@@ -1,10 +1,12 @@
-pub enum OpCode {
+ enum OpCode {
     OpReturn(u8),
+    OpConstant(u8, usize),
 }
 
 struct Chunk {
     count: i32,
     code: Vec<OpCode>,
+    constants: Vec<f32>,
 }
 
 impl Chunk {
@@ -12,6 +14,7 @@ impl Chunk {
         Chunk {
             count: 0,
             code: Vec::new(),
+            constants: Vec::new(),
         }
     }
 
@@ -25,14 +28,26 @@ impl Chunk {
 
         for i in self.code.iter() {
             match i {
-                OpCode::OpReturn(code) => println!("OpReturn: {}", code),
+                OpCode::OpReturn(code) => 
+                    println!("OpReturn: {}", code),
+                OpCode::OpConstant(code, index) => 
+                    println!("OpConstant: {}, index: {}", code, self.constants[*index]),
             }
         }
+    }
+
+    fn add_constant(&mut self, value: f32) -> usize {
+        self.constants.push(value);
+
+        self.constants.len() -1
     }
 }
 
 fn main() {
     let mut chunk = Chunk::new();
     chunk.write(OpCode::OpReturn(0));
-    chunk.disassemble_chunk("test-chunk".to_string());
+
+    let index = chunk.add_constant(2.0);
+    chunk.write(OpCode::OpConstant(1, index));
+    chunk.disassemble_chunk(String::from("test-constants"));
 }

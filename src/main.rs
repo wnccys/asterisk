@@ -1,12 +1,13 @@
- enum OpCode {
+enum OpCode {
     OpReturn(u8),
     OpConstant(u8, usize),
 }
 
 struct Chunk {
-    count: i32,
+    count: usize,
     code: Vec<OpCode>,
     constants: Vec<f32>,
+    lines: Vec<i32>,
 }
 
 impl Chunk {
@@ -15,23 +16,34 @@ impl Chunk {
             count: 0,
             code: Vec::new(),
             constants: Vec::new(),
+            lines: Vec::new(),
         }
     }
 
-    fn write(&mut self, byte: OpCode) {
+    fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.count += 1;
+        self.lines.push(line)
     } 
 
     fn disassemble_chunk(&self, name: String) {
         println!("===%=== {} ===%===", name);
 
-        for i in self.code.iter() {
-            match i {
+        for (i, c) in self.code.iter().enumerate() {
+            if i > 0 {
+                match self.lines[i] == self.lines[i-1] {
+                    true => print!("  | "),
+                    _ => print!("{} ", self.lines[i]),
+                }
+            } else {
+                print!("{} ", self.lines[i]);
+            }
+
+            match c {
                 OpCode::OpReturn(code) => 
-                    println!("OpReturn: {}", code),
+                    println!("{code:0>4} OpReturn"),
                 OpCode::OpConstant(code, index) => 
-                    println!("OpConstant: {}, index: {}", code, self.constants[*index]),
+                    println!("{code:0>4} OpConstant {} {:.1}", i, self.constants[*index]),
             }
         }
     }
@@ -45,9 +57,12 @@ impl Chunk {
 
 fn main() {
     let mut chunk = Chunk::new();
-    chunk.write(OpCode::OpReturn(0));
 
     let index = chunk.add_constant(2.0);
-    chunk.write(OpCode::OpConstant(1, index));
+    chunk.write(OpCode::OpConstant(1, index), 123);
+    chunk.write(OpCode::OpReturn(0), 123);
+    let index = chunk.add_constant(3.0);
+    chunk.write(OpCode::OpConstant(2, index), 200);
+
     chunk.disassemble_chunk(String::from("test-constants"));
 }

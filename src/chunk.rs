@@ -1,12 +1,10 @@
 
 pub enum OpCode<'a> {
     OpReturn,
-    // REVIEW sets correct OpConstant Structure;
     // stores index of chosen constant;
     OpConstant(&'a usize),
 }
 
-// REVIEW check correct struct to store values inside;
 pub enum Value<'a> {
     Float(&'a f32),
 }
@@ -36,7 +34,6 @@ impl<'a> Chunk<'a> {
         self.lines.push(line);
     } 
 
-    // FIXME fix lifetime parameters
     pub fn write_constant(&mut self, value: &'a Value) -> usize {
         self.constant_count += 1;
         self.constants.push(value);

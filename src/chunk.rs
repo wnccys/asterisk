@@ -1,16 +1,13 @@
-mod utils;
-use utils::print;
-
-enum OpCode {
+pub enum OpCode {
     OpReturn(u8),
     OpConstant(u8, usize),
 }
 
-struct Chunk {
-    count: usize,
-    code: Vec<OpCode>,
-    constants: Vec<f32>,
-    lines: Vec<i32>,
+pub struct Chunk {
+    pub count: usize,
+    pub code: Vec<OpCode>,
+    pub constants: Vec<f32>,
+    pub lines: Vec<i32>,
 }
 
 impl Chunk {
@@ -34,16 +31,4 @@ impl Chunk {
 
         self.constants.len() -1
     }
-}
-
-fn main() {
-    let mut chunk = Chunk::new();
-
-    let index = chunk.add_constant(2.0);
-    chunk.write(OpCode::OpConstant(1, index), 123);
-    chunk.write(OpCode::OpReturn(0), 123);
-    let index = chunk.add_constant(3.0);
-    chunk.write(OpCode::OpConstant(2, index), 200);
-
-    print::disassemble_chunk(&chunk, String::from("test-constants"));
 }

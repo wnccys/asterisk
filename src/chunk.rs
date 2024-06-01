@@ -1,18 +1,19 @@
 
-pub enum OpCode {
+pub enum OpCode<'a> {
     OpReturn,
     // REVIEW sets correct OpConstant Structure;
     // stores index of chosen constant;
-    OpConstant(usize),
+    OpConstant(&'a usize),
 }
 
+// REVIEW check correct struct to store values inside;
 pub enum Value<'a> {
     Float(&'a f32),
 }
 
 pub struct Chunk<'a> {
     pub count: usize,
-    pub code: Vec<OpCode>,
+    pub code: Vec<&'a OpCode<'a>>,
     pub constant_count: usize,
     pub constants: Vec<&'a Value<'a>>,
     pub lines: Vec<i32>,
@@ -29,7 +30,7 @@ impl<'a> Chunk<'a> {
         }
     }
 
-    pub fn write(&mut self, byte: OpCode, line: i32) {
+    pub fn write(&mut self, byte: &'a OpCode, line: i32) {
         self.count += 1;
         self.code.push(byte);
         self.lines.push(line);

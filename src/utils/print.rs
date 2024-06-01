@@ -12,6 +12,7 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     print!("{offset:0>4} ");
+    verify_lines(offset, chunk);
 
     let instruction = chunk.code[offset];
 
@@ -43,4 +44,14 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
 
 fn print_value(value: &f32) {
     println!("'{value:.1}'");
+}
+
+fn verify_lines(offset: usize, chunk: &Chunk) {
+    if offset > 0 && 
+        chunk.lines[offset] == chunk.lines[offset-1]
+    {
+        print!("  | ");
+    } else {
+        print!("{} ", chunk.lines[offset]);    
+    }
 }

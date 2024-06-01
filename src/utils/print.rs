@@ -1,5 +1,4 @@
-use crate::Chunk;
-use crate::OpCode;
+use crate::chunk::{Chunk, OpCode};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);

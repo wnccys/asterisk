@@ -11,7 +11,7 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Chunk {
             count: 0,
             code: Vec::new(),
@@ -20,13 +20,13 @@ impl Chunk {
         }
     }
 
-    fn write(&mut self, byte: OpCode, line: i32) {
+    pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.count += 1;
         self.lines.push(line)
     } 
 
-    fn add_constant(&mut self, value: f32) -> usize {
+    pub fn add_constant(&mut self, value: f32) -> usize {
         self.constants.push(value);
 
         self.constants.len() -1

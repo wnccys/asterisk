@@ -1,23 +1,31 @@
-use crate::chunk::{Chunk, OpCode};
+use crate::chunk::{Chunk, OpCode, Value};
 
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 
-    for (i, c) in chunk.code.iter().enumerate() {
-        if i > 0 {
-            match chunk.lines[i] == chunk.lines[i-1] {
-                true => print!("  | "),
-                _ => print!("{} ", chunk.lines[i]),
-            }
-        } else {
-            print!("{} ", chunk.lines[i]);
-        }
+    for mut i in 0..chunk.count {
+        i = disassemble_instruction(&chunk, i);
+    }       
+}
 
-        match c {
-            OpCode::OpReturn(code) => 
-                println!("{code:0>4} OpReturn"),
-            OpCode::OpConstant(code, index) => 
-                println!("{code:0>4} OpConstant {} {:.1}", i, chunk.constants[*index]),
-        }
-    }
+fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
+    print!("{offset:0>4} ");
+
+    let instruction = &chunk.code[offset];
+    let new_offset = match instruction {
+        OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
+        OpCode::OpConstant => constant_instruction("OP_CONSTANT", offset),
+    };
+    
+    new_offset
+}
+
+fn simple_instruction(name: &str, offset: usize) -> usize {
+    println!("{name}");
+    offset+1
+}
+
+fn constant_instruction(name: &str, offset: usize) -> usize {
+    println!("{name}");
+    offset+2
 }

@@ -1,4 +1,3 @@
-
 pub enum OpCode<'a> {
     OpReturn,
     // stores index of chosen constant;
@@ -32,11 +31,12 @@ impl<'a> Chunk<'a> {
         self.count += 1;
         self.code.push(byte);
         self.lines.push(line);
-    } 
+    }
 
     pub fn write_constant(&mut self, value: &'a Value) -> usize {
         self.constant_count += 1;
         self.constants.push(value);
-        return self.constants.len() -1
+        self.constants.len() - 1
     }
 }
+

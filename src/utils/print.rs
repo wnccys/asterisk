@@ -1,13 +1,13 @@
 use crate::chunk::{Chunk, OpCode, Value};
 
- #[allow(unused)]
+#[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 
     let mut i = 0;
     for _ in 0..chunk.count {
-        i = disassemble_instruction(&chunk, i);
-    }       
+        i = disassemble_instruction(chunk, i);
+    }
 }
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
@@ -16,14 +16,10 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
 
     let instruction = chunk.code[offset];
 
-    let new_offset = match instruction {
-        OpCode::OpReturn => 
-            simple_instruction("OP_RETURN", offset),
-        OpCode::OpConstant(index) => 
-            constant_instruction("OP_CONSTANT", &chunk, index, offset),
-    };
-    
-    new_offset
+    match instruction {
+        OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
+        OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
+    }
 }
 
 fn simple_instruction(name: &str, offset: usize) -> usize {
@@ -47,11 +43,10 @@ fn print_value(value: &f32) {
 }
 
 fn verify_lines(offset: usize, chunk: &Chunk) {
-    if offset > 0 && 
-        chunk.lines[offset] == chunk.lines[offset-1]
-    {
+    if offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1] {
         print!("  | ");
     } else {
-        print!("{} ", chunk.lines[offset]);    
+        print!("{} ", chunk.lines[offset]);
     }
 }
+

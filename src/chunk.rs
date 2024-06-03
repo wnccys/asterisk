@@ -1,6 +1,5 @@
 pub enum OpCode<'a> {
     OpReturn,
-    // stores index of chosen constant;
     OpConstant(&'a usize),
 }
 
@@ -39,4 +38,3 @@ impl<'a> Chunk<'a> {
         self.constants.len() - 1
     }
 }
-

@@ -31,15 +31,15 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
     let spaces: usize = 6;
     print!("{name}{op_index:>spaces$} ");
 
-    match chunk.constants[*op_index] {
-        Value::Float(value) => print_value(value),
-    }
+    print_value(chunk.constants[*op_index]);
 
     offset + 1
 }
 
-fn print_value(value: &f32) {
-    println!("'{value:.1}'");
+pub fn print_value(value: &Value) {
+    match value {
+        Value::Float(value) => println!("'{value:.1}'"),
+    }
 }
 
 fn verify_lines(offset: usize, chunk: &Chunk) {
@@ -49,4 +49,3 @@ fn verify_lines(offset: usize, chunk: &Chunk) {
         print!("{} ", chunk.lines[offset]);
     }
 }
-

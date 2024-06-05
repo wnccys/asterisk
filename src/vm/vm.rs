@@ -1,4 +1,5 @@
 use crate::chunk::*;
+use crate::utils::print::print_value;
 
 #[derive(Debug)]
 pub enum InterpretResult {
@@ -37,7 +38,11 @@ impl<'a> Vm<'a> {
                 for &opcode in vec.iter() {
                     match opcode {
                         OpCode::OpReturn => result = InterpretResult::Ok,
-                        OpCode::OpConstant(_) => result = InterpretResult::Ok,
+                        OpCode::OpConstant(index) => {
+                            let constant = self.chunk.unwrap().constants[**index];
+                            print_value(constant);
+                            result = InterpretResult::Ok
+                        }
                     }
                 }
             }

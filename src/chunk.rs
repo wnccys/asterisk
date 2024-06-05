@@ -10,6 +10,8 @@ pub enum Value<'a> {
 pub struct Chunk<'a> {
     pub count: usize,
     pub code: Vec<&'a OpCode<'a>>,
+    pub stack: Vec<&'a Value<'a>>,
+    pub stack_top: Option<&'a Value<'a>>,
     pub constant_count: usize,
     pub constants: Vec<&'a Value<'a>>,
     pub lines: Vec<i32>,
@@ -20,6 +22,8 @@ impl<'a> Chunk<'a> {
         Chunk {
             count: 0,
             code: Vec::new(),
+            stack: Vec::new(),
+            stack_top: None,
             constant_count: 0,
             constants: Vec::new(),
             lines: Vec::new(),

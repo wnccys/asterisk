@@ -41,4 +41,19 @@ impl<'a> Chunk<'a> {
         self.constants.push(value);
         self.constants.len() - 1
     }
+
+    fn push(&mut self, value: &'a Value) {
+        self.stack.push(value);
+        self.stack_top = self.stack.last().copied();
+    }
+
+    fn pop(&mut self) -> &Value {
+        self.stack_top = if let Some(last_index) = self.stack.len().checked_sub(1) {
+            return self.stack[last_index];
+        } else {
+            None
+        };
+
+        self.stack.pop().unwrap()
+    }
 }

@@ -11,7 +11,7 @@ pub struct Chunk<'a> {
     pub count: usize,
     pub code: Vec<&'a OpCode<'a>>,
     pub stack: Vec<&'a Value<'a>>,
-    pub stack_top: Option<&'a Value<'a>>,
+    pub stack_top: Option<usize>,
     pub constant_count: usize,
     pub constants: Vec<&'a Value<'a>>,
     pub lines: Vec<i32>,
@@ -44,16 +44,15 @@ impl<'a> Chunk<'a> {
 
     pub fn push(&mut self, value: &'a Value) {
         self.stack.push(value);
-        self.stack_top = self.stack.last().copied();
+        self.stack_top = Some(self.stack.len());
     }
 
     pub fn pop(&mut self) -> &Value {
-        self.stack_top = if let Some(last_index) = self.stack.len().checked_sub(1) {
-            return self.stack[last_index];
-        } else {
-            None
-        };
+        self.stack_top = Some(self.stack.len() -1);
 
-        self.stack.pop().unwrap()
+        match self.stack.pop() {
+            Some(value) => value, 
+            _ => panic!("stack invalid index!"),
+        }
     }
 }

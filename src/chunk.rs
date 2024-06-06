@@ -44,11 +44,11 @@ impl<'a> Chunk<'a> {
 
     pub fn push(&mut self, value: &'a Value) {
         self.stack.push(value);
-        self.stack_top = self.stack.len();
+        self.stack_top += 1;
     }
 
     pub fn pop(&mut self) -> &Value {
-        self.stack_top = self.stack.len() -1;
+        self.stack_top -= 1;
 
         match self.stack.pop() {
             Some(value) => value, 

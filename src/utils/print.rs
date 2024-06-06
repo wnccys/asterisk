@@ -42,6 +42,14 @@ pub fn print_value(value: &Value) {
     }
 }
 
+pub fn print_stack(chunk: &Chunk) {
+    print!("         ");
+    for &slot in chunk.stack.iter() {
+        print!(">");
+        print_value(slot);
+    }
+}
+
 fn verify_lines(offset: usize, chunk: &Chunk) {
     if offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1] {
         print!("  | ");

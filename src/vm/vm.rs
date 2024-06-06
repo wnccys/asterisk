@@ -26,14 +26,11 @@ impl<'a> Vm<'a> {
 
     pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
-        // IF NOT WORK 
         // test hipotesis for use immutable refences for opcode so
         // it doesn't needs to be mutable, it will copy any value
         // inside it if needed to perform the instruction actions
         // (supposelly) freeing memory after that.
-        // carries a &mut &mut reference yay......
-        // possibly I'm gonna have to change values refs to mutable refs;
-        self.ip = Some(&self.chunk.as_mut().unwrap()
+        self.ip = Some(self.chunk.as_ref().unwrap()
             .code.first()
             .unwrap()
         );

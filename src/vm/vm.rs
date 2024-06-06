@@ -9,8 +9,8 @@ pub enum InterpretResult {
 }
 
 pub struct Vm<'a> {
-    chunk: Option<&'a Chunk<'a>>,
-    ip: Option<&'a Vec<&'a OpCode<'a>>>,
+    chunk: Option<&'a mut Chunk<'a>>,
+    ip: Option<&'a mut Vec<&'a OpCode<'a>>>,
 }
 
 // REVIEW set correct VM structure
@@ -24,8 +24,9 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &'a Chunk) -> InterpretResult {
+    pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
+        // FIXME
         self.ip = Some(&chunk.code);
         self.run()
     }
@@ -39,6 +40,7 @@ impl<'a> Vm<'a> {
                     OpCode::OpReturn => result = InterpretResult::Ok,
                     OpCode::OpConstant(index) => {
                         let constant = self.chunk.unwrap().constants[**index];
+                        self.chunk.unwrap().push(constant);
                         print_value(constant);
                         result = InterpretResult::Ok
                     }

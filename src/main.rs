@@ -18,6 +18,6 @@ fn main() {
 
     print::disassemble_chunk(&chunk, String::from("test-constants"));
 
-    let result = vm.interpret(&chunk);
+    let result = vm.interpret(&mut chunk);
     println!("{:?}", result);
 }

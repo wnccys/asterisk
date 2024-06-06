@@ -10,7 +10,7 @@ pub enum InterpretResult {
 
 pub struct Vm<'a> {
     chunk: Option<&'a mut Chunk<'a>>,
-    ip: Option<&'a Vec<&'a OpCode<'a>>>,
+    ip: Option<&'a OpCode<'a>>,
 }
 
 // REVIEW set correct VM structure
@@ -26,27 +26,21 @@ impl<'a> Vm<'a> {
 
     pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
-        // FIXME
-        self.ip = Some(&self.chunk.unwrap().code);
+        // test hipotesis for use immutable refences for opcode so
+        // it doesn't needs to be mutable, it will copy any value
+        // inside it if needed to perform the instruction actions
+        // (supposelly) freeing memory after that.
+        // carries a &mut &mut reference yay......
+        self.ip = Some(&mut self.chunk.as_mut().unwrap()
+            .code.first()
+            .unwrap()
+        );
+
         self.run()
     }
 
     fn run(&self) -> InterpretResult {
         let mut result = InterpretResult::CompileError;
-
-        if let Some(vec) = self.ip {
-            for &opcode in vec.iter() {
-                match opcode {
-                    OpCode::OpReturn => result = InterpretResult::Ok,
-                    OpCode::OpConstant(index) => {
-                        let constant = self.chunk.unwrap().constants[**index];
-                        self.chunk.unwrap().push(constant);
-                        print_value(constant);
-                        result = InterpretResult::Ok
-                    }
-                }
-            }
-        }
 
         result
     }

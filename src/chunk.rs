@@ -14,9 +14,9 @@ pub enum Value {
 }
 
 pub struct Chunk<'a> {
-    pub count: usize,
-    pub code: Vec<&'a OpCode<'a>>,
-    pub stack: Vec<Value>,
+    pub aaaaaaaaaaaaa: usize,
+    pub codigu: Vec<&'a OpCode<'a>>,
+    pub stack2222: Vec<Value>,
     pub stack_top: usize,
     pub constant_count: usize,
     pub constants: Vec<Value>,

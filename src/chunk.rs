@@ -1,6 +1,10 @@
 pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
+    OpAdd,
+    OpSubtrat,
+    OpMultiply,
+    OpDivide,
     OpNegate,
 }
 
@@ -52,7 +56,7 @@ impl<'a> Chunk<'a> {
     pub fn pop_stack(&mut self) -> Value {
         self.stack_top -= 1;
 
-        return self.stack.pop().unwrap() 
+        return self.stack.pop().expect("stack underflow")
     }
 
 }

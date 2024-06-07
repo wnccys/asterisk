@@ -33,33 +33,47 @@ impl<'a> Vm<'a> {
         self.run()
     }
 
-    fn run (&'a mut self) -> InterpretResult {
-        let mut operation_status = InterpretResult::CompileError;
-        let chunk = self.chunk.as_mut().unwrap();
+    fn run (&mut self) -> InterpretResult {
+        let mut op_status = InterpretResult::CompileError;
 
-        for opcode in chunk.code.iter() {
-            operation_status = match opcode {
+        for i in 0..self.chunk.as_ref().unwrap().code.len() {
+            let opcode = &self.chunk.as_ref().unwrap().code[i];
+
+            op_status = match opcode {
                 OpCode::OpReturn => {
-                   print_value(&chunk.pop_stack());
+                    {
+                        let chunk = self.chunk.as_mut().unwrap();
+                        chunk.pop_stack();
+                    }
 
-                   return InterpretResult::Ok;
+                    InterpretResult::Ok
                 },
                 OpCode::OpConstant(index) => {
-                    let constant = chunk.constants[**index];
-                    chunk.push_stack(constant);
+                    {
+                        let chunk = self.chunk.as_mut().unwrap();
+                        let constant = chunk.constants[**index];
+                        chunk.push_stack(constant);
+                        print_value(&constant);
+                    }
 
-                    return InterpretResult::Ok;
+                    InterpretResult::Ok
                 },
                 OpCode::OpNegate => {
-                    let value = chunk.pop_stack().negate();
+                    let value = {
+                        let chunk = self.chunk.as_mut().unwrap();
+                        chunk.pop_stack().negate()
+                    };
+
+                    let chunk = self.chunk.as_mut().unwrap();
                     chunk.push_stack(value);
+                    print_value(&value);
                      
-                    return InterpretResult::Ok;
+                    InterpretResult::Ok
                 },
                 _ => InterpretResult::RuntimeError 
             }
         }
 
-        operation_status
+        op_status
     }
 }

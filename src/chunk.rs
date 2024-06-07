@@ -1,6 +1,7 @@
 pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
+    OpNegate,
 }
 
 pub enum Value<'a> {
@@ -50,9 +51,6 @@ impl<'a> Chunk<'a> {
     pub fn pop(&mut self) -> &Value {
         self.stack_top -= 1;
 
-        match self.stack.pop() {
-            Some(value) => value, 
-            _ => panic!("stack invalid index!"),
-        }
+        return self.stack.pop().unwrap() 
     }
 }

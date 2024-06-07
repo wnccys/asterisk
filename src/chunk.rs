@@ -43,12 +43,12 @@ impl<'a> Chunk<'a> {
         self.constants.len() - 1
     }
 
-    pub fn push(&mut self, value: &'a Value) {
+    pub fn push_stack(&mut self, value: &'a Value) {
         self.stack.push(value);
         self.stack_top += 1;
     }
 
-    pub fn pop(&mut self) -> &Value {
+    pub fn pop_stack(&mut self) -> &Value {
         self.stack_top -= 1;
 
         return self.stack.pop().unwrap() 
@@ -61,7 +61,7 @@ pub trait ValueOperations {
 }
 
 impl<'a> ValueOperations for Value<'a> {
-    fn negate(&self) -> Self {
+    fn negate(&self) -> Value {
         match self {
             Value::Float(value) => {
                 let result = (*value * -1.0) as f32;

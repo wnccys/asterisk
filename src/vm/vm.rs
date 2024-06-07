@@ -23,11 +23,11 @@ impl<'a> Vm<'a> {
 
     pub fn interpret(&'a mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
-        
+
         self.ip = Some(self.chunk
-            .as_ref().unwrap()
-            .code.first()
-            .unwrap()
+                    .as_ref().unwrap()
+                    .code.first()
+                    .unwrap()
         );
 
         self.run()

@@ -2,7 +2,7 @@ use crate::chunk::{Chunk, OpCode, Value};
 
 #[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
-    println!("===%=== {} ===%===", name);
+    println!("POKELANG===%=== {} ===%===", name);
 
     let mut i = 0;
     for _ in 0..chunk.count {

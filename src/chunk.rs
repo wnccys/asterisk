@@ -53,4 +53,21 @@ impl<'a> Chunk<'a> {
 
         return self.stack.pop().unwrap() 
     }
+
+}
+
+pub trait ValueOperations {
+    fn negate(&self) -> Value<'_>;
+}
+
+impl<'a> ValueOperations for Value<'a> {
+    fn negate(&self) -> Self {
+        match self {
+            Value::Float(value) => {
+                let result = (*value * -1.0) as f32;
+                Value::Float(Box::leak(Box::new(result)))
+            },
+            _ => panic!("operation not allowed for this variant"),
+        }
+    }
 }

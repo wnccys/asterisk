@@ -37,11 +37,12 @@ impl<'a> Vm<'a> {
             .unwrap()
         );
 
-        self.run(&self.chunk.as_mut().unwrap())
+        self.run()
     }
 
-    fn run(&self, chunk: &mut Chunk) -> InterpretResult {
+    fn run(&mut self) -> InterpretResult {
         let mut operation_status = InterpretResult::CompileError;
+        let chunk = self.chunk.as_mut().unwrap();
 
         for opcode in chunk.code.iter() {
             operation_status = match opcode {

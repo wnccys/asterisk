@@ -1,0 +1,1 @@
+PokeLang > ASTERISK

@@ -19,6 +19,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     match instruction {
         OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
         OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
+        OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
     }
 }
 
@@ -31,7 +32,7 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
     let spaces: usize = 6;
     print!("{name}{op_index:>spaces$} ");
 
-    print_value(chunk.constants[*op_index]);
+    print_value(&chunk.constants[*op_index]);
 
     offset + 1
 }
@@ -46,7 +47,7 @@ pub fn print_stack(chunk: &Chunk) {
     print!("         ");
     for &slot in chunk.stack.iter() {
         print!(">");
-        print_value(slot);
+        print_value(&slot);
     }
 }
 

@@ -11,6 +11,7 @@ pub enum OpCode<'a> {
 #[derive(Clone)]
 pub enum Value {
     Float(f32),
+    Int(i32),
 }
 
 pub struct Chunk<'a> {

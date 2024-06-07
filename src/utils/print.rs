@@ -20,6 +20,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
         OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
         OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
+        _ => offset,
     }
 }
 
@@ -39,7 +40,8 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
 
 pub fn print_value(value: &Value) {
     match value {
-        Value::Float(value) => println!("'{value:.1}'"),
+        Value::Float(f) => println!("'{f:.1}'"),
+        Value::Int(i) => println!("'{i}'"),
     }
 }
 

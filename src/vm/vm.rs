@@ -1,5 +1,5 @@
 use crate::chunk::*;
-use crate::utils::print::print_value;
+use crate::utils::print::{print_value, print_stack};
 
 #[derive(Debug)]
 pub enum InterpretResult {
@@ -30,17 +30,36 @@ impl<'a> Vm<'a> {
         // it doesn't needs to be mutable, it will copy any value
         // inside it if needed to perform the instruction actions
         // (supposelly) freeing memory after that.
-        self.ip = Some(self.chunk.as_ref().unwrap()
+        // points to first element of code stack
+        self.ip = Some(self.chunk
+            .as_ref().unwrap()
             .code.first()
             .unwrap()
         );
 
-        self.run()
+        self.run(&self.chunk.as_mut().unwrap())
     }
 
-    fn run(&self) -> InterpretResult {
-        let mut result = InterpretResult::CompileError;
+    fn run(&self, chunk: &mut Chunk) -> InterpretResult {
+        let mut operation_status = InterpretResult::CompileError;
 
-        result
+        for opcode in chunk.code.iter() {
+            operation_status = match opcode {
+                OpCode::OpReturn => {
+                   print_value(chunk.pop());
+
+                   return InterpretResult::Ok
+                },
+                OpCode::OpConstant(index) => {
+                    let constant = chunk.constants[**index];
+                    chunk.push(constant);
+
+                    return InterpretResult::Ok
+                },
+                _ => InterpretResult::RuntimeError 
+            }
+        }
+
+        operation_status
     }
 }

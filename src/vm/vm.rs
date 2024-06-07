@@ -13,9 +13,6 @@ pub struct Vm<'a> {
     ip: Option<&'a OpCode<'a>>,
 }
 
-// REVIEW set correct VM structure
-// static mut VM: Vm = Vm::new();
-
 impl<'a> Vm<'a> {
     pub fn new() -> Self {
         Vm {
@@ -24,13 +21,9 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
+    pub fn interpret(&'a mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
-        // test hipotesis for use immutable refences for opcode so
-        // it doesn't needs to be mutable, it will copy any value
-        // inside it if needed to perform the instruction actions
-        // (supposelly) freeing memory after that.
-        // points to first element of code stack
+        
         self.ip = Some(self.chunk
             .as_ref().unwrap()
             .code.first()
@@ -40,22 +33,28 @@ impl<'a> Vm<'a> {
         self.run()
     }
 
-    fn run(&mut self) -> InterpretResult {
+    fn run (&'a mut self) -> InterpretResult {
         let mut operation_status = InterpretResult::CompileError;
         let chunk = self.chunk.as_mut().unwrap();
 
         for opcode in chunk.code.iter() {
             operation_status = match opcode {
                 OpCode::OpReturn => {
-                   print_value(chunk.pop());
+                   print_value(&chunk.pop_stack());
 
-                   return InterpretResult::Ok
+                   return InterpretResult::Ok;
                 },
                 OpCode::OpConstant(index) => {
                     let constant = chunk.constants[**index];
-                    chunk.push(constant);
+                    chunk.push_stack(constant);
 
-                    return InterpretResult::Ok
+                    return InterpretResult::Ok;
+                },
+                OpCode::OpNegate => {
+                    let value = chunk.pop_stack().negate();
+                    chunk.push_stack(value);
+                     
+                    return InterpretResult::Ok;
                 },
                 _ => InterpretResult::RuntimeError 
             }

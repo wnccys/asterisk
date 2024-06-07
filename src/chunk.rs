@@ -66,9 +66,4 @@ impl Value {
             _ => panic!("operation not allowed for this variant"),
         }
      }
-    // pub fn custom_copy(&self) -> Self {
-    //     match self {
-    //         Value::Float(value) => Value::Float(*value),
-    //     }
-    // }
 }

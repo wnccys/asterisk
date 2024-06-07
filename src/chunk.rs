@@ -1,10 +1,10 @@
 pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
-    OpAdd,
-    OpSubtrat,
-    OpMultiply,
-    OpDivide,
+    OpAdd(String),
+    OpSubtrat(String),
+    OpMultiply(String),
+    OpDivide(String),
     OpNegate,
 }
 

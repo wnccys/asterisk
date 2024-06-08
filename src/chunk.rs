@@ -1,3 +1,4 @@
+use crate::value::Value;
 pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
@@ -6,12 +7,6 @@ pub enum OpCode<'a> {
     OpMultiply,
     OpDivide,
     OpNegate,
-}
-
-#[derive(Clone)]
-pub enum Value {
-    Float(f64),
-    Int(i32),
 }
 
 pub struct Chunk<'a> {
@@ -60,15 +55,4 @@ impl<'a> Chunk<'a> {
         return self.stack.pop().expect("stack underflow")
     }
 
-}
-
-impl Copy for Value {}
-
-impl Value {
-     pub fn negate(&self) -> Value {
-        match self {
-            Value::Float(value) => Value::Float(-value),
-            _ => panic!("operation not allowed for this variant"),
-        }
-     }
 }

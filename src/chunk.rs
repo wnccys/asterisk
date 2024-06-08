@@ -25,9 +25,9 @@ impl<'a> Chunk<'a> {
     }
 
     pub fn write(&mut self, byte: &'a OpCode, line: i32) {
-        dynamize_code_vec(&mut self.code);
         self.code.push(byte);
         self.lines.push(line);
+        dynamize_code_vec(&mut self.code);
     }
 
     pub fn write_constant(&mut self, value: Value) -> usize {
@@ -38,12 +38,12 @@ impl<'a> Chunk<'a> {
 
 pub fn dynamize_code_vec(code: &mut Vec<&OpCode>) {
     if code.len() == code.capacity() {
-        code.reserve(code.capacity() * 2);
+        code.reserve(code.capacity());
     }
 }
 
 pub fn dynamize_stack_vec(stack: &mut Vec<Value>){
     if stack.len() == stack.capacity() {
-        stack.reserve(stack.capacity() * 2);
+        stack.reserve(stack.capacity());
     }
 }

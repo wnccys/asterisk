@@ -1,9 +1,8 @@
 use crate::chunk::*;
 use crate::utils::print::{print_value, print_stack};
 use crate::value::Value;
-use std::ops;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum InterpretResult {
     Ok,
     CompileError,
@@ -42,7 +41,7 @@ impl<'a> Vm<'a> {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
 
             {
-                print_stack(&self.chunk.as_ref().unwrap());
+                // print_stack(&self.chunk.as_ref().unwrap());
             }
 
             op_status = match opcode {
@@ -59,7 +58,6 @@ impl<'a> Vm<'a> {
                         let chunk = self.chunk.as_mut().unwrap();
                         let constant = chunk.constants[**index];
                         chunk.push_stack(constant);
-                        print_value(&constant);
                     }
 
                     InterpretResult::Ok
@@ -104,14 +102,14 @@ impl<'a> Vm<'a> {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let a = self.chunk.as_mut().unwrap().pop_stack();
         let b = self.chunk.as_mut().unwrap().pop_stack();
+        let a = self.chunk.as_mut().unwrap().pop_stack();
 
         match op {
             "+" => self.chunk.as_mut().unwrap().push_stack(a+b),
-            "-" => self.chunk.as_mut().unwrap().push_stack(a+b),
-            "/" => self.chunk.as_mut().unwrap().push_stack(a+b),
-            "*" => self.chunk.as_mut().unwrap().push_stack(a+b),
+            "-" => self.chunk.as_mut().unwrap().push_stack(a-b),
+            "/" => self.chunk.as_mut().unwrap().push_stack(a*b),
+            "*" => self.chunk.as_mut().unwrap().push_stack(a/b),
             _ => panic!("invalid operation"),
         }
 

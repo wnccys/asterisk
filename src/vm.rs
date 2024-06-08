@@ -48,7 +48,7 @@ impl<'a> Vm<'a> {
                 OpCode::OpReturn => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        print_value(&chunk.pop_stack());
+                        print_value(&chunk.stack.pop().expect("stack underflow"));
                     }
 
                     InterpretResult::Ok
@@ -57,30 +57,13 @@ impl<'a> Vm<'a> {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
                         let constant = chunk.constants[**index];
-                        chunk.push_stack(constant);
+                        chunk.stack.push(constant);
                     }
 
                     InterpretResult::Ok
                 },
-                OpCode::OpNegate => {
-                    let value = {
-                        let chunk = self.chunk.as_mut().unwrap();
-                        chunk.pop_stack().negate()
-                    };
-
-                    let chunk = self.chunk.as_mut().unwrap();
-                    chunk.push_stack(value);
-                    print_value(&value);
-                     
-                    InterpretResult::Ok
-                },
                 OpCode::OpAdd => {
                     self.binary_op("+");
-
-                    InterpretResult::Ok
-                },
-                OpCode::OpSubtrat => {
-                    self.binary_op("-");
 
                     InterpretResult::Ok
                 },
@@ -102,14 +85,13 @@ impl<'a> Vm<'a> {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self.chunk.as_mut().unwrap().pop_stack();
-        let a = self.chunk.as_mut().unwrap().pop_stack();
+        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded");
+        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded");
 
         match op {
-            "+" => self.chunk.as_mut().unwrap().push_stack(a+b),
-            "-" => self.chunk.as_mut().unwrap().push_stack(a-b),
-            "*" => self.chunk.as_mut().unwrap().push_stack(a*b),
-            "/" => self.chunk.as_mut().unwrap().push_stack(a/b),
+            "+" => self.chunk.as_mut().unwrap().stack.push(a+b),
+            "*" => self.chunk.as_mut().unwrap().stack.push(a*b),
+            "/" => self.chunk.as_mut().unwrap().stack.push(a/b),
             _ => panic!("invalid operation"),
         }
 

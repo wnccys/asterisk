@@ -3,7 +3,7 @@ mod utils;
 mod vm;
 use crate::chunk::{Chunk, OpCode, Value};
 use crate::utils::*;
-use crate::vm::vm::Vm;
+use crate::vm::Vm;
 
 fn main() {
     let mut vm = Vm::new();

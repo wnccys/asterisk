@@ -11,8 +11,6 @@ pub struct Chunk<'a> {
     pub count: usize,
     pub code: Vec<&'a OpCode<'a>>,
     pub stack: Vec<Value>,
-    pub stack_top: usize,
-    pub constant_count: usize,
     pub constants: Vec<Value>,
     pub lines: Vec<i32>,
 }
@@ -23,8 +21,6 @@ impl<'a> Chunk<'a> {
             count: 0,
             code: Vec::new(),
             stack: Vec::new(),
-            stack_top: 0,
-            constant_count: 0,
             constants: Vec::new(),
             lines: Vec::new(),
         }
@@ -37,20 +33,7 @@ impl<'a> Chunk<'a> {
     }
 
     pub fn write_constant(&mut self, value: Value) -> usize {
-        self.constant_count += 1;
         self.constants.push(value);
         self.constants.len() - 1
     }
-
-    pub fn push_stack(&mut self, value: Value) {
-        self.stack.push(value);
-        self.stack_top += 1;
-    }
-
-    pub fn pop_stack(&mut self) -> Value {
-        self.stack_top -= 1;
-
-        return self.stack.pop().expect("stack underflow")
-    }
-
 }

@@ -40,9 +40,7 @@ impl<'a> Vm<'a> {
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
 
-            {
-                // print_stack(&self.chunk.as_ref().unwrap());
-            }
+            // print_stack(&self.chunk.as_ref().unwrap());
 
             op_status = match opcode {
                 OpCode::OpReturn => {
@@ -78,7 +76,9 @@ impl<'a> Vm<'a> {
                     InterpretResult::Ok
                 },
                 _ => InterpretResult::RuntimeError 
-            }
+            };
+
+            dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);
         }
 
         op_status

@@ -1,16 +1,16 @@
 pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
-    OpAdd(String),
-    OpSubtrat(String),
-    OpMultiply(String),
-    OpDivide(String),
+    OpAdd,
+    OpSubtrat,
+    OpMultiply,
+    OpDivide,
     OpNegate,
 }
 
 #[derive(Clone)]
 pub enum Value {
-    Float(f32),
+    Float(f64),
     Int(i32),
 }
 

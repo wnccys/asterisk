@@ -54,6 +54,24 @@ fn simple_add_op() {
 }
 
 #[test]
+fn simple_sub_op(){
+    let mut vm = Vm::new();
+    let mut chunk = Chunk::new();
+
+    let const1 = chunk.write_constant(Value::Float(2.0));
+    let const2 = chunk.write_constant(Value::Float(-6.0));
+    let op_const1 = OpCode::OpConstant(&const1);
+    let op_const2 = OpCode::OpConstant(&const2);
+
+    chunk.write(&op_const1, 0);
+    chunk.write(&op_const2, 0);
+    chunk.write(&OpCode::OpAdd, 0);
+    chunk.write(&OpCode::OpReturn, 1);
+
+    assert_eq!(InterpretResult::Ok, vm.interpret(&mut chunk));
+}
+
+#[test]
 fn multiple_add_op() {
     let mut vm = Vm::new();
     let mut chunk = Chunk::new();

@@ -49,9 +49,10 @@ pub fn print_value(value: &Value) {
 }
 
 pub fn print_stack(chunk: &Chunk) {
-    for slot in chunk.stack.iter() {
+    println!("=====stack-trace=====");
+    for value in chunk.stack.iter() {
         print!(">");
-        print_value(slot);
+        print_value(value);
     }
 }
 

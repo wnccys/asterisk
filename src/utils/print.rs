@@ -1,4 +1,5 @@
-use crate::chunk::{Chunk, OpCode, Value};
+use crate::chunk::{Chunk, OpCode};
+use crate::value::Value;
 
 #[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
@@ -46,7 +47,6 @@ pub fn print_value(value: &Value) {
 }
 
 pub fn print_stack(chunk: &Chunk) {
-    print!("         ");
     for slot in chunk.stack.iter() {
         print!(">");
         print_value(slot);

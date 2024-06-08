@@ -6,14 +6,14 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 
     let mut i = 0;
-    for _ in 0..chunk.count {
+    for _ in 0..chunk.code.len() {
         i = disassemble_instruction(chunk, i);
     }
 }
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     print!("{offset:0>4} ");
-    verify_lines(offset, chunk);
+    verify_lines(offset, &chunk);
 
     let instruction = chunk.code[offset];
 

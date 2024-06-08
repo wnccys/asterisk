@@ -72,6 +72,26 @@ impl<'a> Vm<'a> {
                      
                     InterpretResult::Ok
                 },
+                OpCode::OpAdd => {
+                    self.binary_op("+");
+
+                    InterpretResult::Ok
+                },
+                OpCode::OpSubtrat => {
+                    self.binary_op("-");
+
+                    InterpretResult::Ok
+                },
+                OpCode::OpMultiply => {
+                    self.binary_op("*");
+
+                    InterpretResult::Ok
+                },
+                OpCode::OpDivide => {
+                    self.binary_op("/");
+
+                    InterpretResult::Ok
+                },
                 _ => InterpretResult::RuntimeError 
             }
         }
@@ -79,6 +99,18 @@ impl<'a> Vm<'a> {
         op_status
     }
 
-    fn binary_op(&mut self, op: fn(f32,f32) -> f32) {
+    fn binary_op(&mut self, op: &str) -> InterpretResult {
+        let a = self.chunk.as_mut().unwrap().pop_stack();
+        let b = self.chunk.as_mut().unwrap().pop_stack();
+
+        match op {
+            "+" => self.chunk.as_mut().unwrap().push_stack(a+b),
+            "-" => self.chunk.as_mut().unwrap().push_stack(a+b),
+            "/" => self.chunk.as_mut().unwrap().push_stack(a+b),
+            "*" => self.chunk.as_mut().unwrap().push_stack(a+b),
+            _ => panic!("invalid operation"),
+        }
+
+        InterpretResult::Ok
     }
 }

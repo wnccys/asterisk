@@ -48,7 +48,7 @@ impl<'a> Vm<'a> {
                 OpCode::OpReturn => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        chunk.pop_stack();
+                        print_value(&chunk.pop_stack());
                     }
 
                     InterpretResult::Ok
@@ -108,8 +108,8 @@ impl<'a> Vm<'a> {
         match op {
             "+" => self.chunk.as_mut().unwrap().push_stack(a+b),
             "-" => self.chunk.as_mut().unwrap().push_stack(a-b),
-            "/" => self.chunk.as_mut().unwrap().push_stack(a*b),
-            "*" => self.chunk.as_mut().unwrap().push_stack(a/b),
+            "*" => self.chunk.as_mut().unwrap().push_stack(a*b),
+            "/" => self.chunk.as_mut().unwrap().push_stack(a/b),
             _ => panic!("invalid operation"),
         }
 

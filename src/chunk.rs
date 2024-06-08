@@ -3,10 +3,8 @@ pub enum OpCode<'a> {
     OpReturn,
     OpConstant(&'a usize),
     OpAdd,
-    OpSubtrat,
     OpMultiply,
     OpDivide,
-    OpNegate,
 }
 
 pub struct Chunk<'a> {

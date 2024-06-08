@@ -20,9 +20,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     match instruction {
         OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
         OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
-        OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
         OpCode::OpAdd => simple_instruction("OP_ADD", offset),
-        OpCode::OpSubtrat => simple_instruction("OP_SUBTRAT", offset),
         OpCode::OpMultiply => simple_instruction("OP_MULTIPLY", offset),
         OpCode::OpDivide => simple_instruction("OP_DIVIDE", offset),
         _ => offset,

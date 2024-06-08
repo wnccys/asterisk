@@ -1,9 +1,11 @@
 mod chunk;
 mod utils;
 mod vm;
-use crate::chunk::{Chunk, OpCode, Value};
+mod value;
+use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::Vm;
+use crate::value::Value;
 
 fn main() {
     let mut vm = Vm::new();

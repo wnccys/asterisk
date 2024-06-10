@@ -29,8 +29,8 @@ fn main() {
 
     print::disassemble_chunk(&chunk, String::from("test-constants"));
 
-    let result = vm.interpret(&mut chunk);
-    println!("{:?}", result);
+    // let result = vm.interpret(&mut chunk);
+    // println!("{:?}", result);
 }
 
 fn check_cmd_args(vm: &mut Vm) {
@@ -63,15 +63,16 @@ fn repl(vm: &mut Vm) {
         }
 
         // TODO fix arg type
-        vm.interpret(buffer.trim());
+        vm.interpret(&buffer.trim().to_string());
     }
 }
 
 fn run_file(vm: &mut Vm, file: &String) {
-    let file_code = fs::read_to_string(file)?;
+    // TODO add error handling
+    let file_code = fs::read_to_string(file);
     
     // TODO fix arg type
-    let result = vm.interpret(&file_code);
+    let result = vm.interpret(&file_code.unwrap());
 
     match result {
         InterpretResult::Ok => (),

@@ -7,7 +7,7 @@ use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
 use crate::value::Value;
 use std::io::{BufRead, Write};
-use std::{env, io};
+use std::{env, fs, io};
 
 fn main() {
     let mut vm = Vm::new();
@@ -33,12 +33,12 @@ fn main() {
     println!("{:?}", result);
 }
 
-fn check_cmd_args(vm: &mut Vm){
+fn check_cmd_args(vm: &mut Vm) {
     let args: Vec<String> = env::args().collect();
 
     match args {
         args if args.len() == 1 => repl(vm),
-        args if args.len() == 2 => run_file(&args[2]),
+        args if args.len() == 2 => run_file(vm, &args[2]),
         _ => panic!("Usage: astr [path]"),
     }
 }
@@ -61,10 +61,19 @@ fn repl(vm: &mut Vm) {
             break;
         }
 
+        // TODO fix arg type
         vm.interpret(buffer.trim());
     }
 }
 
-fn run_file(file: &String) {
+fn run_file(vm: &mut Vm, file: &String) {
+    let file_code = fs::read_to_string(file);
+    // TODO fix arg type
+    let result = vm.interpret(file_code);
 
+    match result {
+        InterpretResult::Ok => (),
+        InterpretResult::RuntimeError => std::process::exit(65),
+        InterpretResult::CompileError =>  std::process::exit(75),
+    }
 }

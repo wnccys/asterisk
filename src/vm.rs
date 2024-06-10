@@ -22,16 +22,30 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
-        self.chunk = Some(chunk);
+    // pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
+    //     self.chunk = Some(chunk);
 
-        self.ip = Some(self.chunk
-                    .as_ref().unwrap()
-                    .code.first()
-                    .unwrap()
-        );
+    //     self.ip = Some(self.chunk
+    //                 .as_ref().unwrap()
+    //                 .code.first()
+    //                 .unwrap()
+    //     );
 
-        self.run()
+    //     self.run()
+    // }
+
+    pub fn interpret(&mut self, source: &String) -> InterpretResult {
+        self.compile(source);
+        
+        InterpretResult::Ok
+    }
+
+    fn compile(&mut self, source: &String){
+        self.init_scanner(source);
+    }
+
+    fn init_scanner(&mut self, source: &String) {
+        
     }
 
     fn run (&mut self) -> InterpretResult {

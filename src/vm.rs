@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::utils::print::{print_value, print_stack};
-use crate::value::Value;
+use crate::scanner::{ Scanner, TokenCode };
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -35,17 +35,28 @@ impl<'a> Vm<'a> {
     // }
 
     pub fn interpret(&mut self, source: &String) -> InterpretResult {
-        self.compile(source);
-        
+        self.compile(source)
+    }
+
+    fn compile(&mut self, source: &String) -> InterpretResult {
+        let mut scanner = Scanner::new();
+        let mut line = -1;
+
+        loop {
+            let token = scanner.scan_token();
+
+            if token.line != line {
+                print!("{}", token.line);
+                line = token.line;
+            } else {
+                print!("  |");
+            }
+            println!("{:?}, {}, {}", token.code , token.length, token.start);
+
+            if token.code == TokenCode::Eof { break };
+        }
+
         InterpretResult::Ok
-    }
-
-    fn compile(&mut self, source: &String){
-        self.init_scanner(source);
-    }
-
-    fn init_scanner(&mut self, source: &String) {
-        
     }
 
     fn run (&mut self) -> InterpretResult {
@@ -53,9 +64,7 @@ impl<'a> Vm<'a> {
 
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
-
             // print_stack(&self.chunk.as_ref().unwrap());
-
             op_status = match opcode {
                 OpCode::OpReturn => {
                     {

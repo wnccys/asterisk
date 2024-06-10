@@ -2,6 +2,7 @@ mod chunk;
 mod utils;
 mod vm;
 mod value;
+mod scanner;
 use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
@@ -12,25 +13,6 @@ use std::{env, fs, io};
 fn main() {
     let mut vm = Vm::new();
     check_cmd_args(&mut vm);
-    let mut chunk = Chunk::new();
-
-    let constant = chunk.write_constant(Value::Float(1.2));
-    let constant2 = chunk.write_constant(Value::Float(3.4));
-
-    let op_constant = OpCode::OpConstant(&constant);
-    let op_constant2 = OpCode::OpConstant(&constant2);
-    let op_add = OpCode::OpAdd;
-    let op_return = OpCode::OpReturn;
-
-    chunk.write(&op_constant, 123);
-    chunk.write(&op_constant2, 123);
-    chunk.write(&op_add, 123);
-    chunk.write(&op_return, 124);
-
-    print::disassemble_chunk(&chunk, String::from("test-constants"));
-
-    // let result = vm.interpret(&mut chunk);
-    // println!("{:?}", result);
 }
 
 fn check_cmd_args(vm: &mut Vm) {
@@ -62,16 +44,13 @@ fn repl(vm: &mut Vm) {
             break;
         }
 
-        // TODO fix arg type
         vm.interpret(&buffer.trim().to_string());
     }
 }
 
 fn run_file(vm: &mut Vm, file: &String) {
-    // TODO add error handling
     let file_code = fs::read_to_string(file);
     
-    // TODO fix arg type
     let result = vm.interpret(&file_code.unwrap());
 
     match result {

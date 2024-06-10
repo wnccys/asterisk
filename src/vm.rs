@@ -34,10 +34,6 @@ impl<'a> Vm<'a> {
         self.run()
     }
 
-    pub fn interpret(&mut self) {
-
-    }
-
     fn run (&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 

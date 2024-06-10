@@ -45,14 +45,14 @@ fn check_cmd_args(vm: &mut Vm) {
 
 fn repl(vm: &mut Vm) {
     let stdin = io::stdin();
-    let handle = stdin.lock();
+    let mut handle = stdin.lock();
     let mut buffer = String::new();
 
     loop {
         print!("> ");
         io::stdout().flush().unwrap();
         buffer.clear();
-        
+
         let bytes_read =
             handle
                 .read_line(&mut buffer).unwrap();
@@ -68,13 +68,10 @@ fn repl(vm: &mut Vm) {
 }
 
 fn run_file(vm: &mut Vm, file: &String) {
-    let file_code = fs::read_to_string(file);
-    if let file_code = Result::Err {
-        Err("Could not read file");
-    }
+    let file_code = fs::read_to_string(file)?;
     
     // TODO fix arg type
-    let result = vm.interpret(file_code);
+    let result = vm.interpret(&file_code);
 
     match result {
         InterpretResult::Ok => (),

@@ -6,27 +6,26 @@ use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
 use crate::value::Value;
+use std::io::{BufRead, Write};
+use std::{env, io};
 
 fn main() {
     let mut vm = Vm::new();
+    check_cmd_args(&mut vm);
     let mut chunk = Chunk::new();
 
     let constant = chunk.write_constant(Value::Float(1.2));
     let constant2 = chunk.write_constant(Value::Float(3.4));
-    let constant3 = chunk.write_constant(Value::Float(5.6));
 
     let op_constant = OpCode::OpConstant(&constant);
     let op_constant2 = OpCode::OpConstant(&constant2);
-    let op_constant3 = OpCode::OpConstant(&constant3);
     let op_add = OpCode::OpAdd;
     let op_return = OpCode::OpReturn;
 
     chunk.write(&op_constant, 123);
     chunk.write(&op_constant2, 123);
     chunk.write(&op_add, 123);
-    chunk.write(&op_constant3, 124);
-    chunk.write(&OpCode::OpDivide, 124);
-    chunk.write(&op_return, 128);
+    chunk.write(&op_return, 124);
 
     print::disassemble_chunk(&chunk, String::from("test-constants"));
 
@@ -34,62 +33,38 @@ fn main() {
     println!("{:?}", result);
 }
 
-#[cfg(test)]
-#[test]
-fn simple_add_op() {
-    let mut vm = Vm::new();
-    let mut chunk = Chunk::new();
+fn check_cmd_args(vm: &mut Vm){
+    let args: Vec<String> = env::args().collect();
 
-    let const1 = chunk.write_constant(Value::Float(2.0));
-    let const2 = chunk.write_constant(Value::Float(2.0));
-    let op_const1 = OpCode::OpConstant(&const1);
-    let op_const2 = OpCode::OpConstant(&const2);
-
-    chunk.write(&op_const1, 0);
-    chunk.write(&op_const2, 0);
-    chunk.write(&OpCode::OpAdd, 0);
-    chunk.write(&OpCode::OpReturn, 1);
-
-    assert_eq!(InterpretResult::Ok, vm.interpret(&mut chunk));
+    match args {
+        args if args.len() == 1 => repl(vm),
+        args if args.len() == 2 => run_file(&args[2]),
+        _ => panic!("Usage: astr [path]"),
+    }
 }
 
-#[test]
-fn simple_sub_op(){
-    let mut vm = Vm::new();
-    let mut chunk = Chunk::new();
+fn repl(vm: &mut Vm) {
+    let stdin = io::stdin();
+    let handle = stdin.lock();
+    let mut buffer = String::new();
 
-    let const1 = chunk.write_constant(Value::Float(2.0));
-    let const2 = chunk.write_constant(Value::Float(-6.0));
-    let op_const1 = OpCode::OpConstant(&const1);
-    let op_const2 = OpCode::OpConstant(&const2);
+    loop {
+        print!("> ");
+        io::stdout().flush().unwrap();
+        buffer.clear();
+        let bytes_read =
+            handle
+                .read_line(&mut buffer).unwrap();
+        
+        if bytes_read == 0 {
+            println!();
+            break;
+        }
 
-    chunk.write(&op_const1, 0);
-    chunk.write(&op_const2, 0);
-    chunk.write(&OpCode::OpAdd, 0);
-    chunk.write(&OpCode::OpReturn, 1);
-
-    assert_eq!(InterpretResult::Ok, vm.interpret(&mut chunk));
+        vm.interpret(buffer.trim());
+    }
 }
 
-#[test]
-fn multiple_add_op() {
-    let mut vm = Vm::new();
-    let mut chunk = Chunk::new();
+fn run_file(file: &String) {
 
-    let constant = chunk.write_constant(Value::Float(2.0));
-    let op_constant = OpCode::OpConstant(&constant);
-    let op_add = OpCode::OpAdd;
-    let op_return = OpCode::OpReturn;
-
-    chunk.write(&op_constant, 123);
-    chunk.write(&op_constant, 123);
-    chunk.write(&op_add, 124);
-    chunk.write(&op_constant, 125);
-    chunk.write(&op_constant, 125);
-    chunk.write(&op_add, 126);
-    chunk.write(&op_add, 127);
-    chunk.write(&op_return, 128);
-    let result = vm.interpret(&mut chunk);
-
-    assert_eq!(InterpretResult::Ok, result)
 }

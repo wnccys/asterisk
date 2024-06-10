@@ -22,7 +22,7 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&'a mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
+    pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
         self.chunk = Some(chunk);
 
         self.ip = Some(self.chunk
@@ -32,6 +32,10 @@ impl<'a> Vm<'a> {
         );
 
         self.run()
+    }
+
+    pub fn interpret(&mut self) {
+
     }
 
     fn run (&mut self) -> InterpretResult {

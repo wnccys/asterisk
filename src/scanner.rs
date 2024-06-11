@@ -70,14 +70,15 @@ impl Scanner {
     }
 
     pub fn scan_token(&self, source: &String) -> Token {
-        // TODO set proper conditional to EOF code
-        if self.current == source.len()-1 { return self.make_token(TokenCode::Eof) }
+        if self.reach_source_end(source) { return self.make_token(TokenCode::Eof) }
         
-        let chars: Vec<char> = source.chars().collect();
+        let chars: Vec<char> = source
+                                .chars()
+                                .collect();
 
         match chars[self.current] {
             '(' => self.make_token(TokenCode::LeftParen),
-            ')' => self.make_token(TokenCode:: RightParen),
+            ')' => self.make_token(TokenCode::RightParen),
             '{' => self.make_token(TokenCode::LeftBrace),
             '}' => self.make_token(TokenCode::RightBrace),
             ';' => self.make_token(TokenCode::SemiColon),
@@ -87,12 +88,24 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => self.make_token(TokenCode::Slash),
+            '!' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+                    { self.make_token(TokenCode::BangEqual) } 
+                    else { self.make_token(TokenCode::Bang) },
+            '=' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+                    { self.make_token(TokenCode::Equal) } 
+                    else { self.make_token(TokenCode::EqualEqual) }
+            '<' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+                    { self.make_token(TokenCode::LessEqual) } 
+                    else { self.make_token(TokenCode::Less) }
+            '>' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+                    { self.make_token(TokenCode::GreaterEqual) } 
+                    else { self.make_token(TokenCode::Greater) }
             _ => self.make_token(TokenCode::Error), 
         }
     }
 
-    pub fn reach_the_end() -> bool {
-        true
+    fn reach_source_end(&self, source: &String) -> bool {
+        self.current == source.len() -1
     }
 
     pub fn make_token(&self, token_code: TokenCode) -> Token {
@@ -105,11 +118,11 @@ impl Scanner {
     }
 
     // TODO set proper token info
-    pub fn error_token(&self, message: String) -> Token {
+    pub fn error_token(&self) -> Token {
         Token {
             code: TokenCode::Error,
             start: todo!(),
-            length: message.len(),
+            length: todo!(),
             line: 22,
         }
     }

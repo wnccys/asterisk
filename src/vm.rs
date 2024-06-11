@@ -49,7 +49,7 @@ impl<'a> Vm<'a> {
                 print!("{} ", token.line);
                 line = token.line;
             } else {
-                print!("  | ");
+                print!("| ");
             }
             println!("{:?}, {}, {}", token.code , token.length, token.start);
 

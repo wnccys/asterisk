@@ -69,7 +69,8 @@ impl Scanner {
         }
     }
 
-    pub fn scan_token(&self, source: &String) -> Token {
+    pub fn scan_token(&mut self, source: &String) -> Token {
+        self.start = self.current;
         if self.reach_source_end(source) { return self.make_token(TokenCode::Eof) }
         
         let chars: Vec<char> = source
@@ -100,7 +101,7 @@ impl Scanner {
             '>' => if !self.reach_source_end(source) && chars[self.current+1] == '='
                     { self.make_token(TokenCode::GreaterEqual) } 
                     else { self.make_token(TokenCode::Greater) }
-            _ => self.make_token(TokenCode::Error), 
+            _ => self.error_token(), 
         }
     }
 

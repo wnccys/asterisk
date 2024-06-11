@@ -39,7 +39,7 @@ impl<'a> Vm<'a> {
     }
 
     fn compile(&mut self, source: &String) -> InterpretResult {
-        let scanner = Scanner::new();
+        let mut scanner = Scanner::new();
         let mut line = -1;
 
         loop {
@@ -49,7 +49,7 @@ impl<'a> Vm<'a> {
                 print!("{}", token.line);
                 line = token.line;
             } else {
-                print!("  |");
+                print!("  | ");
             }
             println!("{:?}, {}, {}", token.code , token.length, token.start);
 

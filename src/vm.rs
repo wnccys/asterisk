@@ -46,7 +46,7 @@ impl<'a> Vm<'a> {
             let token = scanner.scan_token(source);
 
             if token.line != line {
-                print!("{}", token.line);
+                print!("{} ", token.line);
                 line = token.line;
             } else {
                 print!("  | ");

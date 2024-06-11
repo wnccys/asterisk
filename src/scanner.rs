@@ -79,6 +79,7 @@ impl Scanner {
         self.current+=1;
 
         // starts at 0 because of early increment;
+        // FIXME fix out of bound != repl;
         match chars[self.current.clone()-1] {
             '(' => self.make_token(TokenCode::LeftParen),
             ')' => self.make_token(TokenCode::RightParen),
@@ -95,8 +96,8 @@ impl Scanner {
                     { self.current+=1; self.make_token(TokenCode::BangEqual) } 
                     else { self.make_token(TokenCode::Bang) },
             '=' => if !self.reach_source_end(source) && chars[self.current+1] == '='
-                    { self.current+=1; self.make_token(TokenCode::Equal) } 
-                    else { self.make_token(TokenCode::EqualEqual) }
+                    { self.current+=1; self.make_token(TokenCode::EqualEqual) } 
+                    else { self.make_token(TokenCode::Equal) }
             '<' => if !self.reach_source_end(source) && chars[self.current+1] == '='
                     { self.current+=1; self.make_token(TokenCode::LessEqual) } 
                     else { self.make_token(TokenCode::Less) }

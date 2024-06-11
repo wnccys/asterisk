@@ -76,11 +76,9 @@ impl Scanner {
         let chars: Vec<char> = source
                                 .chars()
                                 .collect();
-        self.current+=1;
+        self.current += 1;
 
-        // starts at 0 because of early increment;
-        // FIXME fix out of bound != repl;
-        match chars[self.current.clone()-1] {
+        match chars[self.current-1] {
             '(' => self.make_token(TokenCode::LeftParen),
             ')' => self.make_token(TokenCode::RightParen),
             '{' => self.make_token(TokenCode::LeftBrace),
@@ -92,24 +90,22 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => self.make_token(TokenCode::Slash),
-            '!' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+            '!' => if !self.reach_source_end(source) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::BangEqual) } 
                     else { self.make_token(TokenCode::Bang) },
-            '=' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+            '=' => if !self.reach_source_end(source) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::EqualEqual) } 
                     else { self.make_token(TokenCode::Equal) }
-            '<' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+            '<' => if !self.reach_source_end(source) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::LessEqual) } 
                     else { self.make_token(TokenCode::Less) }
-            '>' => if !self.reach_source_end(source) && chars[self.current+1] == '='
+            '>' => if !self.reach_source_end(source) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::GreaterEqual) } 
                     else { self.make_token(TokenCode::Greater) }
             _ => self.error_token(), 
         }
     }
 
-    // REVIEW assure last char isn't crop because early
-    // current auto-increment;
     fn reach_source_end(&self, source: &String) -> bool {
         self.current == source.len()
     }

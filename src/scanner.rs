@@ -69,29 +69,46 @@ impl Scanner {
         }
     }
 
-    pub fn scan_token(&self) -> Token {
-        if true { return self.make_token(TokenCode::Eof, "asdasd".to_string()) }
+    pub fn scan_token(&self, source: &String) -> Token {
+        // TODO set proper conditional to EOF code
+        if self.current == source.len()-1 { return self.make_token(TokenCode::Eof) }
+        
+        let chars: Vec<char> = source.chars().collect();
 
-        self.make_token(TokenCode::Error, "adad".to_string())
+        match chars[self.current] {
+            '(' => self.make_token(TokenCode::LeftParen),
+            ')' => self.make_token(TokenCode:: RightParen),
+            '{' => self.make_token(TokenCode::LeftBrace),
+            '}' => self.make_token(TokenCode::RightBrace),
+            ';' => self.make_token(TokenCode::SemiColon),
+            ',' => self.make_token(TokenCode::Comma),
+            '.' => self.make_token(TokenCode::Dot),
+            '+' => self.make_token(TokenCode::Plus),
+            '-' => self.make_token(TokenCode::Minus),
+            '*' => self.make_token(TokenCode::Star),
+            '/' => self.make_token(TokenCode::Slash),
+            _ => self.make_token(TokenCode::Error), 
+        }
     }
 
     pub fn reach_the_end() -> bool {
         true
     }
 
-    pub fn make_token(&self, token_type: TokenCode, message: String) -> Token {
+    pub fn make_token(&self, token_code: TokenCode) -> Token {
         Token {
-            code: token_type,
-            start: 0,
-            length: message.len(),
-            line: 21,
+            code: token_code,
+            start: self.start,
+            length: self.current - self.start,
+            line: self.line,
         } 
     }
 
+    // TODO set proper token info
     pub fn error_token(&self, message: String) -> Token {
         Token {
             code: TokenCode::Error,
-            start: 1,
+            start: todo!(),
             length: message.len(),
             line: 22,
         }

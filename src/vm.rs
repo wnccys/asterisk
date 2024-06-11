@@ -39,11 +39,11 @@ impl<'a> Vm<'a> {
     }
 
     fn compile(&mut self, source: &String) -> InterpretResult {
-        let mut scanner = Scanner::new();
+        let scanner = Scanner::new();
         let mut line = -1;
 
         loop {
-            let token = scanner.scan_token();
+            let token = scanner.scan_token(source);
 
             if token.line != line {
                 print!("{}", token.line);

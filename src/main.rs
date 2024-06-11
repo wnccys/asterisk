@@ -50,7 +50,7 @@ fn repl(vm: &mut Vm) {
 
 fn run_file(vm: &mut Vm, file: &String) {
     let file_code = fs::read_to_string(file);
-    if file_code.is_err() { panic!("Could not read bytes from file.") }
+    if file_code.is_err() { panic!("could not read bytes from file.") }
     
     let result = vm.interpret(&file_code.unwrap());
 

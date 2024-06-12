@@ -74,7 +74,10 @@ impl Scanner {
         if self.reach_source_end(chars) { return self.make_token(TokenCode::Eof) }
         
         self.current += 1;
-        if chars[self.current-1].is_digit(10) { return self.number(chars); }
+        if chars[self.current-1].is_alphabetic() 
+            { return self.alphanumeric(chars) }
+        if chars[self.current-1].is_digit(10) 
+            { return self.number(chars); }
 
         match chars[self.current-1] {
             '(' => self.make_token(TokenCode::LeftParen),
@@ -107,8 +110,20 @@ impl Scanner {
         }
     }
 
+    fn alphanumeric(&mut self, chars: &Vec<char>) -> Token {
+        while !self.reach_source_end(chars) && chars[self.current].is_alphanumeric()
+            { self.current+=1; }
+
+        self.make_token(self.identifier())
+    }
+
+    fn identifier(&self) -> TokenCode {
+        TokenCode::Identifier
+    }
+
     fn number(&mut self, chars: &Vec<char>) -> Token {
-        while !self.reach_source_end(chars) && chars[self.current].is_digit(10) { self.current+=1 }
+        while !self.reach_source_end(chars) && chars[self.current].is_digit(10) 
+            { self.current+=1 }
 
         if !self.reach_source_end(chars) && chars[self.current] == '.' {
             self.current+=1;

@@ -115,6 +115,7 @@ impl Scanner {
         if self.reach_source_end(chars) && chars[self.current-1] != '"' 
             { return self.error_token("unterminated string.") };
 
+        self.current+=1;
         self.make_token(TokenCode::String)
     }
 

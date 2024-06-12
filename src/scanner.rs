@@ -101,8 +101,21 @@ impl Scanner {
             '>' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::GreaterEqual) } 
                     else { self.make_token(TokenCode::Greater) }
-            _ => self.error_token(), 
+            '"' => self.string(chars),
+            _ => self.error_token("not implemented yet."), 
         }
+    }
+
+    fn string(&mut self, chars: &Vec<char>) -> Token {
+        while !self.reach_source_end(chars) && chars[self.current] != '"'
+            { if chars[self.current] == '\n' { self.line+=1; }; 
+            self.current+=1; }
+            
+
+        if self.reach_source_end(chars) && chars[self.current-1] != '"' 
+            { return self.error_token("unterminated string.") };
+
+        self.make_token(TokenCode::String)
     }
 
     fn skip_comment(&mut self, chars: &Vec<char>) -> Token {
@@ -126,12 +139,12 @@ impl Scanner {
     }
 
     // TODO set proper token info
-    pub fn error_token(&self) -> Token {
+    pub fn error_token(&self, message: &str) -> Token {
         Token {
             code: TokenCode::Error,
-            start: todo!(),
-            length: todo!(),
-            line: 22,
+            start: self.current - self.start,
+            length: message.len(),
+            line: self.line,
         }
     }
 }

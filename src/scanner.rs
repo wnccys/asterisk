@@ -44,7 +44,7 @@ pub enum TokenCode {
     Var,
     While,
 
-    Error, Eof,
+    Error, Eof, Comment
 }
 
 pub struct Scanner {
@@ -86,7 +86,9 @@ impl Scanner {
             '+' => self.make_token(TokenCode::Plus),
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
-            '/' => self.make_token(TokenCode::Slash),
+            '/' => if !self.reach_source_end(chars) && chars[self.current] == '/' 
+                    { self.current+=1; self.skip_comment(chars) } 
+                    else { self.make_token(TokenCode::Slash) },
             '!' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::BangEqual) } 
                     else { self.make_token(TokenCode::Bang) },
@@ -101,6 +103,13 @@ impl Scanner {
                     else { self.make_token(TokenCode::Greater) }
             _ => self.error_token(), 
         }
+    }
+
+    fn skip_comment(&mut self, chars: &Vec<char>) -> Token {
+        while !self.reach_source_end(chars) && chars[self.current] != '\n' 
+            { self.current+=1; } 
+        
+        self.make_token(TokenCode::Comment)
     }
 
     fn reach_source_end(&self, chars: &Vec<char>) -> bool {

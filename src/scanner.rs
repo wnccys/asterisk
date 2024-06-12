@@ -69,13 +69,10 @@ impl Scanner {
         }
     }
 
-    pub fn scan_token(&mut self, source: &String) -> Token {
+    pub fn scan_token(&mut self, chars: &Vec<char>) -> Token {
         self.start = self.current;
-        if self.reach_source_end(source) { return self.make_token(TokenCode::Eof) }
+        if self.reach_source_end(chars) { return self.make_token(TokenCode::Eof) }
         
-        let chars: Vec<char> = source
-                                .chars()
-                                .collect();
         self.current += 1;
 
         match chars[self.current-1] {
@@ -90,24 +87,24 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => self.make_token(TokenCode::Slash),
-            '!' => if !self.reach_source_end(source) && chars[self.current] == '='
+            '!' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::BangEqual) } 
                     else { self.make_token(TokenCode::Bang) },
-            '=' => if !self.reach_source_end(source) && chars[self.current] == '='
+            '=' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::EqualEqual) } 
                     else { self.make_token(TokenCode::Equal) }
-            '<' => if !self.reach_source_end(source) && chars[self.current] == '='
+            '<' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::LessEqual) } 
                     else { self.make_token(TokenCode::Less) }
-            '>' => if !self.reach_source_end(source) && chars[self.current] == '='
+            '>' => if !self.reach_source_end(chars) && chars[self.current] == '='
                     { self.current+=1; self.make_token(TokenCode::GreaterEqual) } 
                     else { self.make_token(TokenCode::Greater) }
             _ => self.error_token(), 
         }
     }
 
-    fn reach_source_end(&self, source: &String) -> bool {
-        self.current == source.len()
+    fn reach_source_end(&self, chars: &Vec<char>) -> bool {
+        self.current == chars.len()
     }
 
     pub fn make_token(&self, token_code: TokenCode) -> Token {

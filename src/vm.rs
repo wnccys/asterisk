@@ -41,9 +41,10 @@ impl<'a> Vm<'a> {
     fn compile(&mut self, source: &String) -> InterpretResult {
         let mut scanner = Scanner::new();
         let mut line = -1;
+        let chars: Vec<char> = source.chars().filter(|c| !c.is_whitespace() ).collect();
 
         loop {
-            let token = scanner.scan_token(source);
+            let token = scanner.scan_token(&chars);
 
             if token.line != line {
                 print!("{} ", token.line);

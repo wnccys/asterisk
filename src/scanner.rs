@@ -74,6 +74,7 @@ impl Scanner {
         if self.reach_source_end(chars) { return self.make_token(TokenCode::Eof) }
         
         self.current += 1;
+        if chars[self.current-1].is_digit(10) { return self.number(chars); }
 
         match chars[self.current-1] {
             '(' => self.make_token(TokenCode::LeftParen),
@@ -104,6 +105,19 @@ impl Scanner {
             '"' => self.string(chars),
             _ => self.error_token("not implemented yet."), 
         }
+    }
+
+    fn number(&mut self, chars: &Vec<char>) -> Token {
+        while !self.reach_source_end(chars) && chars[self.current].is_digit(10) { self.current+=1 }
+
+        if !self.reach_source_end(chars) && chars[self.current] == '.' {
+            self.current+=1;
+            if !self.reach_source_end(chars) && chars[self.current].is_digit(10) {
+                while !self.reach_source_end(chars) && chars[self.current].is_digit(10) { self.current+=1 };
+            }
+        } 
+
+        self.make_token(TokenCode::Number)
     }
 
     fn string(&mut self, chars: &Vec<char>) -> Token {

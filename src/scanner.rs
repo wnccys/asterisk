@@ -114,11 +114,30 @@ impl Scanner {
         while !self.reach_source_end(chars) && chars[self.current].is_alphanumeric()
             { self.current+=1; }
 
-        self.make_token(self.identifier())
+        self.make_token(self.identifier(chars))
     }
 
-    fn identifier(&self) -> TokenCode {
+    fn identifier(&self, chars: &Vec<char>) -> TokenCode {
+        // possible overflow (current index)
+        match chars[self.start] {
+            'a' => self.check_keyword(1, 2, "nd", TokenCode::And),
+            'c' => self.check_keyword(1, 4, "lass", TokenCode::Class),
+            'e' => self.check_keyword(1, 3, "lse", TokenCode::Else),
+            'i' => self.check_keyword(1, 1, "f", TokenCode::If),
+            'n' => self.check_keyword(1, 2 "il", TokenCode::Nil),
+            'o' => self.check_keyword(1, 1, "r" , TokenCode::Or),
+            'p' => self.check_keyword(1, 4, "rint", TokenCode::Print),
+            'r' => self.check_keyword(1, 5, "eturn", TokenCode::Return),
+            's' => self.check_keyword(1, 4, "uper", TokenCode::Super),
+            'v' => self.check_keyword(1, 2, "ar", TokenCode::Var),
+            'w' => self.check_keyword(1, 4, "hile", TokenCode::While),
+        }
+
         TokenCode::Identifier
+    }
+
+    fn check_keyword(&self){
+
     }
 
     fn number(&mut self, chars: &Vec<char>) -> Token {

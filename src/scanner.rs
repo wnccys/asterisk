@@ -224,17 +224,18 @@ impl Scanner {
         let mut vm = Vm::new();
         let mut expression = Vec::with_capacity(4);
 
-        while !self.reach_source_end(chars) && chars[inner_current] != '}' {
+        while chars.len() > inner_current && chars[inner_current] != '}' {
             expression.push(chars[inner_current]);
             inner_current+=1;
         }
+        dbg!(&expression);
 
-        if chars[inner_current] == '}' {
+        if chars.len() > inner_current && chars[inner_current] == '}' {
             let source = expression.iter().collect();
             vm.interpret(&source);
-        }
+        } 
 
-        self.current += inner_current - self.current;
+        self.current += inner_current - self.current-1;
     }
 
     fn skip_comment(&mut self, chars: &Vec<char>) -> Token {

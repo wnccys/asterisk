@@ -123,6 +123,7 @@ impl Scanner {
     }
 
     fn identifier(&mut self, chars: &Vec<char>) -> TokenCode {
+        // REVIEW possibly removes start argument from check_keyword
         match chars[self.start] {
             'a' => self.check_keyword(1, chars, "and", TokenCode::And),
             'c' => self.check_keyword(1, chars, "class", TokenCode::Class),
@@ -132,7 +133,7 @@ impl Scanner {
                     'a' => self.check_keyword(1, chars, "false", TokenCode::False),
                     'o' => self.check_keyword(1, chars, "for", TokenCode::For),
                     'u' => self.check_keyword(1, chars, "fun", TokenCode::Fun), 
-                    _ => TokenCode::Identifier,
+                    _ => panic!("invalid identifier."),
                 }
             } else {
                 TokenCode::Identifier
@@ -143,6 +144,15 @@ impl Scanner {
             'p' => self.check_keyword(1, chars, "print", TokenCode::Print),
             'r' => self.check_keyword(1, chars, "return", TokenCode::Return),
             's' => self.check_keyword(1, chars, "super", TokenCode::Super),
+            't' => if self.current-self.start > 1 {
+                return match chars[self.start+1] {
+                    'h' => self.check_keyword(1, chars, "this", TokenCode::This),
+                    'r' => self.check_keyword(1, chars, "true", TokenCode::True),
+                    _ => panic!("invalid identifier."),
+                }
+            } else {
+                TokenCode::Identifier
+            }
             'v' => self.check_keyword(1, chars, "var", TokenCode::Var),
             'w' => self.check_keyword(1, chars, "while", TokenCode::While),
             _ => TokenCode::Identifier,

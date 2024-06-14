@@ -1,5 +1,7 @@
 use std::fmt::{self, Display, Formatter};
 
+use crate::vm::Vm;
+
 #[derive(Debug, PartialEq)]
 pub enum TokenCode {
     // Single char tokens
@@ -199,6 +201,7 @@ impl Scanner {
             if chars[self.current] == '\n' { self.line+=1; }; 
             self.current+=1;
 
+            // safelly verifies if ${} expression is present
             if !self.reach_source_end(chars) && chars[self.current] == '$' {
                 self.current+=1;
 
@@ -218,7 +221,7 @@ impl Scanner {
 
     fn evaluate_expression(&mut self, chars: &Vec<char>) {
         let mut inner_current = self.current+1;
-        let mut inner_scanner = Scanner::new();
+        let mut vm = Vm::new();
         let mut expression = Vec::with_capacity(4);
 
         while !self.reach_source_end(chars) && chars[inner_current] != '}' {
@@ -227,21 +230,8 @@ impl Scanner {
         }
 
         if chars[inner_current] == '}' {
-            let mut line = -1;
-
-            loop {
-                let evaluated = inner_scanner.scan_token(&expression);
-
-                if evaluated.line != line {
-                    print!("{} ", evaluated.line);
-                    line = evaluated.line;
-                } else {
-                    print!("| ");
-                }
-                println!("{:?}, {}, {}", evaluated.code , evaluated.length, evaluated.start);
-
-                if evaluated.code == TokenCode::Eof { break };
-            }
+            let source = expression.iter().collect();
+            vm.interpret(&source);
         }
 
         self.current += inner_current - self.current;

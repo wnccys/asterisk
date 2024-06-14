@@ -74,6 +74,10 @@ impl Scanner {
         if self.reach_source_end(chars) { return self.make_token(TokenCode::Eof) }
         
         self.current += 1;
+        if chars[self.current-1].is_whitespace() {
+            self.current+=1;
+            self.start+=1;
+        }
         if chars[self.current-1].is_alphabetic() 
             { return self.alphanumeric(chars) }
         if chars[self.current-1].is_digit(10) 
@@ -119,7 +123,6 @@ impl Scanner {
     }
 
     fn identifier(&mut self, chars: &Vec<char>) -> TokenCode {
-        // possible overflow (current index)
         match chars[self.start] {
             'a' => self.check_keyword(1, chars, "and", TokenCode::And),
             'c' => self.check_keyword(1, chars, "class", TokenCode::Class),
@@ -149,7 +152,6 @@ impl Scanner {
         while matched_chars < matcher.len() && matcher.chars().nth(start).unwrap() == chars[self.start+start] {
             matched_chars +=1;
             start+=1;
-            println!("on loop! matched_chars len: {}; matcher len(): {}", matched_chars, matcher.len());
         }
 
         self.current+=1;

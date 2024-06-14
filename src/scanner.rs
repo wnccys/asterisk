@@ -53,6 +53,7 @@ pub struct Scanner {
     pub line: i32,
 }
 
+#[derive(Debug)]
 pub struct Token {
     pub code: TokenCode,
     pub start: usize,
@@ -194,8 +195,18 @@ impl Scanner {
 
     fn string(&mut self, chars: &Vec<char>) -> Token {
         while !self.reach_source_end(chars) && chars[self.current] != '"'
-            { if chars[self.current] == '\n' { self.line+=1; }; 
-            self.current+=1; }
+        { 
+            if chars[self.current] == '\n' { self.line+=1; }; 
+            self.current+=1;
+
+            if !self.reach_source_end(chars) && chars[self.current] == '$' {
+                self.current+=1;
+
+                if !self.reach_source_end(chars) && chars[self.current] == '{' {
+                    self.evaluate_expression(chars);
+                }
+            }
+        }
             
 
         if self.reach_source_end(chars) && chars[self.current-1] != '"' 
@@ -203,6 +214,37 @@ impl Scanner {
 
         self.current+=1;
         self.make_token(TokenCode::String)
+    }
+
+    fn evaluate_expression(&mut self, chars: &Vec<char>) {
+        let mut inner_current = self.current+1;
+        let mut inner_scanner = Scanner::new();
+        let mut expression = Vec::with_capacity(4);
+
+        while !self.reach_source_end(chars) && chars[inner_current] != '}' {
+            expression.push(chars[inner_current]);
+            inner_current+=1;
+        }
+
+        if chars[inner_current] == '}' {
+            let mut line = -1;
+
+            loop {
+                let evaluated = inner_scanner.scan_token(&expression);
+
+                if evaluated.line != line {
+                    print!("{} ", evaluated.line);
+                    line = evaluated.line;
+                } else {
+                    print!("| ");
+                }
+                println!("{:?}, {}, {}", evaluated.code , evaluated.length, evaluated.start);
+
+                if evaluated.code == TokenCode::Eof { break };
+            }
+        }
+
+        self.current += inner_current - self.current;
     }
 
     fn skip_comment(&mut self, chars: &Vec<char>) -> Token {

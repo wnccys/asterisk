@@ -123,54 +123,51 @@ impl Scanner {
     }
 
     fn identifier(&mut self, chars: &Vec<char>) -> TokenCode {
-        // REVIEW possibly removes start argument from check_keyword
         match chars[self.start] {
-            'a' => self.check_keyword(1, chars, "and", TokenCode::And),
-            'c' => self.check_keyword(1, chars, "class", TokenCode::Class),
-            'e' => self.check_keyword(1, chars, "else", TokenCode::Else),
+            'a' => self.check_keyword(1, chars, "nd", TokenCode::And),
+            'c' => self.check_keyword(1, chars, "lass", TokenCode::Class),
+            'e' => self.check_keyword(1, chars, "lse", TokenCode::Else),
             'f' => if self.current-self.start > 1 {
                 return match chars[self.start+1] {
-                    'a' => self.check_keyword(1, chars, "false", TokenCode::False),
-                    'o' => self.check_keyword(1, chars, "for", TokenCode::For),
-                    'u' => self.check_keyword(1, chars, "fun", TokenCode::Fun), 
+                    'a' => self.check_keyword(2, chars, "lse", TokenCode::False),
+                    'o' => self.check_keyword(2, chars, "r", TokenCode::For),
+                    'u' => self.check_keyword(2, chars, "n", TokenCode::Fun), 
                     _ => panic!("invalid identifier."),
                 }
             } else {
                 TokenCode::Identifier
             }
-            'i' => self.check_keyword(1, chars, "if", TokenCode::If),
-            'n' => self.check_keyword(1, chars, "nil", TokenCode::Nil),
-            'o' => self.check_keyword(1, chars, "or" , TokenCode::Or),
-            'p' => self.check_keyword(1, chars, "print", TokenCode::Print),
-            'r' => self.check_keyword(1, chars, "return", TokenCode::Return),
-            's' => self.check_keyword(1, chars, "super", TokenCode::Super),
+            'i' => self.check_keyword(1, chars, "f", TokenCode::If),
+            'n' => self.check_keyword(1, chars, "il", TokenCode::Nil),
+            'o' => self.check_keyword(1, chars, "r" , TokenCode::Or),
+            'p' => self.check_keyword(1, chars, "rint", TokenCode::Print),
+            'r' => self.check_keyword(1, chars, "eturn", TokenCode::Return),
+            's' => self.check_keyword(1, chars, "uper", TokenCode::Super),
             't' => if self.current-self.start > 1 {
                 return match chars[self.start+1] {
-                    'h' => self.check_keyword(1, chars, "this", TokenCode::This),
-                    'r' => self.check_keyword(1, chars, "true", TokenCode::True),
+                    'h' => self.check_keyword(2, chars, "is", TokenCode::This),
+                    'r' => self.check_keyword(2, chars, "ue", TokenCode::True),
                     _ => panic!("invalid identifier."),
                 }
             } else {
                 TokenCode::Identifier
             }
-            'v' => self.check_keyword(1, chars, "var", TokenCode::Var),
-            'w' => self.check_keyword(1, chars, "while", TokenCode::While),
+            'v' => self.check_keyword(1, chars, "ar", TokenCode::Var),
+            'w' => self.check_keyword(1, chars, "hile", TokenCode::While),
             _ => TokenCode::Identifier,
         }
     }
 
-    // REVIEW possible performance overshoot
-    fn check_keyword(&mut self, mut start: usize, 
+    fn check_keyword(&mut self, matcher_start: usize, 
         chars: &Vec<char>, matcher: &str, token_code: TokenCode) 
         -> TokenCode
     {
-        let mut matched_chars: usize = 1;
+        let mut matched_chars: usize = 0;
 
         while matched_chars < matcher.len() && 
-        matcher.chars().nth(start).unwrap() == chars[self.start+start] 
+        matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matched_chars+matcher_start] 
         {
             matched_chars +=1;
-            start+=1;
         }
 
         if matched_chars == matcher.len() {

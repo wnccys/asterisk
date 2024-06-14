@@ -116,7 +116,7 @@ impl Scanner {
 
     fn alphanumeric(&mut self, chars: &Vec<char>) -> Token {
         while !self.reach_source_end(chars) && chars[self.current].is_alphanumeric()
-            { self.current+=1; }
+        { self.current+=1; }
 
         let identifier_token  = self.identifier(chars);
         self.make_token(identifier_token)
@@ -149,7 +149,9 @@ impl Scanner {
         let mut matched_chars: usize = 1;
         self.current-=1;
 
-        while matched_chars < matcher.len() && matcher.chars().nth(start).unwrap() == chars[self.start+start] {
+        while matched_chars < matcher.len() && 
+        matcher.chars().nth(start).unwrap() == chars[self.start+start] 
+        {
             matched_chars +=1;
             start+=1;
         }
@@ -160,7 +162,7 @@ impl Scanner {
             return token_code
         }
 
-        panic!("invalid identifier")
+        panic!("invalid identifier.")
     }
 
     fn number(&mut self, chars: &Vec<char>) -> Token {

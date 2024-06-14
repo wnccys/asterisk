@@ -165,6 +165,7 @@ impl Scanner {
         let mut matched_chars: usize = 0;
 
         while matched_chars < matcher.len() && 
+        chars.len() > 1 &&
         matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matched_chars+matcher_start] 
         {
             matched_chars +=1;

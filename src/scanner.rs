@@ -228,7 +228,6 @@ impl Scanner {
             expression.push(chars[inner_current]);
             inner_current+=1;
         }
-        dbg!(&expression);
 
         if chars.len() > inner_current && chars[inner_current] == '}' {
             let source = expression.iter().collect();

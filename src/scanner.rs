@@ -114,30 +114,51 @@ impl Scanner {
         while !self.reach_source_end(chars) && chars[self.current].is_alphanumeric()
             { self.current+=1; }
 
-        self.make_token(self.identifier(chars))
+        let identifier_token  = self.identifier(chars);
+        self.make_token(identifier_token)
     }
 
-    fn identifier(&self, chars: &Vec<char>) -> TokenCode {
+    fn identifier(&mut self, chars: &Vec<char>) -> TokenCode {
         // possible overflow (current index)
         match chars[self.start] {
-            'a' => self.check_keyword(1, 2, "nd", TokenCode::And),
-            'c' => self.check_keyword(1, 4, "lass", TokenCode::Class),
-            'e' => self.check_keyword(1, 3, "lse", TokenCode::Else),
-            'i' => self.check_keyword(1, 1, "f", TokenCode::If),
-            'n' => self.check_keyword(1, 2 "il", TokenCode::Nil),
-            'o' => self.check_keyword(1, 1, "r" , TokenCode::Or),
-            'p' => self.check_keyword(1, 4, "rint", TokenCode::Print),
-            'r' => self.check_keyword(1, 5, "eturn", TokenCode::Return),
-            's' => self.check_keyword(1, 4, "uper", TokenCode::Super),
-            'v' => self.check_keyword(1, 2, "ar", TokenCode::Var),
-            'w' => self.check_keyword(1, 4, "hile", TokenCode::While),
+            'a' => self.check_keyword(1, chars, "and", TokenCode::And),
+            'c' => self.check_keyword(1, chars, "class", TokenCode::Class),
+            'e' => self.check_keyword(1, chars, "else", TokenCode::Else),
+            'i' => self.check_keyword(1, chars, "if", TokenCode::If),
+            'n' => self.check_keyword(1, chars, "nil", TokenCode::Nil),
+            'o' => self.check_keyword(1, chars, "or" , TokenCode::Or),
+            'p' => self.check_keyword(1, chars, "print", TokenCode::Print),
+            'r' => self.check_keyword(1, chars, "return", TokenCode::Return),
+            's' => self.check_keyword(1, chars, "super", TokenCode::Super),
+            'v' => self.check_keyword(1, chars, "var", TokenCode::Var),
+            'w' => self.check_keyword(1, chars, "while", TokenCode::While),
+            _ => panic!("invalid keyword."),
         }
 
-        TokenCode::Identifier
+        // TokenCode::Identifier
     }
 
-    fn check_keyword(&self){
+    // REVIEW possible performance overshoot
+    fn check_keyword(&mut self, mut start: usize, 
+        chars: &Vec<char>, matcher: &str, token_code: TokenCode) 
+        -> TokenCode
+    {
+        let mut matched_chars: usize = 1;
+        self.current-=1;
 
+        while matched_chars < matcher.len() && matcher.chars().nth(start).unwrap() == chars[self.start+start] {
+            matched_chars +=1;
+            start+=1;
+            println!("on loop! matched_chars len: {}; matcher len(): {}", matched_chars, matcher.len());
+        }
+
+        self.current+=1;
+
+        if matched_chars == matcher.len() {
+            return token_code
+        }
+
+        panic!("invalid identifier")
     }
 
     fn number(&mut self, chars: &Vec<char>) -> Token {

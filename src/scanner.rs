@@ -147,7 +147,6 @@ impl Scanner {
         -> TokenCode
     {
         let mut matched_chars: usize = 1;
-        self.current-=1;
 
         while matched_chars < matcher.len() && 
         matcher.chars().nth(start).unwrap() == chars[self.start+start] 
@@ -155,8 +154,6 @@ impl Scanner {
             matched_chars +=1;
             start+=1;
         }
-
-        self.current+=1;
 
         if matched_chars == matcher.len() {
             return token_code

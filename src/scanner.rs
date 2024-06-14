@@ -127,6 +127,16 @@ impl Scanner {
             'a' => self.check_keyword(1, chars, "and", TokenCode::And),
             'c' => self.check_keyword(1, chars, "class", TokenCode::Class),
             'e' => self.check_keyword(1, chars, "else", TokenCode::Else),
+            'f' => if self.current-self.start > 1 {
+                return match chars[self.start+1] {
+                    'a' => self.check_keyword(1, chars, "false", TokenCode::False),
+                    'o' => self.check_keyword(1, chars, "for", TokenCode::For),
+                    'u' => self.check_keyword(1, chars, "fun", TokenCode::Fun), 
+                    _ => TokenCode::Identifier,
+                }
+            } else {
+                TokenCode::Identifier
+            }
             'i' => self.check_keyword(1, chars, "if", TokenCode::If),
             'n' => self.check_keyword(1, chars, "nil", TokenCode::Nil),
             'o' => self.check_keyword(1, chars, "or" , TokenCode::Or),
@@ -135,10 +145,8 @@ impl Scanner {
             's' => self.check_keyword(1, chars, "super", TokenCode::Super),
             'v' => self.check_keyword(1, chars, "var", TokenCode::Var),
             'w' => self.check_keyword(1, chars, "while", TokenCode::While),
-            _ => panic!("invalid keyword."),
+            _ => TokenCode::Identifier,
         }
-
-        // TokenCode::Identifier
     }
 
     // REVIEW possible performance overshoot
@@ -159,7 +167,7 @@ impl Scanner {
             return token_code
         }
 
-        panic!("invalid identifier.")
+        TokenCode::Identifier
     }
 
     fn number(&mut self, chars: &Vec<char>) -> Token {

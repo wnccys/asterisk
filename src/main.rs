@@ -2,6 +2,7 @@ mod chunk;
 mod utils;
 mod vm;
 mod value;
+mod scanner;
 use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
@@ -11,39 +12,21 @@ use std::{env, fs, io};
 
 fn main() {
     let mut vm = Vm::new();
-    check_cmd_args(&mut vm);
-    let mut chunk = Chunk::new();
-
-    let constant = chunk.write_constant(Value::Float(1.2));
-    let constant2 = chunk.write_constant(Value::Float(3.4));
-
-    let op_constant = OpCode::OpConstant(&constant);
-    let op_constant2 = OpCode::OpConstant(&constant2);
-    let op_add = OpCode::OpAdd;
-    let op_return = OpCode::OpReturn;
-
-    chunk.write(&op_constant, 123);
-    chunk.write(&op_constant2, 123);
-    chunk.write(&op_add, 123);
-    chunk.write(&op_return, 124);
-
-    print::disassemble_chunk(&chunk, String::from("test-constants"));
-
-    let result = vm.interpret(&mut chunk);
-    println!("{:?}", result);
+    let chunk = Chunk::new();
+    check_cmd_args(&mut vm, chunk);
 }
 
-fn check_cmd_args(vm: &mut Vm) {
+fn check_cmd_args<'a>(vm: &'a mut Vm<'a>, chunk: Chunk<'a>) {
     let args: Vec<String> = env::args().collect();
 
-    match args {
-        args if args.len() == 1 => repl(vm),
-        args if args.len() == 2 => run_file(vm, &args[2]),
+    match args.len() {
+        1 => repl(vm, chunk),
+        2 => run_file(vm, chunk, &args[2]),
         _ => panic!("Usage: astr [path]"),
     }
 }
 
-fn repl(vm: &mut Vm) {
+fn repl<'a>(vm: &'a mut Vm<'a>, chunk: Chunk<'a>) {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
     let mut buffer = String::new();
@@ -62,16 +45,19 @@ fn repl(vm: &mut Vm) {
             break;
         }
 
-        // TODO fix arg type
-        vm.interpret(buffer.trim());
+        let trimmed_buffer = buffer.trim().to_string();
+
+        {
+            vm.interpret(chunk.clone(), &trimmed_buffer);
+        }
     }
 }
 
-fn run_file(vm: &mut Vm, file: &String) {
-    let file_code = fs::read_to_string(file)?;
+fn run_file<'a>(vm: &mut Vm<'a>, chunk: Chunk<'a>, file: &String) {
+    let file_code = fs::read_to_string(file);
+    if file_code.is_err() { panic!("could not read bytes from file.") }
     
-    // TODO fix arg type
-    let result = vm.interpret(&file_code);
+    let result = vm.interpret(chunk , &file_code.unwrap());
 
     match result {
         InterpretResult::Ok => (),

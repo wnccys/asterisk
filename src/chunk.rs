@@ -7,6 +7,7 @@ pub enum OpCode<'a> {
     OpDivide,
 }
 
+#[derive(Clone)]
 pub struct Chunk<'a> {
     pub code: Vec<&'a OpCode<'a>>,
     pub stack: Vec<Value>,

@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::utils::print::{print_value, print_stack};
-use crate::value::Value;
+use crate::scanner::{ Scanner, TokenCode };
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -10,7 +10,7 @@ pub enum InterpretResult {
 }
 
 pub struct Vm<'a> {
-    chunk: Option<&'a mut Chunk<'a>>,
+    chunk: Option<Chunk<'a>>,
     ip: Option<&'a OpCode<'a>>,
 }
 
@@ -22,16 +22,39 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
+    pub fn interpret(&mut self, chunk: Chunk<'a>, source: &String) -> InterpretResult {
         self.chunk = Some(chunk);
-
         self.ip = Some(self.chunk
                     .as_ref().unwrap()
                     .code.first()
                     .unwrap()
         );
+        let chars: Vec<char> = source.chars().collect();
+
+        self.compile(&chars);
 
         self.run()
+    }
+
+    fn compile(&mut self, chars: &Vec<char>) -> InterpretResult {
+        let mut scanner = Scanner::new();
+        let mut line = -1;
+
+        loop {
+            let token = scanner.scan_token(chars);
+
+            if token.line != line {
+                print!("{} ", token.line);
+                line = token.line;
+            } else {
+                print!("| ");
+            }
+            println!("{:?}, {}, {}", token.code , token.length, token.start);
+
+            if token.code == TokenCode::Eof { break };
+        }
+
+        InterpretResult::Ok
     }
 
     fn run (&mut self) -> InterpretResult {
@@ -39,14 +62,12 @@ impl<'a> Vm<'a> {
 
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
-
             // print_stack(&self.chunk.as_ref().unwrap());
-
             op_status = match opcode {
                 OpCode::OpReturn => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        print_value(&chunk.stack.pop().expect("stack underflow"));
+                        print_value(&chunk.stack.pop().expect("stack underflow."));
                     }
 
                     InterpretResult::Ok
@@ -85,14 +106,14 @@ impl<'a> Vm<'a> {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded");
-        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded");
+        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded.");
+        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded.");
 
         match op {
             "+" => self.chunk.as_mut().unwrap().stack.push(a+b),
             "*" => self.chunk.as_mut().unwrap().stack.push(a*b),
             "/" => self.chunk.as_mut().unwrap().stack.push(a/b),
-            _ => panic!("invalid operation"),
+            _ => panic!("invalid operation."),
         }
 
         InterpretResult::Ok

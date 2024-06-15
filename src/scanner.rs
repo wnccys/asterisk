@@ -1,6 +1,6 @@
 use std::fmt::{self, Display, Formatter};
 
-use crate::vm::Vm;
+use crate::{chunk::Chunk, vm::Vm};
 
 #[derive(Debug, PartialEq)]
 pub enum TokenCode {
@@ -210,7 +210,6 @@ impl Scanner {
                 }
             }
         }
-            
 
         if self.reach_source_end(chars) && chars[self.current-1] != '"' 
             { return self.error_token("unterminated string.") };
@@ -223,6 +222,7 @@ impl Scanner {
         let mut inner_current = self.current+1;
         let mut vm = Vm::new();
         let mut expression = Vec::with_capacity(4);
+        let chunk = Chunk::new();
 
         while chars.len() > inner_current && chars[inner_current] != '}' {
             expression.push(chars[inner_current]);
@@ -231,7 +231,7 @@ impl Scanner {
 
         if chars.len() > inner_current && chars[inner_current] == '}' {
             let source = expression.iter().collect();
-            vm.interpret(&source);
+            vm.interpret(chunk, &source);
         } 
 
         self.current += inner_current - self.current-1;

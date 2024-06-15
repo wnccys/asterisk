@@ -10,7 +10,7 @@ pub enum InterpretResult {
 }
 
 pub struct Vm<'a> {
-    chunk: Option<&'a mut Chunk<'a>>,
+    chunk: Option<Chunk<'a>>,
     ip: Option<&'a OpCode<'a>>,
 }
 
@@ -22,29 +22,26 @@ impl<'a> Vm<'a> {
         }
     }
 
-    // pub fn interpret(&mut self, chunk: &'a mut Chunk<'a>) -> InterpretResult {
-    //     self.chunk = Some(chunk);
+    pub fn interpret(&mut self, chunk: Chunk<'a>, source: &String) -> InterpretResult {
+        self.chunk = Some(chunk);
+        self.ip = Some(self.chunk
+                    .as_ref().unwrap()
+                    .code.first()
+                    .unwrap()
+        );
+        let chars: Vec<char> = source.chars().collect();
 
-    //     self.ip = Some(self.chunk
-    //                 .as_ref().unwrap()
-    //                 .code.first()
-    //                 .unwrap()
-    //     );
+        self.compile(&chars);
 
-    //     self.run()
-    // }
-
-    pub fn interpret(&mut self, source: &String) -> InterpretResult {
-        self.compile(source)
+        self.run()
     }
 
-    fn compile(&mut self, source: &String) -> InterpretResult {
+    fn compile(&mut self, chars: &Vec<char>) -> InterpretResult {
         let mut scanner = Scanner::new();
         let mut line = -1;
-        let chars: Vec<char> = source.chars().filter(|c| !c.is_whitespace() ).collect();
 
         loop {
-            let token = scanner.scan_token(&chars);
+            let token = scanner.scan_token(chars);
 
             if token.line != line {
                 print!("{} ", token.line);
@@ -70,7 +67,7 @@ impl<'a> Vm<'a> {
                 OpCode::OpReturn => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        print_value(&chunk.stack.pop().expect("stack underflow"));
+                        print_value(&chunk.stack.pop().expect("stack underflow."));
                     }
 
                     InterpretResult::Ok
@@ -109,14 +106,14 @@ impl<'a> Vm<'a> {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded");
-        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded");
+        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded.");
+        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded.");
 
         match op {
             "+" => self.chunk.as_mut().unwrap().stack.push(a+b),
             "*" => self.chunk.as_mut().unwrap().stack.push(a*b),
             "/" => self.chunk.as_mut().unwrap().stack.push(a/b),
-            _ => panic!("invalid operation"),
+            _ => panic!("invalid operation."),
         }
 
         InterpretResult::Ok

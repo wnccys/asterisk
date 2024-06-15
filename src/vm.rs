@@ -22,15 +22,14 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, chunk: Chunk<'a>, source: &String) -> InterpretResult {
-        self.chunk = Some(chunk);
+    pub fn interpret(&mut self, source: &String) -> InterpretResult {
+        self.chunk = Some(Chunk::new());
         self.ip = Some(self.chunk
                     .as_ref().unwrap()
                     .code.first()
-                    .unwrap()
-        );
-        let chars: Vec<char> = source.chars().collect();
+                    .unwrap());
 
+        let chars: Vec<char> = source.chars().collect();
         self.compile(&chars);
 
         self.run()

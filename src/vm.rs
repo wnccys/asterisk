@@ -24,13 +24,16 @@ impl<'a> Vm<'a> {
 
     pub fn interpret(&mut self, source: &String) -> InterpretResult {
         self.chunk = Some(Chunk::new());
-        self.ip = Some(self.chunk
-                    .as_ref().unwrap()
-                    .code.first()
-                    .unwrap());
+        self.ip = Some(self.chunk.
+                    as_ref().unwrap().
+                    code.first().
+                    unwrap());
 
         let chars: Vec<char> = source.chars().collect();
-        self.compile(&chars);
+        let result = self.compile(&chars);
+        if result != InterpretResult::Ok {
+            panic!("{:?}", result);
+        }
 
         self.run()
     }

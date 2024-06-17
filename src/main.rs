@@ -3,6 +3,7 @@ mod utils;
 mod vm;
 mod value;
 mod scanner;
+mod compiler;
 use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
@@ -20,7 +21,7 @@ fn check_cmd_args(vm: &mut Vm) {
 
     match args.len() {
         1 => repl(vm),
-        2 => run_file(vm, &args[2]),
+        2 => run_file(vm, &args[1]),
         _ => panic!("Usage: astr [path]"),
     }
 }

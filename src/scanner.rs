@@ -1,8 +1,6 @@
-use std::fmt::{self, Display, Formatter};
+use crate::{vm::Vm};
 
-use crate::{chunk::Chunk, vm::Vm};
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenCode {
     // Single char tokens
     LeftParen,
@@ -55,7 +53,7 @@ pub struct Scanner {
     pub line: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token {
     pub code: TokenCode,
     pub start: usize,
@@ -258,10 +256,11 @@ impl Scanner {
 
     // TODO set proper token info
     pub fn error_token(&self, message: &str) -> Token {
+        println!("{}", message);
         Token {
             code: TokenCode::Error,
-            start: self.current - self.start,
-            length: message.len(),
+            start: self.start,
+            length: self.current-self.start,
             line: self.line,
         }
     }

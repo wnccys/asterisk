@@ -1,4 +1,5 @@
 use crate::chunk::*;
+use crate::compiler::compile;
 use crate::utils::print::{print_value, print_stack};
 use crate::scanner::{ Scanner, TokenCode };
 
@@ -9,12 +10,12 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-pub struct Vm<'a> {
-    chunk: Option<Chunk<'a>>,
-    ip: Option<&'a OpCode<'a>>,
+pub struct Vm {
+    chunk: Option<Chunk>,
+    ip: Option<OpCode>,
 }
 
-impl<'a> Vm<'a> {
+impl Vm {
     pub fn new() -> Self {
         Vm {
             chunk: None,
@@ -22,41 +23,16 @@ impl<'a> Vm<'a> {
         }
     }
 
-    pub fn interpret(&mut self, source: &String) -> InterpretResult {
-        self.chunk = Some(Chunk::new());
-        self.ip = Some(self.chunk.
-                    as_ref().unwrap().
-                    code.first().
-                    unwrap());
-
+pub fn interpret(&mut self, source: &String) -> InterpretResult {
         let chars: Vec<char> = source.chars().collect();
-        let result = self.compile(&chars);
+        let (chunk, result) = compile(&chars);
+
         if result != InterpretResult::Ok {
             panic!("{:?}", result);
         }
 
+        self.chunk = Some(chunk);
         self.run()
-    }
-
-    fn compile(&mut self, chars: &Vec<char>) -> InterpretResult {
-        let mut scanner = Scanner::new();
-        let mut line = -1;
-
-        loop {
-            let token = scanner.scan_token(chars);
-
-            if token.line != line {
-                print!("{} ", token.line);
-                line = token.line;
-            } else {
-                print!("| ");
-            }
-            println!("{:?}, {}, {}", token.code , token.length, token.start);
-
-            if token.code == TokenCode::Eof { break };
-        }
-
-        InterpretResult::Ok
     }
 
     fn run (&mut self) -> InterpretResult {
@@ -75,9 +51,10 @@ impl<'a> Vm<'a> {
                     InterpretResult::Ok
                 },
                 OpCode::OpConstant(index) => {
+                    let temp_index = index.clone();
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        let constant = chunk.constants[**index];
+                        let constant = chunk.constants[temp_index];
                         chunk.stack.push(constant);
                     }
 

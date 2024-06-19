@@ -1,4 +1,4 @@
-use crate::{vm::Vm};
+use crate::vm::Vm;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenCode {
@@ -254,7 +254,6 @@ impl Scanner {
         } 
     }
 
-    // TODO set proper token info
     pub fn error_token(&self, message: &str) -> Token {
         println!("{}", message);
         Token {

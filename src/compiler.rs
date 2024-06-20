@@ -111,6 +111,27 @@ impl Parser {
         }
     }
 
+    fn binary(&self, chunk: &mut Chunk) {
+        let operator_type = self.previous.expect("empty token.").code;
+        let rule = self.get_rule(&operator_type);
+        self.parse_precedence(rule.precedence+=1);
+
+        if let Some(token) = Some (operator_type) {
+            match token {
+                TokenCode::Plus => self.emit_byte(chunk, OpCode::OpAdd),
+                // REVIEW possible operation mismatch behavior 
+                TokenCode::Minus => self.emit_byte(chunk, OpCode::OpAdd),
+                TokenCode::Star => self.emit_byte(chunk, OpCode::OpMultiply),
+                TokenCode::Slash => self.emit_byte(chunk, OpCode::OpDivide),
+                _ => (),
+            }
+        }
+    }
+
+    fn get_rule(&self, code: &TokenCode) {
+
+    }
+
     fn parse_precedence(&self, precedence: Precedence) {
 
     }

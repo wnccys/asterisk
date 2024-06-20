@@ -6,6 +6,7 @@ pub enum OpCode {
     OpAdd,
     OpMultiply,
     OpDivide,
+    OpNegate,
 }
 pub struct Chunk {
     pub code: Vec<OpCode>,

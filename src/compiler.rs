@@ -1,8 +1,24 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::value::Value;
 use crate::scanner::*;
 use crate::vm::InterpretResult;
 
-#[derive(Copy, Clone)]
+#[derive(PartialEq, PartialOrd)]
+// lower to high precedence order
+enum Precedence {
+    None,
+    Assignment, // =
+    Or,         // or
+    And,        // and
+    Equality,   // == !=
+    Comparison, // < > <= >=
+    Term,       // + -
+    Factor,     // * /
+    Unary,      // ! -
+    Call,       // . ()
+    Primary,
+}
+
 struct Parser {
     current: Option<Token>,
     previous: Option<Token>,
@@ -49,11 +65,14 @@ impl Parser {
     }
 
     pub fn expression(&mut self) {
-
+        self.parse_precedence(Precedence::Assignment);
     }
 
-    pub fn consume(&mut self, token_code: TokenCode, chars: &Vec<char>, 
-        scanner: &mut Scanner, msg: &str) 
+    pub fn consume(&mut self, 
+        token_code: TokenCode, 
+        chars: &Vec<char>, 
+        scanner: &mut Scanner, 
+        msg: &str) 
     {
         if self.current.unwrap().code == token_code { self.advance(chars, scanner) }
 
@@ -64,17 +83,41 @@ impl Parser {
         chunk.write(code, self.current.unwrap().line);
     }
 
-    fn emit_bytes(&self, byte1: OpCode, byte2: OpCode, 
-        chunk: &mut Chunk) 
-    {
-        let chunk = chunk;
-        self.emit_byte(chunk, byte1);
-
-        self.emit_byte(chunk, byte2);
-    }
-
     fn end_compiler(&mut self, chunk: &mut Chunk) {
         self.emit_byte(chunk, OpCode::OpReturn);
+    }
+
+    fn grouping(&mut self, chars: &Vec<char>, scanner: &mut Scanner) {
+        self.expression();
+        self.consume(TokenCode::RightParen, chars, scanner, "expected ')' after expression.");
+    }
+
+    // NOTE possibly adds support for values != i32;
+    fn number(&self, chars: &Vec<char>, chunk: &mut Chunk) {
+        let value = chars[self.previous.unwrap().start] as i32;
+
+        self.emit_constant(&value, chunk);
+    }
+
+    fn unary(&mut self, chunk: &mut Chunk) {
+        self.parse_precedence(Precedence::Unary);
+        let operator_type = self.previous.unwrap().code;
+
+        self.expression();
+
+        match operator_type {
+            TokenCode::Minus => self.emit_byte(chunk, OpCode::OpNegate),
+            _ => (),
+        }
+    }
+
+    fn parse_precedence(&self, precedence: Precedence) {
+
+    }
+
+    fn emit_constant(&self, value: &i32, chunk: &mut Chunk) {
+        let const_index = chunk.write_constant(Value::Int(*value));
+        self.emit_byte(chunk, OpCode::OpConstant(const_index));
     }
 
     fn error(&self, msg: &str) {
@@ -85,7 +128,7 @@ impl Parser {
 
         match token.code {
             TokenCode::Eof => println!(" at end."),
-            TokenCode:: Error => (),
+            TokenCode::Error => (),
             _ => println!(" at {} {}", token.length, token.start),
         }
 

@@ -1,6 +1,6 @@
 use std::ops::{Add, Sub, Mul, Div};
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Float(f64),
     Int(i32),

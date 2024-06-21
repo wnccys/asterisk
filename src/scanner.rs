@@ -47,6 +47,7 @@ pub enum TokenCode {
     Error, Eof, Comment
 }
 
+#[derive(Debug)]
 pub struct Scanner {
     pub start: usize,
     pub current: usize,

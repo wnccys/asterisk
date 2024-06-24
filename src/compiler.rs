@@ -17,30 +17,30 @@ pub struct Parser<'a> {
 }
 
 pub fn compile(chars: &Vec<char>) -> (Chunk, InterpretResult) {
-    let mut parser = Parser::new();
-    let chars = vec!['1'; 2];
-
-    parser.chunk = Some(Chunk::new());
-    parser.scanner = Some(Scanner::new());
-    parser.chars = Some(&chars);
-    parser.advance();
-    // dbg!(parser);
-
-    let rule = get_rule(&TokenCode::Number);
-    (rule.prefix)(&mut parser);
     // let mut parser = Parser::new();
-    // let scanner = Scanner::new();
-    // let chunk = Chunk::new();
+    // let chars = vec!['1'; 2];
 
-    // parser.chunk = Some(chunk);
-    // parser.scanner = Some(scanner);
-    // parser.chars = Some(chars);
-
+    // parser.chunk = Some(Chunk::new());
+    // parser.scanner = Some(Scanner::new());
+    // parser.chars = Some(&chars);
     // parser.advance();
-    // parser.expression();
-    // parser.consume(TokenCode::Eof, "expected end of expression.");
-    // parser.end_compiler();
-    // if parser.had_error { return (parser.chunk.unwrap(), InterpretResult::RuntimeError) }
+
+    // let rule = get_rule(&TokenCode::Number);
+    // (rule.prefix)(&mut parser);
+    // STUB ends tests
+    let mut parser = Parser::new();
+    let scanner = Scanner::new();
+    let chunk = Chunk::new();
+
+    parser.chunk = Some(chunk);
+    parser.scanner = Some(scanner);
+    parser.chars = Some(chars);
+
+    parser.advance();
+    parser.expression();
+    parser.consume(TokenCode::Eof, "expected end of expression.");
+    parser.end_compiler();
+    if parser.had_error { return (parser.chunk.unwrap(), InterpretResult::RuntimeError) }
 
     (parser.chunk.unwrap(), InterpretResult::Ok)
 }
@@ -78,7 +78,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn expression(&mut self) {
-        // self.parse_precedence(Precedence::Assignment);
+        self.parse_precedence(Precedence::Assignment);
     }
 
     pub fn consume(&mut self, token_code: TokenCode, msg: &str) 
@@ -93,7 +93,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn emit_constant(&mut self, value: &i32) {
-        let const_index = self.chunk.as_mut().unwrap().write_constant(Value::Int(*value));
+        let const_index = self
+                                .chunk
+                                .as_mut()
+                                .unwrap()
+                                .write_constant(Value::Int(*value));
+
         self.emit_byte(OpCode::OpConstant(const_index));
     }
 
@@ -101,11 +106,26 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::OpReturn);
     }
 
-    pub fn parse_precedence(&self, rule: ParseRule) {
+    pub fn parse_precedence(&mut self, precedence: Precedence) {
+        self.advance();
 
+        let prefix_rule = get_rule(&self
+                        .previous
+                        .as_ref()
+                        .unwrap()
+                        .code).prefix;
+
+        (prefix_rule)(self);
+
+        while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
+           self.advance(); 
+
+           let infix_rule = get_rule(&self.previous.as_ref().unwrap().code).infix;
+           (infix_rule)(self)
+        }
     }
 
-    fn error(&self, msg: &str) {
+    pub fn error(&self, msg: &str) {
         if self.panic_mode { return }
 
         let token = self.current.unwrap();
@@ -120,24 +140,6 @@ impl<'a> Parser<'a> {
         println!("{}", msg);
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-
-//     fn number_ruler() {
-//         let mut parser = Parser::new();
-//         let chars = vec!['1'; 2];
-
-//         parser.chunk = Some(Chunk::new());
-//         parser.scanner = Some(Scanner::new());
-//         parser.chars = Some(&chars);
-
-//         let rule = get_rule(&TokenCode::Number);
-//         println!("{:?}", rule);
-//         (rule.prefix)(&mut parser);
-//     }
-// }
 
     // fn grouping(&mut self, chars: &Vec<char>, scanner: &mut Scanner) {
     //     self.expression();

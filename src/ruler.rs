@@ -1,6 +1,7 @@
 use crate::chunk::OpCode;
 use crate::scanner::TokenCode;
 use crate::compiler::Parser;
+use std::ops::AddAssign;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to high precedence order
@@ -16,6 +17,24 @@ pub enum Precedence {
     Unary,      // ! -
     Call,       // . ()
     Primary,
+}
+
+impl AddAssign for Precedence {
+    fn add_assign(&mut self, other: Precedence) {
+        *self = match self {
+            Self::None => Self::None,
+            Self::Assignment => Self::Or,
+            Self::Or => Self::And,
+            Self::And => Self::Equality,
+            Self::Equality => Self::Comparison,
+            Self::Comparison => Self::Term,
+            Self::Term => Self::Factor,
+            Self::Factor => Self::Unary,
+            Self::Unary => Self::Call,
+            Self::Call => Self::Primary,
+            Self::Primary => Self::Primary,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -243,14 +262,13 @@ fn grouping(parser: &mut Parser) {
 // NOTE possibly adds support for values != i32 / remove forced coersion;
 pub fn number(parser: &mut Parser) {
     let value = parser.chars
-                        .as_ref()
                         .unwrap()[parser.previous.unwrap().start] as i32;
 
     parser.emit_constant(&value);
 }
 
 fn unary(parser: &mut Parser) {
-    // parser.parse_precedence(Precedence::Unary);
+    parser.parse_precedence(Precedence::Unary);
     let operator_type = parser.previous.unwrap().code;
 
     parser.expression();
@@ -267,7 +285,7 @@ pub fn binary(parser: &mut Parser) {
                                     .code;
     let rule = get_rule(&operator_type);
     // TODO impl += 1 to precedence;
-    // parser.parse_precedence(rule.precedence+=1);
+    parser.parse_precedence(rule.precedence+=1);
 
     if let Some(token) = Some (operator_type) {
         match token {

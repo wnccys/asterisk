@@ -1,7 +1,6 @@
 use crate::chunk::OpCode;
 use crate::scanner::TokenCode;
 use crate::compiler::Parser;
-use std::ops::AddAssign;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to high precedence order
@@ -284,11 +283,11 @@ pub fn binary(parser: &mut Parser) {
                                     .expect("empty token.")
                                     .code;
     let mut rule = get_rule(&operator_type);
-    // TODO impl += 1 to precedence;
     rule.precedence.increment();
+
     parser.parse_precedence(rule.precedence);
 
-    if let Some(token) = Some (operator_type) {
+    if let Some(token) = Some(operator_type) {
         match token {
             TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
             // REVIEW possible operation mismatch behavior 

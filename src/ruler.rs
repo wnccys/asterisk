@@ -19,8 +19,8 @@ pub enum Precedence {
     Primary,
 }
 
-impl AddAssign for Precedence {
-    fn add_assign(&mut self, other: Precedence) {
+impl Precedence {
+    fn increment (&mut self) {
         *self = match self {
             Self::None => Self::None,
             Self::Assignment => Self::Or,
@@ -283,9 +283,10 @@ pub fn binary(parser: &mut Parser) {
     let operator_type = parser.previous
                                     .expect("empty token.")
                                     .code;
-    let rule = get_rule(&operator_type);
+    let mut rule = get_rule(&operator_type);
     // TODO impl += 1 to precedence;
-    parser.parse_precedence(rule.precedence+=1);
+    rule.precedence.increment();
+    parser.parse_precedence(rule.precedence);
 
     if let Some(token) = Some (operator_type) {
         match token {

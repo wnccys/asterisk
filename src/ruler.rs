@@ -27,17 +27,212 @@ pub struct ParseRule {
 
 pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
     match token_code {
+        TokenCode::LeftParen => ParseRule {
+            prefix: grouping,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::RightParen => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::LeftBrace => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::RightBrace => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Comma => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Dot => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Minus => ParseRule {
+            prefix: unary,
+            infix: binary,
+            precedence: Precedence::Term,
+        },
+        TokenCode::Plus => ParseRule {
+            prefix: none,
+            infix: binary,
+            precedence: Precedence::Term,
+        },
+        TokenCode::SemiColon => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Slash => ParseRule {
+            prefix: none,
+            infix: binary,
+            precedence: Precedence::Factor,
+        },
+        TokenCode::Star => ParseRule {
+            prefix: none,
+            infix: binary,
+            precedence: Precedence::Factor,
+        },
+        TokenCode::Bang => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::BangEqual => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Equal => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::EqualEqual => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Greater => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::GreaterEqual => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Less => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::LessEqual => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Identifier => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::String => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::Number => ParseRule {
             prefix: number,
             infix: none,
             precedence: Precedence::None,
         },
-        _ => panic!("not yet implemented."),
+        TokenCode::And => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Class => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Else => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::False => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::For => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Fun => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::If => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Nil => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Or => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Print => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Return => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Super => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::This => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::True => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Var => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::While => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Error => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Eof => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+       _ => panic!("not yet implemented."),
     }
 }
 
-fn none(_parser: &mut Parser) {
-    ()
+pub fn none(parser: &mut Parser) {
+    parser.error("expected expression.")
 }
 
 fn grouping(parser: &mut Parser) {
@@ -45,9 +240,8 @@ fn grouping(parser: &mut Parser) {
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
 }
 
-// NOTE possibly adds support for values != i32 / forced coersion;
+// NOTE possibly adds support for values != i32 / remove forced coersion;
 pub fn number(parser: &mut Parser) {
-    println!("passed on number function!!!");
     let value = parser.chars
                         .as_ref()
                         .unwrap()[parser.previous.unwrap().start] as i32;

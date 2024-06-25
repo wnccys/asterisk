@@ -4,6 +4,7 @@ mod vm;
 mod value;
 mod scanner;
 mod compiler;
+mod ruler;
 use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};

@@ -15,11 +15,11 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     print!("{offset:0>4} ");
     verify_lines(offset, &chunk);
 
-    let instruction = chunk.code[offset];
+    let instruction = &chunk.code[offset];
 
     match instruction {
         OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
-        OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
+        OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, &index, offset),
         OpCode::OpAdd => simple_instruction("OP_ADD", offset),
         OpCode::OpMultiply => simple_instruction("OP_MULTIPLY", offset),
         OpCode::OpDivide => simple_instruction("OP_DIVIDE", offset),

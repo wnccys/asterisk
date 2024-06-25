@@ -1,4 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
+use crate::utils::print::disassemble_chunk;
 use crate::value::Value;
 use crate::scanner::*;
 use crate::vm::InterpretResult;
@@ -104,6 +105,10 @@ impl<'a> Parser<'a> {
 
     fn end_compiler(&mut self) {
         self.emit_byte(OpCode::OpReturn);
+
+        if !self.had_error {
+            disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
+        }
     }
 
     pub fn parse_precedence(&mut self, precedence: Precedence) {

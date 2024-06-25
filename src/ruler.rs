@@ -43,6 +43,57 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
+pub fn none(parser: &mut Parser) {
+    parser.error("expected expression.")
+}
+
+fn grouping(parser: &mut Parser) {
+    parser.expression();
+    parser.consume(TokenCode::RightParen, "expected ')' after expression.");
+}
+
+// NOTE possibly adds support for values != i32 / remove forced coersion;
+pub fn number(parser: &mut Parser) {
+    let value = parser.chars
+                        .unwrap()[parser.previous.unwrap().start] as i32;
+
+    parser.emit_constant(&value);
+}
+
+fn unary(parser: &mut Parser) {
+    parser.parse_precedence(Precedence::Unary);
+    let operator_type = parser.previous.unwrap().code;
+
+    parser.expression();
+
+    match operator_type {
+        TokenCode::Minus => parser.emit_byte(OpCode::OpNegate),
+        _ => (),
+    }
+}
+
+pub fn binary(parser: &mut Parser) {
+    let operator_type = parser.previous
+                                    .expect("empty token.")
+                                    .code;
+    let mut rule = get_rule(&operator_type);
+    rule.precedence.increment();
+
+    parser.parse_precedence(rule.precedence);
+
+    if let Some(token) = Some(operator_type) {
+        match token {
+            TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
+            // REVIEW possible operation mismatch behavior 
+            TokenCode::Minus => parser.emit_byte(OpCode::OpAdd),
+            TokenCode::Star => parser.emit_byte(OpCode::OpMultiply),
+            TokenCode::Slash => parser.emit_byte(OpCode::OpDivide),
+            _ => (),
+        }
+    }
+}
+
+
 pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
@@ -246,55 +297,5 @@ pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
        _ => panic!("not yet implemented."),
-    }
-}
-
-pub fn none(parser: &mut Parser) {
-    parser.error("expected expression.")
-}
-
-fn grouping(parser: &mut Parser) {
-    parser.expression();
-    parser.consume(TokenCode::RightParen, "expected ')' after expression.");
-}
-
-// NOTE possibly adds support for values != i32 / remove forced coersion;
-pub fn number(parser: &mut Parser) {
-    let value = parser.chars
-                        .unwrap()[parser.previous.unwrap().start] as i32;
-
-    parser.emit_constant(&value);
-}
-
-fn unary(parser: &mut Parser) {
-    parser.parse_precedence(Precedence::Unary);
-    let operator_type = parser.previous.unwrap().code;
-
-    parser.expression();
-
-    match operator_type {
-        TokenCode::Minus => parser.emit_byte(OpCode::OpNegate),
-        _ => (),
-    }
-}
-
-pub fn binary(parser: &mut Parser) {
-    let operator_type = parser.previous
-                                    .expect("empty token.")
-                                    .code;
-    let mut rule = get_rule(&operator_type);
-    rule.precedence.increment();
-
-    parser.parse_precedence(rule.precedence);
-
-    if let Some(token) = Some(operator_type) {
-        match token {
-            TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
-            // REVIEW possible operation mismatch behavior 
-            TokenCode::Minus => parser.emit_byte(OpCode::OpAdd),
-            TokenCode::Star => parser.emit_byte(OpCode::OpMultiply),
-            TokenCode::Slash => parser.emit_byte(OpCode::OpDivide),
-            _ => (),
-        }
     }
 }

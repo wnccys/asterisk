@@ -18,24 +18,11 @@ pub struct Parser<'a> {
 }
 
 pub fn compile(chars: &Vec<char>) -> (Chunk, InterpretResult) {
-    // let mut parser = Parser::new();
-    // let chars = vec!['1'; 2];
-
-    // parser.chunk = Some(Chunk::new());
-    // parser.scanner = Some(Scanner::new());
-    // parser.chars = Some(&chars);
-    // parser.advance();
-
-    // let rule = get_rule(&TokenCode::Number);
-    // (rule.prefix)(&mut parser);
-    // STUB ends tests
     let mut parser = Parser::new();
-    let scanner = Scanner::new();
-    let chunk = Chunk::new();
 
-    parser.chunk = Some(chunk);
-    parser.scanner = Some(scanner);
-    parser.chars = Some(chars);
+    parser.chunk = Some(Chunk::new());
+    parser.scanner = Some(Scanner::new());
+    parser.chars = Some(&chars);
 
     parser.advance();
     parser.expression();
@@ -145,46 +132,3 @@ impl<'a> Parser<'a> {
         println!("{}", msg);
     }
 }
-
-    // fn grouping(&mut self, chars: &Vec<char>, scanner: &mut Scanner) {
-    //     self.expression();
-    //     self.consume(TokenCode::RightParen, chars, scanner, "expected ')' after expression.");
-    // }
-
-    // // NOTE possibly adds support for values != i32 / forced coersion;
-    // pub fn number(&mut self) {
-    //     let value = self.chars.as_ref().unwrap()[self.previous.unwrap().start] as i32;
-
-    //     self.emit_constant(&value);
-    // }
-
-    // fn unary(&mut self) {
-    //     // REVIEW see if it is going to be changed in the book;
-    //     self.parse_precedence(Precedence::Unary);
-    //     let operator_type = self.previous.unwrap().code;
-
-    //     self.expression();
-
-    //     match operator_type {
-    //         TokenCode::Minus => self.emit_byte(OpCode::OpNegate),
-    //         _ => (),
-    //     }
-    // }
-
-    // fn binary(&self) {
-    //     let operator_type = self.previous.expect("empty token.").code;
-    //     let rule = get_rule(&operator_type, self);
-    //     // TODO impl += 1 to precedence;
-    //     self.parse_precedence(rule.precedence+=1);
-
-    //     if let Some(token) = Some (operator_type) {
-    //         match token {
-    //             TokenCode::Plus => self.emit_byte(OpCode::OpAdd),
-    //             // REVIEW possible operation mismatch behavior 
-    //             TokenCode::Minus => self.emit_byte(OpCode::OpAdd),
-    //             TokenCode::Star => self.emit_byte(OpCode::OpMultiply),
-    //             TokenCode::Slash => self.emit_byte(OpCode::OpDivide),
-    //             _ => (),
-    //         }
-    //     }
-    // }

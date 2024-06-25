@@ -58,7 +58,7 @@ pub fn print_stack(chunk: &Chunk) {
 
 fn verify_lines(offset: usize, chunk: &Chunk) {
     if offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1] {
-        print!("  | ");
+        print!("| ");
     } else {
         print!("{} ", chunk.lines[offset]);
     }

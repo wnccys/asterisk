@@ -1,6 +1,7 @@
 use crate::chunk::OpCode;
 use crate::scanner::TokenCode;
 use crate::compiler::Parser;
+use crate::value::Value;
 
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to high precedence order
@@ -19,7 +20,7 @@ pub enum Precedence {
 }
 
 impl Precedence {
-    fn increment (&mut self) {
+    fn increment(&mut self) {
         *self = match self {
             Self::None => Self::None,
             Self::Assignment => Self::Or,
@@ -52,17 +53,38 @@ fn grouping(parser: &mut Parser) {
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
 }
 
-// NOTE possibly adds support for values != i32 / remove forced coersion;
 pub fn number(parser: &mut Parser) {
-    let value = parser.chars
-                        .unwrap()[parser.previous.unwrap().start] as i32;
+    // gets slice containing token number (token start .. token length);
+    let value = &parser.chars
+                        .unwrap()[parser
+                                .previous
+                                .unwrap()
+                                .start..parser
+                                        .previous
+                                        .unwrap()
+                                        .start + parser
+                                                .previous
+                                                .unwrap()
+                                                .length];
 
-    parser.emit_constant(&value);
+    if value.contains(&'.') {
+        let str_value: String = value.iter().collect();
+        let float_value: f64 = str_value.parse().expect("invalid float value.");
+
+        parser.emit_constant(&Value::Float(float_value));
+    } else {
+        let str_value: String = value.iter().collect();
+        let int_value: i32 = str_value.parse().expect("invalid int value.");
+
+        parser.emit_constant(&Value::Int(int_value));
+    }
 }
 
+// FIXME fix -1 -4 precedence
 fn unary(parser: &mut Parser) {
     parser.parse_precedence(Precedence::Unary);
     let operator_type = parser.previous.unwrap().code;
+    println!("ON UNRAYYYYYY");
 
     parser.expression();
 
@@ -73,9 +95,8 @@ fn unary(parser: &mut Parser) {
 }
 
 pub fn binary(parser: &mut Parser) {
-    let operator_type = parser.previous
-                                    .expect("empty token.")
-                                    .code;
+    let operator_type = parser.previous.unwrap().code;
+
     let mut rule = get_rule(&operator_type);
     rule.precedence.increment();
 
@@ -85,7 +106,7 @@ pub fn binary(parser: &mut Parser) {
         match token {
             TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
             // REVIEW possible operation mismatch behavior 
-            TokenCode::Minus => parser.emit_byte(OpCode::OpAdd),
+            TokenCode::Minus => { parser.emit_byte(OpCode::OpNegate); parser.emit_byte(OpCode::OpAdd) },
             TokenCode::Star => parser.emit_byte(OpCode::OpMultiply),
             TokenCode::Slash => parser.emit_byte(OpCode::OpDivide),
             _ => (),
@@ -296,6 +317,6 @@ pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
-       _ => panic!("not yet implemented."),
+       _ => panic!("invalid rule identified."),
     }
 }

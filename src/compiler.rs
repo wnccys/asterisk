@@ -12,7 +12,6 @@ pub struct Parser<'a> {
     pub chars: Option<&'a Vec<char>>,
     pub chunk: Option<Chunk>,
     pub scanner: Option<Scanner>,
-    // TODO possibly add scanner as a field;
     pub had_error: bool,
     pub panic_mode: bool,
 }
@@ -46,7 +45,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn advance(&mut self){
+    pub fn advance(&mut self) {
         self.previous = self.current;
 
         loop {
@@ -56,6 +55,7 @@ impl<'a> Parser<'a> {
                     .unwrap()
                     .scan_token(self.chars.as_ref().unwrap())
             );
+            dbg!(self.current);
 
             if let Some(current) = self.current {
                 if current.code != TokenCode::Error { break }
@@ -69,23 +69,25 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::Assignment);
     }
 
-    pub fn consume(&mut self, token_code: TokenCode, msg: &str) 
-    {
+    pub fn consume(&mut self, token_code: TokenCode, msg: &str) {
         if self.current.unwrap().code == token_code { self.advance(); }
-
-        self.error(msg);
+        else { self.error(msg); }
     }
 
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.chunk.as_mut().unwrap().write(code, self.current.unwrap().line);
+        self
+        .chunk
+        .as_mut()
+        .unwrap()
+        .write(code, self.current.unwrap().line);
     }
 
-    pub fn emit_constant(&mut self, value: &i32) {
+    pub fn emit_constant(&mut self, value: &Value) {
         let const_index = self
                                 .chunk
                                 .as_mut()
                                 .unwrap()
-                                .write_constant(Value::Int(*value));
+                                .write_constant(*value);
 
         self.emit_byte(OpCode::OpConstant(const_index));
     }

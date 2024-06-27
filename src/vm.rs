@@ -1,7 +1,7 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::utils::print::{print_value, print_stack};
-use crate::scanner::{ Scanner, TokenCode };
+use crate::utils::print::{ print_value, print_stack };
+use crate::value::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -12,14 +12,12 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Option<Chunk>,
-    ip: Option<OpCode>,
 }
 
 impl Vm {
     pub fn new() -> Self {
         Vm {
             chunk: None,
-            ip: None,
         }
     }
 
@@ -56,6 +54,19 @@ pub fn interpret(&mut self, source: &String) -> InterpretResult {
                         let chunk = self.chunk.as_mut().unwrap();
                         let constant = chunk.constants[temp_index];
                         chunk.stack.push(constant);
+                    }
+
+                    InterpretResult::Ok
+                },
+                OpCode::OpNegate => {
+                    {
+                        let chunk = self.chunk.as_mut().unwrap();
+                        let to_be_negated = chunk.stack.pop().unwrap();
+
+                        match to_be_negated {
+                            Value::Int(value) => { chunk.stack.push(Value::Int(-value))},
+                            Value::Float(value) => { chunk.stack.push(Value::Float(-value)) },
+                        }
                     }
 
                     InterpretResult::Ok

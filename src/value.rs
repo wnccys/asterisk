@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub, Mul, Div};
+use std::ops::{Add, Mul, Div};
 
 #[derive(Debug, Clone)]
 pub enum Value {

@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::utils::print::{ print_value, print_stack };
+use crate::utils::print::print_value;
 use crate::value::Value;
 
 #[derive(Debug, PartialEq)]
@@ -86,7 +86,6 @@ pub fn interpret(&mut self, source: &String) -> InterpretResult {
 
                     InterpretResult::Ok
                 },
-                _ => InterpretResult::RuntimeError 
             };
 
             dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);

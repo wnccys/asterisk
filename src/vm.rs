@@ -1,6 +1,7 @@
 use crate::chunk::*;
-use crate::utils::print::{print_value, print_stack};
-use crate::scanner::{ Scanner, TokenCode };
+use crate::compiler::compile;
+use crate::utils::print::print_value;
+use crate::value::Value;
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -9,52 +10,27 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-pub struct Vm<'a> {
-    chunk: Option<Chunk<'a>>,
-    ip: Option<&'a OpCode<'a>>,
+pub struct Vm {
+    chunk: Option<Chunk>,
 }
 
-impl<'a> Vm<'a> {
+impl Vm {
     pub fn new() -> Self {
         Vm {
             chunk: None,
-            ip: None,
         }
     }
 
-    pub fn interpret(&mut self, chunk: Chunk<'a>, source: &String) -> InterpretResult {
-        self.chunk = Some(chunk);
-        self.ip = Some(self.chunk
-                    .as_ref().unwrap()
-                    .code.first()
-                    .unwrap()
-        );
+pub fn interpret(&mut self, source: &String) -> InterpretResult {
         let chars: Vec<char> = source.chars().collect();
+        let (chunk, result) = compile(&chars);
 
-        self.compile(&chars);
-
-        self.run()
-    }
-
-    fn compile(&mut self, chars: &Vec<char>) -> InterpretResult {
-        let mut scanner = Scanner::new();
-        let mut line = -1;
-
-        loop {
-            let token = scanner.scan_token(chars);
-
-            if token.line != line {
-                print!("{} ", token.line);
-                line = token.line;
-            } else {
-                print!("| ");
-            }
-            println!("{:?}, {}, {}", token.code , token.length, token.start);
-
-            if token.code == TokenCode::Eof { break };
+        if result != InterpretResult::Ok {
+            panic!("{:?}", result);
         }
 
-        InterpretResult::Ok
+        self.chunk = Some(chunk);
+        self.run()
     }
 
     fn run (&mut self) -> InterpretResult {
@@ -73,10 +49,24 @@ impl<'a> Vm<'a> {
                     InterpretResult::Ok
                 },
                 OpCode::OpConstant(index) => {
+                    let temp_index = index.clone();
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        let constant = chunk.constants[**index];
+                        let constant = chunk.constants[temp_index];
                         chunk.stack.push(constant);
+                    }
+
+                    InterpretResult::Ok
+                },
+                OpCode::OpNegate => {
+                    {
+                        let chunk = self.chunk.as_mut().unwrap();
+                        let to_be_negated = chunk.stack.pop().unwrap();
+
+                        match to_be_negated {
+                            Value::Int(value) => { chunk.stack.push(Value::Int(-value))},
+                            Value::Float(value) => { chunk.stack.push(Value::Float(-value)) },
+                        }
                     }
 
                     InterpretResult::Ok
@@ -96,7 +86,6 @@ impl<'a> Vm<'a> {
 
                     InterpretResult::Ok
                 },
-                _ => InterpretResult::RuntimeError 
             };
 
             dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);

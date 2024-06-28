@@ -1,8 +1,6 @@
-use std::fmt::{self, Display, Formatter};
+use crate::vm::Vm;
 
-use crate::{chunk::Chunk, vm::Vm};
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenCode {
     // Single char tokens
     LeftParen,
@@ -49,13 +47,14 @@ pub enum TokenCode {
     Error, Eof, Comment
 }
 
+#[derive(Debug)]
 pub struct Scanner {
     pub start: usize,
     pub current: usize,
     pub line: i32,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Token {
     pub code: TokenCode,
     pub start: usize,
@@ -161,15 +160,18 @@ impl Scanner {
         }
     }
 
-    fn check_keyword(&mut self, matcher_start: usize, 
-        chars: &Vec<char>, matcher: &str, token_code: TokenCode) 
+    fn check_keyword(&mut self, 
+        matcher_start: usize, 
+        chars: &Vec<char>, 
+        matcher: &str, 
+        token_code: TokenCode) 
         -> TokenCode
     {
         let mut matched_chars: usize = 0;
 
         while matched_chars < matcher.len() && 
         chars.len() > 1 &&
-        matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matched_chars+matcher_start] 
+        matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matcher_start+matched_chars] 
         {
             matched_chars +=1;
         }
@@ -183,7 +185,7 @@ impl Scanner {
 
     fn number(&mut self, chars: &Vec<char>) -> Token {
         while !self.reach_source_end(chars) && chars[self.current].is_digit(10) 
-            { self.current+=1 }
+            { self.current+=1; }
 
         if !self.reach_source_end(chars) && chars[self.current] == '.' {
             self.current+=1;
@@ -222,7 +224,6 @@ impl Scanner {
         let mut inner_current = self.current+1;
         let mut vm = Vm::new();
         let mut expression = Vec::with_capacity(4);
-        let chunk = Chunk::new();
 
         while chars.len() > inner_current && chars[inner_current] != '}' {
             expression.push(chars[inner_current]);
@@ -231,7 +232,7 @@ impl Scanner {
 
         if chars.len() > inner_current && chars[inner_current] == '}' {
             let source = expression.iter().collect();
-            vm.interpret(chunk, &source);
+            vm.interpret(&source);
         } 
 
         self.current += inner_current - self.current-1;
@@ -257,12 +258,12 @@ impl Scanner {
         } 
     }
 
-    // TODO set proper token info
     pub fn error_token(&self, message: &str) -> Token {
+        println!("{}", message);
         Token {
             code: TokenCode::Error,
-            start: self.current - self.start,
-            length: message.len(),
+            start: self.start,
+            length: self.current-self.start,
             line: self.line,
         }
     }

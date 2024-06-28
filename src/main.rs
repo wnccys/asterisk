@@ -3,6 +3,8 @@ mod utils;
 mod vm;
 mod value;
 mod scanner;
+mod compiler;
+mod ruler;
 use crate::chunk::{Chunk, OpCode};
 use crate::utils::*;
 use crate::vm::{Vm, InterpretResult};
@@ -12,21 +14,20 @@ use std::{env, fs, io};
 
 fn main() {
     let mut vm = Vm::new();
-    let chunk = Chunk::new();
-    check_cmd_args(&mut vm, chunk);
+    check_cmd_args(&mut vm);
 }
 
-fn check_cmd_args<'a>(vm: &'a mut Vm<'a>, chunk: Chunk<'a>) {
+fn check_cmd_args(vm: &mut Vm) {
     let args: Vec<String> = env::args().collect();
 
     match args.len() {
-        1 => repl(vm, chunk),
-        2 => run_file(vm, chunk, &args[2]),
-        _ => panic!("Usage: astr [path]"),
+        1 => repl(vm),
+        2 => run_file(vm, &args[1]),
+        _ => panic!("Usage: ask [path]"),
     }
 }
 
-fn repl<'a>(vm: &'a mut Vm<'a>, chunk: Chunk<'a>) {
+fn repl(vm: &mut Vm) {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
     let mut buffer = String::new();
@@ -48,16 +49,16 @@ fn repl<'a>(vm: &'a mut Vm<'a>, chunk: Chunk<'a>) {
         let trimmed_buffer = buffer.trim().to_string();
 
         {
-            vm.interpret(chunk.clone(), &trimmed_buffer);
+            vm.interpret(&trimmed_buffer);
         }
     }
 }
 
-fn run_file<'a>(vm: &mut Vm<'a>, chunk: Chunk<'a>, file: &String) {
+fn run_file(vm: &mut Vm, file: &String) {
     let file_code = fs::read_to_string(file);
     if file_code.is_err() { panic!("could not read bytes from file.") }
     
-    let result = vm.interpret(chunk , &file_code.unwrap());
+    let result = vm.interpret(&file_code.unwrap());
 
     match result {
         InterpretResult::Ok => (),

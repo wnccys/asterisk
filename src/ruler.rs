@@ -39,8 +39,8 @@ impl Precedence {
 
 #[derive(Debug)]
 pub struct ParseRule {
-    pub prefix: fn(&mut Parser), 
-    pub infix: fn(&mut Parser), 
+    pub prefix: fn(&mut Parser),
+    pub infix: fn(&mut Parser),
     pub precedence: Precedence,
 }
 
@@ -68,25 +68,30 @@ pub fn number(parser: &mut Parser) {
                                                 .length];
 
     if value.contains(&'.') {
-        let str_value: String = value.iter().collect();
-        let float_value: f64 = str_value.parse().expect("invalid float value.");
+        let str_value: String = value
+                                .iter()
+                                .collect();
+        let float_value: f64 = str_value
+                                .parse()
+                                .expect("invalid float value.");
 
         parser.emit_constant(&Value::Float(float_value));
     } else {
-        let str_value: String = value.iter().collect();
-        let int_value: i32 = str_value.parse().expect("invalid int value.");
+        let str_value: String = value
+                                .iter()
+                                .collect();
+        let int_value: i32 = str_value
+                                .parse()
+                                .expect("invalid int value.");
 
         parser.emit_constant(&Value::Int(int_value));
     }
 }
 
-// FIXME fix -1 -4 precedence
 fn unary(parser: &mut Parser) {
-    parser.parse_precedence(Precedence::Unary);
     let operator_type = parser.previous.unwrap().code;
-    println!("ON UNRAYYYYYY");
 
-    parser.expression();
+    parser.parse_precedence(Precedence::Unary);
 
     match operator_type {
         TokenCode::Minus => parser.emit_byte(OpCode::OpNegate),
@@ -105,7 +110,6 @@ pub fn binary(parser: &mut Parser) {
     if let Some(token) = Some(operator_type) {
         match token {
             TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
-            // REVIEW possible operation mismatch behavior 
             TokenCode::Minus => { parser.emit_byte(OpCode::OpNegate); parser.emit_byte(OpCode::OpAdd) },
             TokenCode::Star => parser.emit_byte(OpCode::OpMultiply),
             TokenCode::Slash => parser.emit_byte(OpCode::OpDivide),
@@ -113,7 +117,6 @@ pub fn binary(parser: &mut Parser) {
         }
     }
 }
-
 
 pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
     match token_code {

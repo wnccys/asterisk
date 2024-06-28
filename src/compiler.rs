@@ -69,6 +69,25 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::Assignment);
     }
 
+    pub fn parse_precedence(&mut self, precedence: Precedence) {
+        self.advance();
+
+        let prefix_rule = get_rule(&self
+                                                                .previous
+                                                                .as_ref()
+                                                                .unwrap()
+                                                                .code).prefix;
+
+        (prefix_rule)(self);
+
+        while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
+           self.advance(); 
+
+           let infix_rule = get_rule(&self.previous.as_ref().unwrap().code).infix;
+           (infix_rule)(self)
+        }
+    }
+
     pub fn consume(&mut self, token_code: TokenCode, msg: &str) {
         if self.current.unwrap().code == token_code { self.advance(); }
         else { self.error(msg); }
@@ -97,25 +116,6 @@ impl<'a> Parser<'a> {
 
         if !self.had_error {
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
-        }
-    }
-
-    pub fn parse_precedence(&mut self, precedence: Precedence) {
-        self.advance();
-
-        let prefix_rule = get_rule(&self
-                        .previous
-                        .as_ref()
-                        .unwrap()
-                        .code).prefix;
-
-        (prefix_rule)(self);
-
-        while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
-           self.advance(); 
-
-           let infix_rule = get_rule(&self.previous.as_ref().unwrap().code).infix;
-           (infix_rule)(self)
         }
     }
 

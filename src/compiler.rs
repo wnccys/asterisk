@@ -1,5 +1,6 @@
+#![allow(dead_code, unused)]
 use crate::chunk::{Chunk, OpCode};
-use crate::utils::print::disassemble_chunk;
+use crate::utils::print::{disassemble_chunk, print_stack};
 use crate::value::Value;
 use crate::scanner::*;
 use crate::vm::InterpretResult;

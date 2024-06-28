@@ -23,7 +23,7 @@ fn check_cmd_args(vm: &mut Vm) {
     match args.len() {
         1 => repl(vm),
         2 => run_file(vm, &args[1]),
-        _ => panic!("Usage: astr [path]"),
+        _ => panic!("Usage: ask [path]"),
     }
 }
 

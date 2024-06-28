@@ -160,15 +160,18 @@ impl Scanner {
         }
     }
 
-    fn check_keyword(&mut self, matcher_start: usize, 
-        chars: &Vec<char>, matcher: &str, token_code: TokenCode) 
+    fn check_keyword(&mut self, 
+        matcher_start: usize, 
+        chars: &Vec<char>, 
+        matcher: &str, 
+        token_code: TokenCode) 
         -> TokenCode
     {
         let mut matched_chars: usize = 0;
 
         while matched_chars < matcher.len() && 
         chars.len() > 1 &&
-        matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matched_chars+matcher_start] 
+        matcher.chars().nth(matched_chars).unwrap() == chars[self.start+matcher_start+matched_chars] 
         {
             matched_chars +=1;
         }
@@ -182,7 +185,7 @@ impl Scanner {
 
     fn number(&mut self, chars: &Vec<char>) -> Token {
         while !self.reach_source_end(chars) && chars[self.current].is_digit(10) 
-            { self.current+=1 }
+            { self.current+=1; }
 
         if !self.reach_source_end(chars) && chars[self.current] == '.' {
             self.current+=1;

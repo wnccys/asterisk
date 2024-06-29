@@ -1,5 +1,5 @@
 use crate::chunk::OpCode;
-use crate::scanner::TokenCode;
+use crate::parser::scanner::TokenCode;
 use crate::compiler::Parser;
 use crate::value::Value;
 
@@ -118,7 +118,7 @@ pub fn binary(parser: &mut Parser) {
     }
 }
 
-pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
+pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
             prefix: grouping,

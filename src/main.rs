@@ -2,13 +2,9 @@ mod chunk;
 mod utils;
 mod vm;
 mod value;
-mod scanner;
 mod compiler;
-mod ruler;
-use crate::chunk::{Chunk, OpCode};
-use crate::utils::*;
+mod parser;
 use crate::vm::{Vm, InterpretResult};
-use crate::value::Value;
 use std::io::{BufRead, Write};
 use std::{env, fs, io};
 
@@ -47,7 +43,6 @@ fn repl(vm: &mut Vm) {
         }
 
         let trimmed_buffer = buffer.trim().to_string();
-
         {
             vm.interpret(&trimmed_buffer);
         }

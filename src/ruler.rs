@@ -118,7 +118,7 @@ pub fn binary(parser: &mut Parser) {
     }
 }
 
-pub fn get_rule<'a>(token_code: &TokenCode) -> ParseRule {
+pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
             prefix: grouping,

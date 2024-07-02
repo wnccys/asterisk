@@ -76,6 +76,7 @@ fn unary(parser: &mut Parser) {
 
     parser.parse_precedence(Precedence::Unary);
 
+    #[allow(clippy::single_match)]
     match operator_type {
         TokenCode::Minus => parser.emit_byte(OpCode::Negate),
         _ => (),
@@ -309,4 +310,3 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
         _ => panic!("invalid rule identified."),
     }
 }
-

@@ -14,16 +14,19 @@ pub struct Vm {
     chunk: Option<Chunk>,
 }
 
+impl Default for Vm {
+    fn default() -> Self {
+        Vm::new()
+    }
+}
+
 impl Vm {
     pub fn new() -> Self {
-        Vm {
-            chunk: None,
-        }
+        Vm { chunk: None }
     }
 
-pub fn interpret(&mut self, source: &String) -> InterpretResult {
-        let chars: Vec<char> = source.chars().collect();
-        let (chunk, result) = compile(&chars);
+    pub fn interpret(&mut self, source: &[char]) -> InterpretResult {
+        let (chunk, result) = compile(source);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);
@@ -33,23 +36,23 @@ pub fn interpret(&mut self, source: &String) -> InterpretResult {
         self.run()
     }
 
-    fn run (&mut self) -> InterpretResult {
+    fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
             // print_stack(&self.chunk.as_ref().unwrap());
             op_status = match opcode {
-                OpCode::OpReturn => {
+                OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
                         print_value(&chunk.stack.pop().expect("stack underflow."));
                     }
 
                     InterpretResult::Ok
-                },
-                OpCode::OpConstant(index) => {
-                    let temp_index = index.clone();
+                }
+                OpCode::Constant(index) => {
+                    let temp_index = *index;
                     {
                         let chunk = self.chunk.as_mut().unwrap();
                         let constant = chunk.constants[temp_index];
@@ -57,35 +60,35 @@ pub fn interpret(&mut self, source: &String) -> InterpretResult {
                     }
 
                     InterpretResult::Ok
-                },
-                OpCode::OpNegate => {
+                }
+                OpCode::Negate => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
                         let to_be_negated = chunk.stack.pop().unwrap();
 
                         match to_be_negated {
-                            Value::Int(value) => { chunk.stack.push(Value::Int(-value))},
-                            Value::Float(value) => { chunk.stack.push(Value::Float(-value)) },
+                            Value::Int(value) => chunk.stack.push(Value::Int(-value)),
+                            Value::Float(value) => chunk.stack.push(Value::Float(-value)),
                         }
                     }
 
                     InterpretResult::Ok
-                },
-                OpCode::OpAdd => {
+                }
+                OpCode::Add => {
                     self.binary_op("+");
 
                     InterpretResult::Ok
-                },
-                OpCode::OpMultiply => {
+                }
+                OpCode::Multiply => {
                     self.binary_op("*");
 
                     InterpretResult::Ok
-                },
-                OpCode::OpDivide => {
+                }
+                OpCode::Divide => {
                     self.binary_op("/");
 
                     InterpretResult::Ok
-                },
+                }
             };
 
             dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);
@@ -95,16 +98,29 @@ pub fn interpret(&mut self, source: &String) -> InterpretResult {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self.chunk.as_mut().unwrap().stack.pop().expect("value b not loaded.");
-        let a = self.chunk.as_mut().unwrap().stack.pop().expect("value a not loaded.");
+        let b = self
+            .chunk
+            .as_mut()
+            .unwrap()
+            .stack
+            .pop()
+            .expect("value b not loaded.");
+        let a = self
+            .chunk
+            .as_mut()
+            .unwrap()
+            .stack
+            .pop()
+            .expect("value a not loaded.");
 
         match op {
-            "+" => self.chunk.as_mut().unwrap().stack.push(a+b),
-            "*" => self.chunk.as_mut().unwrap().stack.push(a*b),
-            "/" => self.chunk.as_mut().unwrap().stack.push(a/b),
+            "+" => self.chunk.as_mut().unwrap().stack.push(a + b),
+            "*" => self.chunk.as_mut().unwrap().stack.push(a * b),
+            "/" => self.chunk.as_mut().unwrap().stack.push(a / b),
             _ => panic!("invalid operation."),
         }
 
         InterpretResult::Ok
     }
 }
+

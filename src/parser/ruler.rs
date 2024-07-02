@@ -1,10 +1,10 @@
 use crate::chunk::OpCode;
-use crate::parser::scanner::TokenCode;
 use crate::compiler::Parser;
+use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
 #[derive(Debug, PartialEq, PartialOrd)]
-// lower to high precedence order
+// lower to higher precedence order
 pub enum Precedence {
     None,
     Assignment, // =
@@ -55,34 +55,17 @@ fn grouping(parser: &mut Parser) {
 
 pub fn number(parser: &mut Parser) {
     // gets slice containing token number (token start .. token length);
-    let value = &parser.chars
-                        .unwrap()[parser
-                                .previous
-                                .unwrap()
-                                .start..parser
-                                        .previous
-                                        .unwrap()
-                                        .start + parser
-                                                .previous
-                                                .unwrap()
-                                                .length];
+    let value = &parser.chars.unwrap()[parser.previous.unwrap().start
+        ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
     if value.contains(&'.') {
-        let str_value: String = value
-                                .iter()
-                                .collect();
-        let float_value: f64 = str_value
-                                .parse()
-                                .expect("invalid float value.");
+        let str_value: String = value.iter().collect();
+        let float_value: f64 = str_value.parse().expect("invalid float value.");
 
         parser.emit_constant(&Value::Float(float_value));
     } else {
-        let str_value: String = value
-                                .iter()
-                                .collect();
-        let int_value: i32 = str_value
-                                .parse()
-                                .expect("invalid int value.");
+        let str_value: String = value.iter().collect();
+        let int_value: i32 = str_value.parse().expect("invalid int value.");
 
         parser.emit_constant(&Value::Int(int_value));
     }
@@ -94,7 +77,7 @@ fn unary(parser: &mut Parser) {
     parser.parse_precedence(Precedence::Unary);
 
     match operator_type {
-        TokenCode::Minus => parser.emit_byte(OpCode::OpNegate),
+        TokenCode::Minus => parser.emit_byte(OpCode::Negate),
         _ => (),
     }
 }
@@ -109,10 +92,13 @@ pub fn binary(parser: &mut Parser) {
 
     if let Some(token) = Some(operator_type) {
         match token {
-            TokenCode::Plus => parser.emit_byte(OpCode::OpAdd),
-            TokenCode::Minus => { parser.emit_byte(OpCode::OpNegate); parser.emit_byte(OpCode::OpAdd) },
-            TokenCode::Star => parser.emit_byte(OpCode::OpMultiply),
-            TokenCode::Slash => parser.emit_byte(OpCode::OpDivide),
+            TokenCode::Plus => parser.emit_byte(OpCode::Add),
+            TokenCode::Minus => {
+                parser.emit_byte(OpCode::Negate);
+                parser.emit_byte(OpCode::Add)
+            }
+            TokenCode::Star => parser.emit_byte(OpCode::Multiply),
+            TokenCode::Slash => parser.emit_byte(OpCode::Divide),
             _ => (),
         }
     }
@@ -320,6 +306,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
-       _ => panic!("invalid rule identified."),
+        _ => panic!("invalid rule identified."),
     }
 }
+

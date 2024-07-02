@@ -13,17 +13,17 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
     print!("{offset:0>4} ");
-    verify_lines(offset, &chunk);
+    verify_lines(offset, chunk);
 
     let instruction = &chunk.code[offset];
 
     match instruction {
-        OpCode::OpReturn => simple_instruction("OP_RETURN", offset),
-        OpCode::OpConstant(index) => constant_instruction("OP_CONSTANT", chunk, &index, offset),
-        OpCode::OpAdd => simple_instruction("OP_ADD", offset),
-        OpCode::OpMultiply => simple_instruction("OP_MULTIPLY", offset),
-        OpCode::OpDivide => simple_instruction("OP_DIVIDE", offset),
-        OpCode::OpNegate => simple_instruction("OP_NEGATE", offset),
+        OpCode::Return => simple_instruction("OP_RETURN", offset),
+        OpCode::Constant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
+        OpCode::Add => simple_instruction("OP_ADD", offset),
+        OpCode::Multiply => simple_instruction("OP_MULTIPLY", offset),
+        OpCode::Divide => simple_instruction("OP_DIVIDE", offset),
+        OpCode::Negate => simple_instruction("OP_NEGATE", offset),
     }
 }
 
@@ -36,7 +36,7 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
     let spaces: usize = 6;
     print!("{name}{op_index:>spaces$} ");
 
-   print_value(&chunk.constants[*op_index]);
+    print_value(&chunk.constants[*op_index]);
 
     offset + 1
 }

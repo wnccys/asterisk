@@ -1,15 +1,15 @@
 use crate::value::Value;
 #[derive(Debug, Clone)]
 pub enum OpCode {
-    OpReturn,
-    OpConstant(usize),
-    OpAdd,
-    OpMultiply,
-    OpDivide,
-    OpNegate,
+    Return,
+    Constant(usize),
+    Add,
+    Multiply,
+    Divide,
+    Negate,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Chunk {
     pub code: Vec<OpCode>,
     pub stack: Vec<Value>,
@@ -18,15 +18,6 @@ pub struct Chunk {
 }
 
 impl Chunk {
-    pub fn new() -> Self {
-        Chunk {
-            code: Vec::with_capacity(4),
-            stack: Vec::with_capacity(4),
-            constants: Vec::new(),
-            lines: Vec::new(),
-        }
-    }
-
     pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.lines.push(line);
@@ -45,7 +36,7 @@ pub fn dynamize_code_vec(code: &mut Vec<OpCode>) {
     }
 }
 
-pub fn dynamize_stack_vec(stack: &mut Vec<Value>){
+pub fn dynamize_stack_vec(stack: &mut Vec<Value>) {
     if stack.len() == stack.capacity() {
         stack.reserve(stack.capacity());
     }

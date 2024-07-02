@@ -1,10 +1,10 @@
 mod chunk;
-mod utils;
-mod vm;
-mod value;
 mod compiler;
 mod parser;
-use crate::vm::{Vm, InterpretResult};
+mod utils;
+mod value;
+mod vm;
+use crate::vm::{InterpretResult, Vm};
 use std::io::{BufRead, Write};
 use std::{env, fs, io};
 
@@ -33,31 +33,32 @@ fn repl(vm: &mut Vm) {
         io::stdout().flush().unwrap();
         buffer.clear();
 
-        let bytes_read =
-            handle
-                .read_line(&mut buffer).unwrap();
-        
+        let bytes_read = handle.read_line(&mut buffer).unwrap();
+
         if bytes_read == 0 {
             println!();
             break;
         }
 
         let trimmed_buffer = buffer.trim().to_string();
-        {
-            vm.interpret(&trimmed_buffer);
-        }
+        let chars: Vec<char> = trimmed_buffer.to_owned().chars().collect();
+        vm.interpret(&chars);
     }
 }
 
-fn run_file(vm: &mut Vm, file: &String) {
-    let file_code = fs::read_to_string(file);
-    if file_code.is_err() { panic!("could not read bytes from file.") }
-    
-    let result = vm.interpret(&file_code.unwrap());
+fn run_file(vm: &mut Vm, file: &str) {
+    let source_code = fs::read_to_string(file);
+    if source_code.is_err() {
+        panic!("could not read bytes from file.")
+    }
+
+    let source_chars: Vec<char> = source_code.unwrap().chars().collect();
+    let result = vm.interpret(&source_chars);
 
     match result {
         InterpretResult::Ok => (),
         InterpretResult::RuntimeError => std::process::exit(65),
-        InterpretResult::CompileError =>  std::process::exit(75),
+        InterpretResult::CompileError => std::process::exit(75),
     }
 }
+

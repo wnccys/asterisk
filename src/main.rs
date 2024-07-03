@@ -4,9 +4,9 @@ mod parser;
 mod utils;
 mod value;
 mod vm;
-use crate::vm::{InterpretResult, Vm};
 use std::io::{BufRead, Write};
 use std::{env, fs, io};
+use vm::{InterpretResult, Vm};
 
 fn main() {
     let mut vm = Vm::default();

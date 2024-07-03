@@ -9,7 +9,7 @@ use std::io::{BufRead, Write};
 use std::{env, fs, io};
 
 fn main() {
-    let mut vm = Vm::new();
+    let mut vm = Vm::default();
     check_cmd_args(&mut vm);
 }
 
@@ -61,4 +61,3 @@ fn run_file(vm: &mut Vm, file: &str) {
         InterpretResult::CompileError => std::process::exit(75),
     }
 }
-

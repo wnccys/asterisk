@@ -257,7 +257,7 @@ impl Scanner {
 
     fn evaluate_expression(&mut self, chars: &[char]) {
         let mut inner_current = self.current + 1;
-        let mut vm = Vm::new();
+        let mut vm = Vm::default();
         let mut expression = Vec::with_capacity(4);
 
         while chars.len() > inner_current && chars[inner_current] != '}' {
@@ -304,4 +304,3 @@ impl Scanner {
         }
     }
 }
-

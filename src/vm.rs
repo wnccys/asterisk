@@ -16,15 +16,13 @@ pub struct Vm {
 
 impl Default for Vm {
     fn default() -> Self {
-        Vm::new()
+        Self {
+            chunk: Some(Chunk::default()),
+        }
     }
 }
 
 impl Vm {
-    pub fn new() -> Self {
-        Vm { chunk: None }
-    }
-
     pub fn interpret(&mut self, source: &[char]) -> InterpretResult {
         let (chunk, result) = compile(source);
 
@@ -123,4 +121,3 @@ impl Vm {
         InterpretResult::Ok
     }
 }
-

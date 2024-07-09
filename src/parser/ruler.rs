@@ -54,7 +54,7 @@ fn grouping(parser: &mut Parser) {
 }
 
 pub fn number(parser: &mut Parser) {
-    // gets slice containing token number (token start .. token length);
+    // gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.chars.unwrap()[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
@@ -307,6 +307,10 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
-        _ => panic!("invalid rule identified."),
+        TokenCode::Comment => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
     }
 }

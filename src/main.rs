@@ -46,8 +46,8 @@ fn repl(vm: &mut Vm) {
     }
 }
 
-fn run_file(vm: &mut Vm, file: &str) {
-    let source_code = fs::read_to_string(file);
+fn run_file(vm: &mut Vm, file_path: &str) {
+    let source_code = fs::read_to_string(file_path);
     if source_code.is_err() {
         panic!("could not read bytes from file.")
     }

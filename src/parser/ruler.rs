@@ -55,7 +55,7 @@ fn grouping(parser: &mut Parser) {
 
 pub fn number(parser: &mut Parser) {
     // gets slice containing token stringify'ed number (token start .. token length);
-    let value = &parser.chars.unwrap()[parser.previous.unwrap().start
+    let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
     if value.contains(&'.') {
@@ -303,6 +303,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Eof => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Ternary => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

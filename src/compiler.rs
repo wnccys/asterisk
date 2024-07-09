@@ -10,9 +10,8 @@ use crate::vm::InterpretResult;
 pub struct Parser<'a> {
     pub current: Option<Token>,
     pub previous: Option<Token>,
-    pub chars: Option<&'a [char]>,
     pub chunk: Option<Chunk>,
-    pub scanner: Option<Scanner>,
+    pub scanner: Option<Scanner<'a>>,
     pub had_error: bool,
     pub panic_mode: bool,
 }
@@ -22,7 +21,6 @@ impl<'a> Default for Parser<'a> {
         Self {
             current: None,
             previous: None,
-            chars: None,
             chunk: Some(Chunk::default()),
             scanner: Some(Scanner::default()),
             had_error: false,
@@ -33,7 +31,10 @@ impl<'a> Default for Parser<'a> {
 
 pub fn compile(chars: &[char]) -> (Chunk, InterpretResult) {
     let mut parser = Parser {
-        chars: Some(chars),
+        scanner: Some(Scanner {
+            chars,
+            ..Default::default()
+        }),
         ..Default::default()
     };
 
@@ -53,12 +54,7 @@ impl<'a> Parser<'a> {
         self.previous = self.current;
 
         loop {
-            self.current = Some(
-                self.scanner
-                    .as_mut()
-                    .unwrap()
-                    .scan_token(self.chars.as_ref().unwrap()),
-            );
+            self.current = Some(self.scanner.as_mut().unwrap().scan_token());
             dbg!(self.current);
 
             if let Some(current) = self.current {
@@ -130,7 +126,7 @@ impl<'a> Parser<'a> {
         match token.code {
             TokenCode::Eof => println!(" at end."),
             TokenCode::Error => (),
-            _ => println!(" at {} {}", token.length, token.start),
+            _ => println!(" at {} | line: {}", token.length, token.start),
         }
 
         println!("{}", msg);

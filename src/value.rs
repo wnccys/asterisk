@@ -10,8 +10,6 @@ pub enum Value {
 
 impl Copy for Value {}
 
-impl Value {}
-
 impl Add for Value {
     type Output = Value;
 
@@ -47,4 +45,3 @@ impl Div for Value {
         }
     }
 }
-

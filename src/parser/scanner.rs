@@ -44,7 +44,6 @@ pub enum TokenCode {
     True,
     Var,
     While,
-    Ternary,
 
     Error,
     Eof,
@@ -135,13 +134,6 @@ impl<'a> Scanner<'a> {
                     self.make_token(TokenCode::GreaterEqual)
                 } else {
                     self.make_token(TokenCode::Greater)
-                }
-            }
-            '?' => {
-                if !self.reach_source_end() {
-                    self.ternary()
-                } else {
-                    self.error_token("invalid ternary expression.")
                 }
             }
             '"' => self.string(),
@@ -279,10 +271,6 @@ impl<'a> Scanner<'a> {
         }
 
         self.current += inner_current - self.current - 1;
-    }
-
-    fn ternary(&mut self) -> Token {
-        self.make_token(TokenCode::Comment)
     }
 
     fn skip_comment(&mut self) -> Token {

@@ -67,6 +67,7 @@ impl Vm {
                         match to_be_negated {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
+                            _ => panic!("invalid negation!"),
                         }
                     }
 
@@ -84,6 +85,18 @@ impl Vm {
                 }
                 OpCode::Divide => {
                     self.binary_op("/");
+
+                    InterpretResult::Ok
+                }
+                OpCode::True => {
+                    let chunk = self.chunk.as_mut().unwrap();
+                    chunk.stack.push(Value::True);
+
+                    InterpretResult::Ok
+                }
+                OpCode::False => {
+                    let chunk = self.chunk.as_mut().unwrap();
+                    chunk.stack.push(Value::False);
 
                     InterpretResult::Ok
                 }

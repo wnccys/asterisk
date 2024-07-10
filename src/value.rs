@@ -1,9 +1,11 @@
-use std::ops::{Add, Mul, Div};
+use std::ops::{Add, Div, Mul};
 
 #[derive(Debug, Clone)]
 pub enum Value {
     Float(f64),
     Int(i32),
+    True,
+    False,
 }
 
 impl Copy for Value {}
@@ -14,9 +16,9 @@ impl Add for Value {
     type Output = Value;
 
     fn add(self, other: Value) -> Value {
-        match(self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a+b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a+b),
+        match (self, other) {
+            (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
+            (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
             _ => panic!("different type operations are now allowed"),
         }
     }
@@ -27,8 +29,8 @@ impl Mul for Value {
 
     fn mul(self, other: Value) -> Value {
         match (self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a*b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a*b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
+            (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
             _ => panic!("different type operations are now allowed"),
         }
     }
@@ -39,9 +41,10 @@ impl Div for Value {
 
     fn div(self, other: Value) -> Value {
         match (self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a/b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a/b),
+            (Value::Float(a), Value::Float(b)) => Value::Float(a / b),
+            (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
             _ => panic!("different type operations are now allowed"),
         }
     }
 }
+

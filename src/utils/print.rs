@@ -24,6 +24,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::Multiply => simple_instruction("OP_MULTIPLY", offset),
         OpCode::Divide => simple_instruction("OP_DIVIDE", offset),
         OpCode::Negate => simple_instruction("OP_NEGATE", offset),
+        _ => panic!("invalid op."),
     }
 }
 
@@ -45,6 +46,7 @@ pub fn print_value(value: &Value) {
     match value {
         Value::Float(f) => println!("'{f:.1}'"),
         Value::Int(i) => println!("'{i}'"),
+        _ => panic!("invalid value."),
     }
 }
 

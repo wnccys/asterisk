@@ -105,6 +105,14 @@ pub fn binary(parser: &mut Parser) {
     }
 }
 
+pub fn literal(parser: &mut Parser) {
+    match parser.previous.unwrap().code {
+        TokenCode::True => parser.emit_byte(OpCode::True),
+        TokenCode::False => parser.emit_byte(OpCode::False),
+        _ => panic!("invalid literal operation."),
+    }
+}
+
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
@@ -233,7 +241,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::False => ParseRule {
-            prefix: none,
+            prefix: literal,
             infix: none,
             precedence: Precedence::None,
         },
@@ -283,7 +291,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::True => ParseRule {
-            prefix: none,
+            prefix: literal,
             infix: none,
             precedence: Precedence::None,
         },
@@ -303,11 +311,6 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Eof => ParseRule {
-            prefix: none,
-            infix: none,
-            precedence: Precedence::None,
-        },
-        TokenCode::Ternary => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

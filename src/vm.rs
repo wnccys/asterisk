@@ -1,7 +1,7 @@
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::utils::print::print_value;
-use crate::value::Value;
+use crate::value::{values_equal, Value};
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -67,8 +67,19 @@ impl Vm {
                         match to_be_negated {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
-                            _ => panic!("invalid negation!"),
+                            Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
                         }
+                    }
+
+                    InterpretResult::Ok
+                }
+                OpCode::Not => {
+                    let chunk = self.chunk.as_mut().unwrap();
+                    let to_be_negated = chunk.stack.pop().unwrap();
+
+                    match to_be_negated {
+                        Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
+                        _ => panic!("value should be a boolean."),
                     }
 
                     InterpretResult::Ok
@@ -90,13 +101,22 @@ impl Vm {
                 }
                 OpCode::True => {
                     let chunk = self.chunk.as_mut().unwrap();
-                    chunk.stack.push(Value::True);
+                    chunk.stack.push(Value::Bool(true));
 
                     InterpretResult::Ok
                 }
                 OpCode::False => {
                     let chunk = self.chunk.as_mut().unwrap();
-                    chunk.stack.push(Value::False);
+                    chunk.stack.push(Value::Bool(false));
+
+                    InterpretResult::Ok
+                }
+                OpCode::Equal => {
+                    let chunk = self.chunk.as_mut().unwrap();
+                    let a = chunk.stack.pop().unwrap();
+                    let b = chunk.stack.pop().unwrap();
+
+                    chunk.stack.push(values_equal(a, b));
 
                     InterpretResult::Ok
                 }

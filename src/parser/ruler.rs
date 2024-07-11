@@ -78,6 +78,7 @@ fn unary(parser: &mut Parser) {
 
     #[allow(clippy::single_match)]
     match operator_type {
+        TokenCode::Bang => parser.emit_byte(OpCode::Not),
         TokenCode::Minus => parser.emit_byte(OpCode::Negate),
         _ => (),
     }
@@ -100,7 +101,22 @@ pub fn binary(parser: &mut Parser) {
             }
             TokenCode::Star => parser.emit_byte(OpCode::Multiply),
             TokenCode::Slash => parser.emit_byte(OpCode::Divide),
-            _ => (),
+            TokenCode::BangEqual => {
+                parser.emit_byte(OpCode::Equal);
+                parser.emit_byte(OpCode::Not);
+            }
+            TokenCode::EqualEqual => parser.emit_byte(OpCode::Equal),
+            TokenCode::Greater => parser.emit_byte(OpCode::Greater),
+            TokenCode::GreaterEqual => {
+                parser.emit_byte(OpCode::Less);
+                parser.emit_byte(OpCode::Not);
+            }
+            TokenCode::Less => parser.emit_byte(OpCode::Less),
+            TokenCode::LessEqual => {
+                parser.emit_byte(OpCode::Greater);
+                parser.emit_byte(OpCode::Not);
+            }
+            _ => panic!("invalid binary call."),
         }
     }
 }
@@ -171,14 +187,14 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::Factor,
         },
         TokenCode::Bang => ParseRule {
-            prefix: none,
+            prefix: unary,
             infix: none,
             precedence: Precedence::None,
         },
         TokenCode::BangEqual => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Equality,
         },
         TokenCode::Equal => ParseRule {
             prefix: none,
@@ -187,28 +203,28 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
         },
         TokenCode::EqualEqual => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Equality,
         },
         TokenCode::Greater => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Comparison,
         },
         TokenCode::GreaterEqual => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Comparison,
         },
         TokenCode::Less => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Comparison,
         },
         TokenCode::LessEqual => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: binary,
+            precedence: Precedence::Comparison,
         },
         TokenCode::Identifier => ParseRule {
             prefix: none,

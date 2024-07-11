@@ -1,11 +1,18 @@
 use std::ops::{Add, Div, Mul};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Float(f64),
     Int(i32),
-    True,
-    False,
+    Bool(bool),
+}
+
+pub fn values_equal(a: Value, b: Value) -> Value {
+    if a != b {
+        panic!("comparison are only allowed between 2 equal types.");
+    }
+
+    Value::Bool(true)
 }
 
 impl Copy for Value {}
@@ -29,7 +36,7 @@ impl Mul for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-            _ => panic!("different type operations are now allowed"),
+            _ => panic!("operation now allowed."),
         }
     }
 }

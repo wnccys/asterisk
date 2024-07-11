@@ -120,6 +120,16 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                OpCode::Greater => {
+                    self.binary_op(">");
+
+                    InterpretResult::Ok
+                }
+                OpCode::Less => {
+                    self.binary_op("<");
+
+                    InterpretResult::Ok
+                }
             };
 
             dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);
@@ -148,6 +158,10 @@ impl Vm {
             "+" => self.chunk.as_mut().unwrap().stack.push(a + b),
             "*" => self.chunk.as_mut().unwrap().stack.push(a * b),
             "/" => self.chunk.as_mut().unwrap().stack.push(a / b),
+            // REVIEW check for >, < partialOrd inconvenient (apply the condition on other variants)
+            // in this case a same type as b is false;
+            ">" => self.chunk.as_mut().unwrap().stack.push(Value::Bool(a > b)),
+            "<" => self.chunk.as_mut().unwrap().stack.push(Value::Bool(a < b)),
             _ => panic!("invalid operation."),
         }
 

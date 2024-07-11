@@ -1,18 +1,20 @@
 use std::ops::{Add, Div, Mul};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub enum Value {
     Float(f64),
     Int(i32),
     Bool(bool),
 }
 
+// REVIEW probably resolvable with macro
 pub fn values_equal(a: Value, b: Value) -> Value {
-    if a != b {
-        panic!("comparison are only allowed between 2 equal types.");
+    match (a, b) {
+        (Value::Bool(value_a), Value::Bool(value_b)) => Value::Bool(value_a == value_b),
+        (Value::Int(value_a), Value::Int(value_b)) => Value::Bool(value_a == value_b),
+        (Value::Float(value_a), Value::Float(value_b)) => Value::Bool(value_a == value_b),
+        _ => panic!("only equal-types are allowed to be compared."),
     }
-
-    Value::Bool(true)
 }
 
 impl Copy for Value {}

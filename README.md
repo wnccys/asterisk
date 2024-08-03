@@ -11,7 +11,7 @@ It's Implementation is based on <strong><a href="https://craftinginterpreters.co
 $ cargo run
 ```
 
-### Read To Source File (.ask)
+### Read From Source File (.ask)
 
 ```bash
 $ cargo run -- [path-to-file]

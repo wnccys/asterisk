@@ -220,10 +220,8 @@ impl<'a> Scanner<'a> {
 
         if !self.reach_source_end() && self.chars[self.current] == '.' {
             self.current += 1;
-            if !self.reach_source_end() && self.chars[self.current].is_ascii_digit() {
-                while !self.reach_source_end() && self.chars[self.current].is_ascii_digit() {
-                    self.current += 1
-                }
+            while !self.reach_source_end() && self.chars[self.current].is_ascii_digit() {
+                self.current += 1
             }
         }
 

@@ -26,7 +26,7 @@ impl Add for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            _ => panic!("different type operations are now allowed"),
+            _ => panic!("different type operations are not allowed"),
         }
     }
 }
@@ -38,7 +38,7 @@ impl Mul for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-            _ => panic!("operation now allowed."),
+            _ => panic!("operation not allowed."),
         }
     }
 }
@@ -50,7 +50,7 @@ impl Div for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a / b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
-            _ => panic!("different type operations are now allowed"),
+            _ => panic!("different type operations are not allowed"),
         }
     }
 }

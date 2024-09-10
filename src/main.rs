@@ -36,7 +36,7 @@ fn repl(vm: &mut Vm) {
         let bytes_read = handle.read_line(&mut buffer).unwrap();
 
         if bytes_read == 0 {
-            println!();
+            println!("exiting!!");
             break;
         }
 

@@ -51,6 +51,7 @@ pub fn print_value(value: &Value) {
     match value {
         Value::Float(f) => println!("'{f:.1}'"),
         Value::Int(i) => println!("'{i}'"),
+        Value::Bool(b) => println!("{b}"),
         _ => panic!("invalid value."),
     }
 }

@@ -7,6 +7,11 @@ pub enum Value {
     Bool(bool),
 }
 
+#[allow(dead_code)]
+enum ObjectType<'a> {
+    String(&'a String),
+}
+
 // REVIEW probably resolvable with macro
 pub fn values_equal(a: Value, b: Value) -> Value {
     match (a, b) {
@@ -26,7 +31,7 @@ impl Add for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            _ => panic!("different type operations are not allowed"),
+            _ => panic!("operations with different types are not allowed"),
         }
     }
 }
@@ -38,7 +43,7 @@ impl Mul for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-            _ => panic!("operation not allowed."),
+            _ => panic!("operation with different types are not allowed."),
         }
     }
 }
@@ -50,7 +55,7 @@ impl Div for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a / b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
-            _ => panic!("different type operations are not allowed"),
+            _ => panic!("operation with different types are not allowed."),
         }
     }
 }

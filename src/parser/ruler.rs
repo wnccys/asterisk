@@ -129,6 +129,10 @@ pub fn literal(parser: &mut Parser) {
     }
 }
 
+pub fn string(parser: &mut Parser) {
+    parser.emit_byte(OpCode::Constant(parser.previous.unwrap().start..parser.previous.unwrap().));
+}
+
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
@@ -232,7 +236,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::String => ParseRule {
-            prefix: none,
+            prefix: string,
             infix: none,
             precedence: Precedence::None,
         },

@@ -1,19 +1,19 @@
 use std::ops::{Add, Div, Mul};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Value {
+pub enum Value<'a> {
     Float(f64),
     Int(i32),
     Bool(bool),
+    String(&'a String),
 }
 
-#[allow(dead_code)]
-enum ObjectType<'a> {
+pub enum HeapValue<'a> {
     String(&'a String),
 }
 
 // REVIEW probably resolvable with macro
-pub fn values_equal(a: Value, b: Value) -> Value {
+pub fn values_equal<'a>(a: Value, b: Value) -> Value<'a> {
     match (a, b) {
         (Value::Bool(value_a), Value::Bool(value_b)) => Value::Bool(value_a == value_b),
         (Value::Int(value_a), Value::Int(value_b)) => Value::Bool(value_a == value_b),
@@ -22,10 +22,10 @@ pub fn values_equal(a: Value, b: Value) -> Value {
     }
 }
 
-impl Copy for Value {}
+impl<'a> Copy for Value<'a> {}
 
-impl Add for Value {
-    type Output = Value;
+impl<'a> Add for Value<'a> {
+    type Output = Value<'a>;
 
     fn add(self, other: Value) -> Value {
         match (self, other) {
@@ -36,8 +36,8 @@ impl Add for Value {
     }
 }
 
-impl Mul for Value {
-    type Output = Value;
+impl<'a> Mul for Value<'a> {
+    type Output = Value<'a>;
 
     fn mul(self, other: Value) -> Value {
         match (self, other) {
@@ -48,8 +48,8 @@ impl Mul for Value {
     }
 }
 
-impl Div for Value {
-    type Output = Value;
+impl<'a> Div for Value<'a> {
+    type Output = Value<'a>;
 
     fn div(self, other: Value) -> Value {
         match (self, other) {

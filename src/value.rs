@@ -14,6 +14,7 @@ pub fn values_equal<'a>(a: Value, b: Value) -> Value<'a> {
         (Value::Bool(value_a), Value::Bool(value_b)) => Value::Bool(value_a == value_b),
         (Value::Int(value_a), Value::Int(value_b)) => Value::Bool(value_a == value_b),
         (Value::Float(value_a), Value::Float(value_b)) => Value::Bool(value_a == value_b),
+        (Value::String(value_a), Value::String(value_b)) => Value::Bool(value_a == value_b),
         _ => panic!("only equal-types are allowed to be compared."),
     }
 }

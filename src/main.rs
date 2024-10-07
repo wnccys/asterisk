@@ -36,7 +36,7 @@ fn repl(vm: &mut Vm) {
         let bytes_read = handle.read_line(&mut buffer).unwrap();
 
         if bytes_read == 0 {
-            println!("exiting!!");
+            println!("exiting...");
             break;
         }
 
@@ -53,11 +53,9 @@ fn run_file(vm: &mut Vm, file_path: &str) {
     }
 
     let source_chars: Vec<char> = source_code.unwrap().chars().collect();
-    let result = vm.interpret(source_chars);
-
-    match result {
+    match vm.interpret(source_chars) {
         InterpretResult::Ok => (),
-        InterpretResult::RuntimeError => std::process::exit(65),
-        InterpretResult::CompileError => std::process::exit(75),
+        InterpretResult::RuntimeError => std::process::exit(2),
+        InterpretResult::CompileError => std::process::exit(3),
     }
 }

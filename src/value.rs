@@ -8,10 +8,6 @@ pub enum Value<'a> {
     String(&'a String),
 }
 
-pub enum HeapValue<'a> {
-    String(&'a String),
-}
-
 // REVIEW probably resolvable with macro
 pub fn values_equal<'a>(a: Value, b: Value) -> Value<'a> {
     match (a, b) {

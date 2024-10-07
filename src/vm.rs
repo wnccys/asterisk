@@ -10,27 +10,27 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-pub struct Vm {
-    chunk: Option<Chunk>,
+pub struct Vm<'a> {
+    chunk: Option<Box<Chunk<'a>>>,
 }
 
-impl Default for Vm {
+impl<'a> Default for Vm<'a> {
     fn default() -> Self {
         Self {
-            chunk: Some(Chunk::default()),
+            chunk: Some(Box::default()),
         }
     }
 }
 
-impl Vm {
-    pub fn interpret(&mut self, source: &[char]) -> InterpretResult {
+impl<'a> Vm<'a> {
+    pub fn interpret<'b: 'a>(&mut self, source: Vec<char>) -> InterpretResult {
         let (chunk, result) = compile(source);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);
         }
 
-        self.chunk = Some(chunk);
+        self.chunk = Some(Box::new(chunk));
         self.run()
     }
 
@@ -68,6 +68,7 @@ impl Vm {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
                             Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
+                            _ => todo!("TODO NEGATED STRING ACTION"),
                         }
                     }
 

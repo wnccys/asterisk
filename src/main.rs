@@ -42,7 +42,7 @@ fn repl(vm: &mut Vm) {
 
         let trimmed_buffer = buffer.trim().to_string();
         let chars: Vec<char> = trimmed_buffer.to_owned().chars().collect();
-        vm.interpret(&chars);
+        vm.interpret(chars);
     }
 }
 
@@ -53,7 +53,7 @@ fn run_file(vm: &mut Vm, file_path: &str) {
     }
 
     let source_chars: Vec<char> = source_code.unwrap().chars().collect();
-    let result = vm.interpret(&source_chars);
+    let result = vm.interpret(source_chars);
 
     match result {
         InterpretResult::Ok => (),

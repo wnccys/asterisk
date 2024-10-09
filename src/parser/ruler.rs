@@ -130,7 +130,16 @@ pub fn literal(parser: &mut Parser) {
 }
 
 pub fn string(parser: &mut Parser) {
-    // parser.emit_byte(OpCode::Constant(parser.previous.unwrap().start..parser.previous.unwrap().));
+    let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
+        ..parser.previous.unwrap().start + parser.previous.unwrap().length]
+        .to_owned();
+
+    let index = parser
+        .chunk
+        .as_mut()
+        .unwrap()
+        .write_constant(Value::String(str));
+    parser.emit_byte(OpCode::Constant(index));
 }
 
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {

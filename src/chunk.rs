@@ -16,21 +16,21 @@ pub enum OpCode {
 }
 
 #[derive(Debug, Default)]
-pub struct Chunk<'a> {
+pub struct Chunk {
     pub code: Vec<OpCode>,
-    pub stack: Vec<Value<'a>>,
-    pub constants: Vec<Value<'a>>,
+    pub stack: Vec<Value>,
+    pub constants: Vec<Value>,
     pub lines: Vec<i32>,
 }
 
-impl<'a> Chunk<'a> {
+impl Chunk {
     pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.lines.push(line);
         dynamize_code_vec(&mut self.code);
     }
 
-    pub fn write_constant(&mut self, value: Value<'a>) -> usize {
+    pub fn write_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
     }

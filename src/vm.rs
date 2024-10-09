@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::utils::print::print_value;
+use crate::utils::print::{print_stack, print_value};
 use crate::value::{values_equal, Value};
 
 #[derive(Debug, PartialEq)]
@@ -10,11 +10,11 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-pub struct Vm<'a> {
-    chunk: Option<Box<Chunk<'a>>>,
+pub struct Vm {
+    chunk: Option<Box<Chunk>>,
 }
 
-impl<'a> Default for Vm<'a> {
+impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Some(Box::default()),
@@ -22,8 +22,8 @@ impl<'a> Default for Vm<'a> {
     }
 }
 
-impl<'a> Vm<'a> {
-    pub fn interpret<'b: 'a>(&mut self, source: Vec<char>) -> InterpretResult {
+impl Vm {
+    pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
         let (chunk, result) = compile(source);
 
         if result != InterpretResult::Ok {
@@ -39,7 +39,7 @@ impl<'a> Vm<'a> {
 
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
-            // print_stack(&self.chunk.as_ref().unwrap());
+            print_stack(self.chunk.as_ref().unwrap());
             op_status = match opcode {
                 OpCode::Return => {
                     {
@@ -53,7 +53,7 @@ impl<'a> Vm<'a> {
                     let temp_index = *index;
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        let constant = chunk.constants[temp_index];
+                        let constant = chunk.constants[temp_index].clone();
                         chunk.stack.push(constant);
                     }
 

@@ -51,8 +51,8 @@ pub enum TokenCode {
 }
 
 #[derive(Debug, Default)]
-pub struct Scanner<'a> {
-    pub chars: &'a [char],
+pub struct Scanner {
+    pub chars: Vec<char>,
     pub start: usize,
     pub current: usize,
     pub line: i32,
@@ -66,7 +66,7 @@ pub struct Token {
     pub line: i32,
 }
 
-impl<'a> Scanner<'a> {
+impl Scanner {
     pub fn scan_token(&mut self) -> Token {
         self.start = self.current;
         if self.reach_source_end() {
@@ -265,7 +265,7 @@ impl<'a> Scanner<'a> {
 
         if self.chars.len() > inner_current && self.chars[inner_current] == '}' {
             let source = expression;
-            vm.interpret(&source);
+            vm.interpret(source);
         }
 
         self.current += inner_current - self.current - 1;

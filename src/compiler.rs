@@ -10,8 +10,8 @@ use crate::vm::InterpretResult;
 pub struct Parser<'a> {
     pub current: Option<Token>,
     pub previous: Option<Token>,
-    pub chunk: Option<Chunk>,
-    pub scanner: Option<Scanner<'a>>,
+    pub chunk: Option<Chunk<'a>>,
+    pub scanner: Option<Scanner>,
     pub had_error: bool,
     pub panic_mode: bool,
 }
@@ -29,7 +29,7 @@ impl<'a> Default for Parser<'a> {
     }
 }
 
-pub fn compile(chars: &[char]) -> (Chunk, InterpretResult) {
+pub fn compile<'a>(chars: Vec<char>) -> (Chunk<'a>, InterpretResult) {
     let mut parser = Parser {
         scanner: Some(Scanner {
             chars,
@@ -101,8 +101,12 @@ impl<'a> Parser<'a> {
             .write(code, self.current.unwrap().line);
     }
 
-    pub fn emit_constant(&mut self, value: &Value) {
-        let const_index = self.chunk.as_mut().unwrap().write_constant(*value);
+    pub fn emit_constant<'b: 'a>(&mut self, value: Value<'b>) {
+        let const_index = self
+            .chunk
+            .as_mut()
+            .unwrap()
+            .write_constant(value.to_owned());
 
         self.emit_byte(OpCode::Constant(const_index));
     }

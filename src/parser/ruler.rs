@@ -62,12 +62,12 @@ pub fn number(parser: &mut Parser) {
         let str_value: String = value.iter().collect();
         let float_value: f64 = str_value.parse().expect("invalid float value.");
 
-        parser.emit_constant(&Value::Float(float_value));
+        parser.emit_constant(Value::Float(float_value));
     } else {
         let str_value: String = value.iter().collect();
         let int_value: i32 = str_value.parse().expect("invalid int value.");
 
-        parser.emit_constant(&Value::Int(int_value));
+        parser.emit_constant(Value::Int(int_value));
     }
 }
 
@@ -127,6 +127,10 @@ pub fn literal(parser: &mut Parser) {
         TokenCode::False => parser.emit_byte(OpCode::False),
         _ => panic!("invalid literal operation."),
     }
+}
+
+pub fn string(parser: &mut Parser) {
+    // parser.emit_byte(OpCode::Constant(parser.previous.unwrap().start..parser.previous.unwrap().));
 }
 
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
@@ -232,7 +236,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::String => ParseRule {
-            prefix: none,
+            prefix: string,
             infix: none,
             precedence: Precedence::None,
         },

@@ -125,7 +125,7 @@ impl Parser {
         }
 
         let token = self.current.unwrap();
-        print!("[{}] error", token.line);
+        print!("Error [{}]", token.line);
 
         match token.code {
             TokenCode::Eof => println!(" at end."),

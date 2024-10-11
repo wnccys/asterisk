@@ -26,7 +26,7 @@ impl Add for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            _ => panic!("operations add not allowed."),
+            _ => panic!("operation add not allowed."),
         }
     }
 }

@@ -130,8 +130,8 @@ pub fn literal(parser: &mut Parser) {
 }
 
 pub fn string(parser: &mut Parser) {
-    let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
-        ..parser.previous.unwrap().start + parser.previous.unwrap().length]
+    let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
+        ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
 
     let index = parser

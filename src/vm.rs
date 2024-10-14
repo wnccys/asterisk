@@ -44,7 +44,7 @@ impl Vm {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        print_value(&chunk.stack.pop().expect("stack underflow."));
+                        print_value(&chunk.stack.pop().expect("Error on return: stack underflow."));
                     }
 
                     InterpretResult::Ok
@@ -68,7 +68,7 @@ impl Vm {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
                             Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
-                            _ => todo!("TODO NEGATED STRING ACTION"),
+                            _ => todo!("Operation not allowed."),
                         }
                     }
 
@@ -80,7 +80,7 @@ impl Vm {
 
                     match to_be_negated {
                         Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
-                        _ => panic!("value should be a boolean."),
+                        _ => panic!("Value should be a boolean."),
                     }
 
                     InterpretResult::Ok

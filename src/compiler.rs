@@ -55,7 +55,7 @@ impl Parser {
 
         loop {
             self.current = Some(self.scanner.as_mut().unwrap().scan_token());
-            dbg!(self.current);
+            // dbg!(self.current);
 
             if let Some(current) = self.current {
                 if current.code != TokenCode::Error {

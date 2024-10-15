@@ -52,6 +52,10 @@ pub fn print_value(value: &Value) {
         Value::Float(f) => println!("'{f:.1}'"),
         Value::Int(i) => println!("'{i}'"),
         Value::Bool(b) => println!("{b}"),
+        Value::String(str) => {
+            let stringified: String = str.iter().collect();
+            println!("{stringified}")
+        }
         _ => panic!("invalid value."),
     }
 }

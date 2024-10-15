@@ -7,16 +7,16 @@ use crate::value::Value;
 use crate::vm::InterpretResult;
 
 #[derive(Debug)]
-pub struct Parser<'a> {
+pub struct Parser {
     pub current: Option<Token>,
     pub previous: Option<Token>,
-    pub chunk: Option<Chunk<'a>>,
+    pub chunk: Option<Chunk>,
     pub scanner: Option<Scanner>,
     pub had_error: bool,
     pub panic_mode: bool,
 }
 
-impl<'a> Default for Parser<'a> {
+impl Default for Parser {
     fn default() -> Self {
         Self {
             current: None,
@@ -29,7 +29,7 @@ impl<'a> Default for Parser<'a> {
     }
 }
 
-pub fn compile<'a>(chars: Vec<char>) -> (Chunk<'a>, InterpretResult) {
+pub fn compile(chars: Vec<char>) -> (Chunk, InterpretResult) {
     let mut parser = Parser {
         scanner: Some(Scanner {
             chars,
@@ -49,13 +49,13 @@ pub fn compile<'a>(chars: Vec<char>) -> (Chunk<'a>, InterpretResult) {
     (parser.chunk.unwrap(), InterpretResult::Ok)
 }
 
-impl<'a> Parser<'a> {
+impl Parser {
     pub fn advance(&mut self) {
         self.previous = self.current;
 
         loop {
             self.current = Some(self.scanner.as_mut().unwrap().scan_token());
-            dbg!(self.current);
+            // dbg!(self.current);
 
             if let Some(current) = self.current {
                 if current.code != TokenCode::Error {
@@ -101,7 +101,7 @@ impl<'a> Parser<'a> {
             .write(code, self.current.unwrap().line);
     }
 
-    pub fn emit_constant<'b: 'a>(&mut self, value: Value<'b>) {
+    pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk
             .as_mut()
@@ -125,7 +125,7 @@ impl<'a> Parser<'a> {
         }
 
         let token = self.current.unwrap();
-        print!("[{}] error", token.line);
+        print!("Error [{}]", token.line);
 
         match token.code {
             TokenCode::Eof => println!(" at end."),

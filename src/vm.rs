@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::utils::print::print_value;
+use crate::utils::print::{print_stack, print_value};
 use crate::value::{values_equal, Value};
 
 #[derive(Debug, PartialEq)]
@@ -10,11 +10,11 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
-pub struct Vm<'a> {
-    chunk: Option<Box<Chunk<'a>>>,
+pub struct Vm {
+    chunk: Option<Box<Chunk>>,
 }
 
-impl<'a> Default for Vm<'a> {
+impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Some(Box::default()),
@@ -22,8 +22,8 @@ impl<'a> Default for Vm<'a> {
     }
 }
 
-impl<'a> Vm<'a> {
-    pub fn interpret<'b: 'a>(&mut self, source: Vec<char>) -> InterpretResult {
+impl Vm {
+    pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
         let (chunk, result) = compile(source);
 
         if result != InterpretResult::Ok {
@@ -39,12 +39,12 @@ impl<'a> Vm<'a> {
 
         for i in 0..self.chunk.as_ref().unwrap().code.len() {
             let opcode = &self.chunk.as_ref().unwrap().code[i];
-            // print_stack(&self.chunk.as_ref().unwrap());
+            // print_stack(self.chunk.as_ref().unwrap());
             op_status = match opcode {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        print_value(&chunk.stack.pop().expect("stack underflow."));
+                        print_value(&chunk.stack.pop().expect("Error on return: stack underflow."));
                     }
 
                     InterpretResult::Ok
@@ -53,7 +53,7 @@ impl<'a> Vm<'a> {
                     let temp_index = *index;
                     {
                         let chunk = self.chunk.as_mut().unwrap();
-                        let constant = chunk.constants[temp_index];
+                        let constant = chunk.constants[temp_index].clone();
                         chunk.stack.push(constant);
                     }
 
@@ -68,7 +68,7 @@ impl<'a> Vm<'a> {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
                             Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
-                            _ => todo!("TODO NEGATED STRING ACTION"),
+                            _ => todo!("Operation not allowed."),
                         }
                     }
 
@@ -80,7 +80,7 @@ impl<'a> Vm<'a> {
 
                     match to_be_negated {
                         Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
-                        _ => panic!("value should be a boolean."),
+                        _ => panic!("Value should be a boolean."),
                     }
 
                     InterpretResult::Ok
@@ -133,7 +133,7 @@ impl<'a> Vm<'a> {
                 }
             };
 
-            dynamize_stack_vec(&mut self.chunk.as_mut().unwrap().stack);
+            dynamize_vec(&mut self.chunk.as_mut().unwrap().stack);
         }
 
         op_status

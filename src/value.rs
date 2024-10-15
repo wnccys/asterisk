@@ -1,15 +1,15 @@
 use std::ops::{Add, Div, Mul};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-pub enum Value<'a> {
+pub enum Value {
     Float(f64),
     Int(i32),
     Bool(bool),
-    String(&'a String),
+    String(Vec<char>),
 }
 
 // REVIEW probably resolvable with macro
-pub fn values_equal<'a>(a: Value, b: Value) -> Value<'a> {
+pub fn values_equal(a: Value, b: Value) -> Value {
     match (a, b) {
         (Value::Bool(value_a), Value::Bool(value_b)) => Value::Bool(value_a == value_b),
         (Value::Int(value_a), Value::Int(value_b)) => Value::Bool(value_a == value_b),
@@ -19,40 +19,43 @@ pub fn values_equal<'a>(a: Value, b: Value) -> Value<'a> {
     }
 }
 
-impl<'a> Copy for Value<'a> {}
-
-impl<'a> Add for Value<'a> {
-    type Output = Value<'a>;
+impl Add for Value {
+    type Output = Value;
 
     fn add(self, other: Value) -> Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            _ => panic!("operations with different types are not allowed"),
+            (Value::String(str1), Value::String(str2)) => {
+                let mut result = str1.clone();
+                result.extend(str2);
+                Value::String(result)
+            },
+            _ => panic!("operation add not allowed."),
         }
     }
 }
 
-impl<'a> Mul for Value<'a> {
-    type Output = Value<'a>;
+impl Mul for Value {
+    type Output = Value;
 
     fn mul(self, other: Value) -> Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
-            _ => panic!("operation with different types are not allowed."),
+            _ => panic!("operation mult not allowed."),
         }
     }
 }
 
-impl<'a> Div for Value<'a> {
-    type Output = Value<'a>;
+impl Div for Value {
+    type Output = Value;
 
     fn div(self, other: Value) -> Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a / b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
-            _ => panic!("operation with different types are not allowed."),
+            _ => panic!("operation divide not allowed."),
         }
     }
 }

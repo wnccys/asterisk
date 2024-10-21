@@ -50,6 +50,12 @@ mod tests {
         let mut word = vec!{'n', 'u', 'm'};
         println!("hash: {}", hash_string(&mut word));
 
+        let mut word = vec!{'n', 'a', 'm'};
+        println!("hash: {}", hash_string(&mut word));
+
+        let mut word = vec!{'n', 'u', 'l', 'l'};
+        println!("hash: {}", hash_string(&mut word));
+
         let mut word = vec!{'z', 'a', 'z', 'a'};
         println!("hash: {}", hash_string(&mut word));
     }

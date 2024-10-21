@@ -11,21 +11,21 @@ struct Entry {
 
 pub struct Table {
     count: i64,
-    entries: Option<Vec<Rc<Entry>>>,
+    entries: Vec<Rc<Entry>>,
 }
 
 impl Default for Table {
     fn default() -> Self {
        Self {
             count: 0,
-            entries: None
+            entries: Vec::new()
        } 
     }
 }
 
 impl Table {
-    fn set(&mut self, key: Vec<char>, value: Value) -> bool {
-        true
+    fn set(&mut self, key: Vec<char>, value: Value) {
+        self.entries.push(Rc::new( Entry { key, value }));
     }
 }
 

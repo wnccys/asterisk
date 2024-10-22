@@ -1,8 +1,8 @@
-use std::rc::Rc;
+use std::{rc::Rc};
 
 use crate::value::Value;
 pub type Hash = u32;
-
+const MAX_LOAD: f32 = 0.75;
 
 struct Entry {
     key: Vec<char>,
@@ -11,21 +11,21 @@ struct Entry {
 
 pub struct Table {
     count: i64,
-    entries: Vec<Rc<Entry>>,
+    entries: Box<[Rc<Entry>]>,
 }
 
 impl Default for Table {
     fn default() -> Self {
        Self {
             count: 0,
-            entries: Vec::new()
+            entries: Box::new([])
        } 
     }
 }
 
 impl Table {
     fn set(&mut self, key: Vec<char>, value: Value) {
-        self.entries.push(Rc::new( Entry { key, value }));
+        self.entries.fill(Rc::new( Entry { key, value }));
     }
 }
 

@@ -15,10 +15,10 @@ pub struct Table {
 
 impl Default for Table {
     fn default() -> Self {
-       Self {
+        Self {
             count: 0,
-            entries: Box::new(vec![])
-       } 
+            entries: Box::new(vec![]),
+        }
     }
 }
 
@@ -26,10 +26,11 @@ impl Table {
     const MAX_LOAD: f32 = 0.75;
 
     fn set(&mut self, key: Vec<char>, value: Value) -> bool {
-        if ((self.entries.capacity() - self.count) as f32) < Self::MAX_LOAD {}
+        if ((self.count / self.entries.capacity()) as f32) < Self::MAX_LOAD {
+            self.entries.reserve(2);
+        }
 
-
-        if let Some(new_entry) = self.find_entry(&key) {
+        if let Some(new_entry) = self.find_entry(&mut key.to_owned()) {
             self.entries.fill(new_entry);
             return true;
         }
@@ -37,8 +38,18 @@ impl Table {
         return false;
     }
 
-    fn find_entry(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
+    fn find_entry(&self, key: &mut Vec<char>) -> Option<Rc<Entry>> {
+        let mut index = hash_string(key) % self.entries.capacity() as u32;
 
+        loop {
+            let entry = self.entries[index as usize].as_ref();
+
+            if (entry.key == key.to_owned()) {
+                return Some(Rc::new(*entry));
+            }
+
+            index = (index + 1) % self.entries.capacity() as u32;
+        }
     }
 }
 
@@ -61,16 +72,16 @@ mod tests {
 
     #[test]
     fn test_hashing() {
-        let mut word = vec!{'n', 'u', 'm'};
+        let mut word = vec!['n', 'u', 'm'];
         println!("hash: {}", hash_string(&mut word));
 
-        let mut word = vec!{'n', 'a', 'm'};
+        let mut word = vec!['n', 'a', 'm'];
         println!("hash: {}", hash_string(&mut word));
 
-        let mut word = vec!{'n', 'u', 'l', 'l'};
+        let mut word = vec!['n', 'u', 'l', 'l'];
         println!("hash: {}", hash_string(&mut word));
 
-        let mut word = vec!{'z', 'a', 'z', 'a'};
+        let mut word = vec!['z', 'a', 'z', 'a'];
         println!("hash: {}", hash_string(&mut word));
     }
 }

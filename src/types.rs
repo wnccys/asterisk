@@ -39,16 +39,16 @@ impl Table {
     }
 
     fn find_entry(&self, key: &mut Vec<char>) -> Option<Rc<Entry>> {
-        let mut index = hash_string(key) % self.entries.capacity() as u32;
+        let mut index = hash_string(key) as usize % self.entries.capacity();
 
         loop {
-            let entry = &self.entries[index as usize];
+            let entry = &self.entries[index];
 
             if entry.key == key.to_owned() {
                 return Some(Rc::clone(entry));
             }
 
-            index = (index + 1) % self.entries.capacity() as u32;
+            index = (index + 1) % self.entries.capacity();
         }
     }
 }

@@ -42,10 +42,10 @@ impl Table {
         let mut index = hash_string(key) % self.entries.capacity() as u32;
 
         loop {
-            let entry = self.entries[index as usize].as_ref();
+            let entry = &self.entries[index as usize];
 
-            if (entry.key == key.to_owned()) {
-                return Some(Rc::new(*entry));
+            if entry.key == key.to_owned() {
+                return Some(Rc::clone(entry));
             }
 
             index = (index + 1) % self.entries.capacity() as u32;

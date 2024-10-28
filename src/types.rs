@@ -10,14 +10,14 @@ struct Entry {
 
 pub struct Table {
     count: usize,
-    entries: Box<Vec<Rc<Entry>>>,
+    entries: Box<Vec<Option<Rc<Entry>>>>,
 }
 
 impl Default for Table {
     fn default() -> Self {
         Self {
             count: 0,
-            entries: Box::new(vec![]),
+            entries: Box::new(Vec::with_capacity(4)),
         }
     }
 }
@@ -26,12 +26,12 @@ impl Table {
     const MAX_LOAD: f32 = 0.75;
 
     fn set(&mut self, key: Vec<char>, value: Value) -> bool {
-        if ((self.count / self.entries.capacity()) as f32) < Self::MAX_LOAD {
-            self.entries.reserve(2);
+        if ((self.count / self.entries.capacity()) as f32) > Self::MAX_LOAD {
+            self.entries.reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
         }
 
         if let Some(new_entry) = self.find_entry(&mut key.to_owned()) {
-            self.entries.fill(new_entry);
+            self.entries.fill(Some(new_entry));
             return true;
         }
 
@@ -42,9 +42,11 @@ impl Table {
         let mut index = hash_string(key) as usize % self.entries.capacity();
 
         loop {
-            let entry = &self.entries[index];
+            let entry = self.entries[index].as_ref().unwrap();
 
-            if entry.key == key.to_owned() {
+            // match entry.key {}
+
+            if entry.key == *key || self.entries[index].is_none() {
                 return Some(Rc::clone(entry));
             }
 
@@ -83,5 +85,11 @@ mod tests {
 
         let mut word = vec!['z', 'a', 'z', 'a'];
         println!("hash: {}", hash_string(&mut word));
+    }
+
+    fn test_find_entry_by_key() {
+        let table = Table::default();
+        let str = vec!['l', 'o', 'l', 'o',' ', 'm', 'e', 'u', ' ', 'a', 'm', 'o', 'r'];
+        table.set();
     }
 }

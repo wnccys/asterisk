@@ -3,21 +3,23 @@ use std::{fmt::Error, rc::Rc};
 use crate::value::Value;
 pub type Hash = u32;
 
+#[derive(Debug)]
 struct Entry {
     key: Vec<char>,
     value: Value,
 }
 
+#[derive(Debug)]
 pub struct Table {
     count: usize,
-    entries: Box<Vec<Option<Rc<Entry>>>>,
+    entries: Vec<Option<Rc<Entry>>>,
 }
 
 impl Default for Table {
     fn default() -> Self {
         Self {
             count: 0,
-            entries: Box::new(Vec::with_capacity(4)),
+            entries: vec![None],
         }
     }
 }
@@ -30,43 +32,32 @@ impl Table {
             self.entries.reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
         }
 
-        if let Some(new_entry) = self.find_entry(&key) {
-            self.entries.fill(Some(new_entry));
-            return true;
+        // applied when some new entry is found or None is returned
+        match self.find_entry(&key) {
+            (Some(new_entry), index) => {
+                 self.entries[index] = Some(new_entry);
+                 return true;
+            },
+            (None, index) => { 
+                self.entries[index] = Some(Rc::new(Entry{ key, value }));
+                self.count += 1;
+                return true;
+            },
         }
-
-        return false;
     }
 
-    fn find_entry(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
+    fn find_entry(&self, key: &Vec<char>) -> (Option<Rc<Entry>>, usize) {
         let mut index = hash_string(key) as usize % self.entries.capacity();
 
         loop {
-            let entry = self.entries[index].as_ref().unwrap();
+            let entry = self.entries[index].to_owned();
 
-            if entry.key == *key || self.entries[index].is_none() {
-                return Some(Rc::clone(entry));
+            if self.entries[index].is_none() || entry.as_ref().unwrap().key == *key {
+                return (entry, index);
             }
 
             index = (index + 1) % self.entries.capacity();
         }
-    }
-}
-
-impl std::fmt::Display for Table {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut all_entries: Vec<(Vec<char>, Value)> = Default::default(); 
-        let mut final_formated: String = Default::default();
-
-        self.entries.iter().for_each(|entry| {
-            all_entries.push((entry.as_ref().unwrap().key.clone(), entry.as_ref().unwrap().value.clone()));
-        });
-
-        all_entries.iter().for_each(|key_value| {
-            final_formated += format!("{:?} => {:?}", key_value.0, key_value.1).as_str();
-        });
-
-        write!(f, "{final_formated}")
     }
 }
 
@@ -106,7 +97,14 @@ mod tests {
     fn test_find_entry_by_key() {
         let mut table = Table::default();
         let str = vec!['l', 'o', 'l', 'o',' ', 'm', 'e', 'u', ' ', 'a', 'm', 'o', 'r'];
-        table.set(vec!['a', 'm', 'o', 'r'], Value::String(str));
-        println!("{table}");
+        println!("cap before: {}", table.entries.capacity());
+        println!("before add element: {}", table.count);
+        table.set(vec!['a', 'm', 'o', 'r'], Value::String(str.clone()));
+        table.set(vec!['a', 'm', 'o', 'r'], Value::String(str.clone()));
+        let key: Vec<char> = "amor".chars().collect();
+        println!("found: {:?}", table.find_entry(&key));
+        println!("{:?}", table);
+        println!("after add element: {}", table.count);
+        println!("cap after: {}", table.entries.capacity());
     }
 }

@@ -28,9 +28,7 @@ impl Table {
     const MAX_LOAD: f32 = 0.75;
 
     fn set(&mut self, key: Vec<char>, value: Value) -> bool {
-        if ((self.count + 1 / self.entries.capacity()) as f32) > Self::MAX_LOAD {
-            self.entries.reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
-        }
+        self.check_cap();
 
         // applied when some new entry is found or None is returned
         match self.find_entry(&key) {
@@ -57,6 +55,12 @@ impl Table {
             }
 
             index = (index + 1) % self.entries.capacity();
+        }
+    }
+    
+    fn check_cap(&mut self) {
+        if ((self.count + 1 / self.entries.capacity()) as f32) > Self::MAX_LOAD {
+            self.entries.reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
         }
     }
 }

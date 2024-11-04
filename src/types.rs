@@ -96,15 +96,15 @@ mod tests {
     #[test]
     fn test_find_entry_by_key() {
         let mut table = Table::default();
-        let str = vec!['l', 'o', 'l', 'o',' ', 'm', 'e', 'u', ' ', 'a', 'm', 'o', 'r'];
+        let str: Vec<char> = "lolo meu amor".chars().collect();
         println!("cap before: {}", table.entries.capacity());
-        println!("before add element: {}", table.count);
-        table.set(vec!['a', 'm', 'o', 'r'], Value::String(str.clone()));
-        table.set(vec!['a', 'm', 'o', 'r'], Value::String(str.clone()));
+        println!("count before add element: {}", table.count);
+        table.set("amor".chars().collect(), Value::String(str.clone()));
+        table.set("amor".chars().collect(), Value::String(str.clone()));
         let key: Vec<char> = "amor".chars().collect();
         println!("found: {:?}", table.find_entry(&key));
         println!("{:?}", table);
-        println!("after add element: {}", table.count);
+        println!("count after add element: {}", table.count);
         println!("cap after: {}", table.entries.capacity());
     }
 }

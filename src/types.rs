@@ -27,8 +27,9 @@ impl Default for Table {
 impl Table {
     const MAX_LOAD: f32 = 0.75;
 
-    fn set(&mut self, key: Vec<char>, value: Value) -> bool {
+    fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
+        let key = key.clone();
 
         // applied when some new entry is found or None is returned
         match self.find_entry(&key) {
@@ -42,6 +43,11 @@ impl Table {
                 return true;
             },
         }
+    }
+
+    fn get(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
+        if self.count == 0 { return None }
+        self.find_entry(key).0
     }
 
     fn find_entry(&self, key: &Vec<char>) -> (Option<Rc<Entry>>, usize) {

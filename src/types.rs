@@ -27,7 +27,7 @@ impl Default for Table {
 impl Table {
     const MAX_LOAD: f32 = 0.75;
 
-    fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
+    pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
         let key = key.clone();
 
@@ -45,10 +45,12 @@ impl Table {
         }
     }
 
-    fn get(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
+    pub fn get(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
         if self.count == 0 { return None }
         self.find_entry(key).0
     }
+     
+    pub fn delete() {}
 
     fn find_entry(&self, key: &Vec<char>) -> (Option<Rc<Entry>>, usize) {
         let mut index = hash_string(key) as usize % self.entries.capacity();
@@ -115,12 +117,20 @@ mod tests {
         let str: Vec<char> = "lolo meu amor".chars().collect();
         println!("cap before: {}", table.entries.capacity());
         println!("count before add element: {}", table.count);
-        table.set("amor".chars().collect(), Value::String(str.clone()));
-        table.set("amor".chars().collect(), Value::String(str.clone()));
+        table.set(&"amor".chars().collect(), Value::String(str.clone()));
+        table.set(&"amor".chars().collect(), Value::String(str.clone()));
         let key: Vec<char> = "amor".chars().collect();
         println!("found: {:?}", table.find_entry(&key));
         println!("{:?}", table);
         println!("count after add element: {}", table.count);
         println!("cap after: {}", table.entries.capacity());
+    }
+
+    #[test]
+    fn test_table_get() {
+        let mut table = Table::default();
+
+        table.set(&"jesse".chars().collect(), Value::String("james".chars().collect()));
+        println!("Result: {:?}", table.get(&"jesse".chars().collect()).unwrap());
     }
 }

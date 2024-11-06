@@ -4,9 +4,9 @@ use crate::value::Value;
 pub type Hash = u32;
 
 #[derive(Debug)]
-struct Entry {
-    key: Vec<char>,
-    value: Value,
+pub struct Entry {
+    pub key: Vec<char>,
+    pub value: Value,
 }
 
 #[derive(Debug)]
@@ -50,7 +50,17 @@ impl Table {
         self.find_entry(key).0
     }
      
-    pub fn delete() {}
+    pub fn delete(&mut self, key: &Vec<char>) -> Result<(), Error> {
+        if self.count == 0 { return Err(Error) };
+
+        match self.find_entry(key) {
+           (Some(_), _) => {
+            self.set(key, Value::Bool(true));
+            Ok(()) 
+        },
+            (None, _) => Err(Error)
+        }
+    }
 
     fn find_entry(&self, key: &Vec<char>) -> (Option<Rc<Entry>>, usize) {
         let mut index = hash_string(key) as usize % self.entries.capacity();

@@ -54,8 +54,9 @@ impl Table {
         if self.count == 0 { return Err(Error) };
 
         match self.find_entry(key) {
-           (Some(_), _) => {
-            self.set(key, Value::Bool(true));
+           (Some(_), index) => {
+            // Unreachable key
+            self.entries[index] = Some(Rc::new(Entry{ key: "".chars().collect(), value: Value::Bool(true) }));
             Ok(()) 
         },
             (None, _) => Err(Error)

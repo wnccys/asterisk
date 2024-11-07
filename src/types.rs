@@ -167,4 +167,13 @@ mod tests {
             table.get(&"jesse".chars().collect()).unwrap()
         );
     }
+
+    #[test]
+    fn test_table_del() {
+        let mut table = Table::default();
+
+        table.set(&"name".chars().collect(), Value::String("JOJI".chars().collect()));
+        table.delete(&"name".chars().collect()).unwrap();
+        assert_eq!(table.get(&"name".chars().collect()).is_none(), true);
+    }
 }

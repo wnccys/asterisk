@@ -30,36 +30,46 @@ impl Table {
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
         let key = key.clone();
+        if key.len() == 0 {
+            return false;
+        };
 
         // applied when some new entry is found or None is returned
         match self.find_entry(&key) {
             (Some(new_entry), index) => {
-                 self.entries[index] = Some(new_entry);
-                 return true;
-            },
-            (None, index) => { 
-                self.entries[index] = Some(Rc::new(Entry{ key, value }));
+                self.entries[index] = Some(new_entry);
+                return true;
+            }
+            (None, index) => {
+                self.entries[index] = Some(Rc::new(Entry { key, value }));
                 self.count += 1;
                 return true;
-            },
+            }
         }
     }
 
     pub fn get(&self, key: &Vec<char>) -> Option<Rc<Entry>> {
-        if self.count == 0 { return None }
+        if self.count == 0 {
+            return None;
+        }
         self.find_entry(key).0
     }
-     
+
     pub fn delete(&mut self, key: &Vec<char>) -> Result<(), Error> {
-        if self.count == 0 { return Err(Error) };
+        if self.count == 0 {
+            return Err(Error);
+        };
 
         match self.find_entry(key) {
-           (Some(_), index) => {
-            // Unreachable key
-            self.entries[index] = Some(Rc::new(Entry{ key: "".chars().collect(), value: Value::Bool(true) }));
-            Ok(()) 
-        },
-            (None, _) => Err(Error)
+            (Some(_), index) => {
+                // Unreachable key
+                self.entries[index] = Some(Rc::new(Entry {
+                    key: "".chars().collect(),
+                    value: Value::Bool(true),
+                }));
+                Ok(())
+            }
+            (None, _) => Err(Error),
         }
     }
 
@@ -69,17 +79,24 @@ impl Table {
         loop {
             let entry = self.entries[index].to_owned();
 
-            if self.entries[index].is_none() || entry.as_ref().unwrap().key == *key {
+            if entry.is_none() || entry.as_ref().unwrap().key == *key {
                 return (entry, index);
+            }
+
+            if entry.as_ref().unwrap().key == "".chars().collect::<Vec<char>>()
+                && entry.as_ref().unwrap().value == Value::Bool(true)
+            {
+                return (None, index);
             }
 
             index = (index + 1) % self.entries.capacity();
         }
     }
-    
+
     fn check_cap(&mut self) {
         if ((self.count + 1 / self.entries.capacity()) as f32) > Self::MAX_LOAD {
-            self.entries.reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
+            self.entries
+                .reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
         }
     }
 }
@@ -141,7 +158,13 @@ mod tests {
     fn test_table_get() {
         let mut table = Table::default();
 
-        table.set(&"jesse".chars().collect(), Value::String("james".chars().collect()));
-        println!("Result: {:?}", table.get(&"jesse".chars().collect()).unwrap());
+        table.set(
+            &"jesse".chars().collect(),
+            Value::String("james".chars().collect()),
+        );
+        println!(
+            "Result: {:?}",
+            table.get(&"jesse".chars().collect()).unwrap()
+        );
     }
 }

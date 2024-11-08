@@ -27,14 +27,13 @@ impl Default for Table {
 impl Table {
     const MAX_LOAD: f32 = 0.75;
 
+    // TODO handle tombstone ghost counting
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
         let key = key.clone();
-        if key.len() == 0 {
-            return false;
-        };
+        if key.len() == 0 { return false; };
 
-        // applied when some new entry is found or None is returned
+        // Applied when some new entry is found or None is returned
         match self.find_entry(&key) {
             (Some(new_entry), index) => {
                 self.entries[index] = Some(new_entry);
@@ -83,6 +82,7 @@ impl Table {
                 return (entry, index);
             }
 
+            // Tombstone handling
             if entry.as_ref().unwrap().key == "".chars().collect::<Vec<char>>()
                 && entry.as_ref().unwrap().value == Value::Bool(true)
             {

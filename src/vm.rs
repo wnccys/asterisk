@@ -1,3 +1,4 @@
+use crate::types::Table;
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::utils::print::{print_stack, print_value};
@@ -12,12 +13,14 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Box<Chunk>,
+    strings: Table,
 }
 
 impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Box::default(),
+            strings: Table::default(),
         }
     }
 }

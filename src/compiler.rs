@@ -2,21 +2,23 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::parser::ruler::*;
 use crate::parser::scanner::*;
+use crate::types::Table;
 use crate::utils::print::{disassemble_chunk, print_stack};
 use crate::value::Value;
-use crate::vm::InterpretResult;
+use crate::vm::{InterpretResult, Vm};
 
 #[derive(Debug)]
-pub struct Parser {
+pub struct Parser<'a> {
     pub current: Option<Token>,
     pub previous: Option<Token>,
     pub chunk: Option<Chunk>,
     pub scanner: Option<Scanner>,
     pub had_error: bool,
     pub panic_mode: bool,
+    pub strings: Option<&'a mut Table>,
 }
 
-impl Default for Parser {
+impl<'a> Default for Parser<'a> {
     fn default() -> Self {
         Self {
             current: None,
@@ -25,16 +27,18 @@ impl Default for Parser {
             scanner: Some(Scanner::default()),
             had_error: false,
             panic_mode: false,
+            strings: None,
         }
     }
 }
 
-pub fn compile(chars: Vec<char>) -> (Chunk, InterpretResult) {
+pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult) {
     let mut parser = Parser {
         scanner: Some(Scanner {
             chars,
             ..Default::default()
         }),
+        strings: Some(strings),
         ..Default::default()
     };
 
@@ -49,7 +53,7 @@ pub fn compile(chars: Vec<char>) -> (Chunk, InterpretResult) {
     (parser.chunk.unwrap(), InterpretResult::Ok)
 }
 
-impl Parser {
+impl<'a> Parser<'a> {
     pub fn advance(&mut self) {
         self.previous = self.current;
 

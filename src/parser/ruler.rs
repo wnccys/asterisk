@@ -134,6 +134,8 @@ pub fn string(parser: &mut Parser) {
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
 
+        
+
     let index = parser
         .chunk
         .as_mut()

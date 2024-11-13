@@ -27,7 +27,7 @@ impl Default for Vm {
 
 impl Vm {
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        let (chunk, result) = compile(source);
+        let (chunk, result) = compile(&mut self.strings, source);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);

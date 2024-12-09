@@ -160,7 +160,7 @@ impl Scanner {
                     match self.chars[self.start + 1] {
                         'a' => self.check_keyword(2, "lse", TokenCode::False),
                         'o' => self.check_keyword(2, "r", TokenCode::For),
-                        'u' => self.check_keyword(2, "n", TokenCode::Fun),
+                        'n' => self.check_keyword(1, "n", TokenCode::Fun),
                         _ => panic!("invalid identifier."),
                     }
                 } else {
@@ -235,7 +235,7 @@ impl Scanner {
             };
             self.current += 1;
 
-            // safelly verifies if ${} expression is present
+            // Safelly verifies if ${} expression is present
             if !self.reach_source_end() && self.chars[self.current] == '$' {
                 self.current += 1;
 

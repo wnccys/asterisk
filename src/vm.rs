@@ -1,6 +1,6 @@
-use crate::types::Table;
 use crate::chunk::*;
 use crate::compiler::compile;
+use crate::types::Table;
 use crate::utils::print::{print_stack, print_value};
 use crate::value::{values_equal, Value};
 
@@ -42,12 +42,17 @@ impl Vm {
 
         for i in 0..self.chunk.as_ref().code.len() {
             let opcode = &self.chunk.as_ref().code[i];
-            // print_stack(self.chunk.as_ref().unwrap());
+            // print_stack(self.chunk.as_ref());
             op_status = match opcode {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut();
-                        print_value(&chunk.stack.pop().expect("Error on return: stack underflow."));
+                        print_value(
+                            &chunk
+                                .stack
+                                .pop()
+                                .expect("Error on return: stack underflow."),
+                        );
                     }
 
                     InterpretResult::Ok
@@ -131,6 +136,12 @@ impl Vm {
                 }
                 OpCode::Less => {
                     self.binary_op("<");
+
+                    InterpretResult::Ok
+                },
+                OpCode::Print => {
+                    let chunk = &self.chunk.as_mut().stack.pop().unwrap();
+                    print_value(chunk);
 
                     InterpretResult::Ok
                 }

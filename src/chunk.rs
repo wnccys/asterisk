@@ -13,6 +13,7 @@ pub enum OpCode {
     Multiply,
     Divide,
     Negate,
+    Print,
 }
 
 #[derive(Debug, Default)]

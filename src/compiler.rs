@@ -44,7 +44,12 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 
     parser.advance();
     parser.expression();
-    parser.consume(TokenCode::Eof, "expected end of expression.");
+
+    // parser.consume(TokenCode::Eof, "expected end of expression.");
+    while parser.current.unwrap().code != TokenCode::Eof {
+        parser.declaration();
+    }
+
     parser.end_compiler();
     if parser.had_error {
         return (parser.chunk.unwrap(), InterpretResult::RuntimeError);
@@ -54,12 +59,38 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 }
 
 impl<'a> Parser<'a> {
+    pub fn declaration(&mut self) {
+        self.statement();
+    }
+
+    pub fn statement(&mut self) {
+        if self.match_token(TokenCode::Print) {
+            self.print_statement();
+        }
+    }
+
+    pub fn print_statement(&mut self) {
+        self.expression();
+        self.consume(TokenCode::SemiColon, "Expect ';' after value.");
+        self.emit_byte(OpCode::Print);
+    }
+
+    pub fn match_token(&mut self, token: TokenCode) -> bool {
+        if !self.check(token) { return false; }
+        self.advance();
+        true
+    }
+
+    pub fn check(&self, token: TokenCode) -> bool {
+        self.current.unwrap().code == token
+    }
+
     pub fn advance(&mut self) {
         self.previous = self.current;
 
         loop {
             self.current = Some(self.scanner.as_mut().unwrap().scan_token());
-            // dbg!(self.current);
+            dbg!(self.current);
 
             if let Some(current) = self.current {
                 if current.code != TokenCode::Error {

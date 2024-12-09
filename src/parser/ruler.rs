@@ -129,12 +129,24 @@ pub fn literal(parser: &mut Parser) {
     }
 }
 
+// TODO set string interning model
 pub fn string(parser: &mut Parser) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
 
-        
+    // match get_table_intern(parser) {
+    //     Some(intern) => {
+    //         let index = parser
+    //             .chunk
+    //             .as_mut()
+    //             .unwrap()
+    //             .write_constant(intern.value.clone());
+    //         parser.emit_byte(OpCode::Constant(index));
+    //     },
+    //     None => {
+    //     }
+    // };
 
     let index = parser
         .chunk
@@ -143,6 +155,10 @@ pub fn string(parser: &mut Parser) {
         .write_constant(Value::String(str));
     parser.emit_byte(OpCode::Constant(index));
 }
+
+// pub fn get_table_intern(parser: &mut Parser) -> Option<Rc<Entry>> {
+
+// }
 
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {

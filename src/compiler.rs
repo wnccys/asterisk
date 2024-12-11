@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
         match token.code {
             TokenCode::Eof => println!(" at end."),
             TokenCode::Error => (),
-            _ => println!(" at {} | line: {}", token.length, token.start),
+            _ => println!(" at {} | position: {}", token.line + 1, token.start),
         }
 
         println!("{}", msg);

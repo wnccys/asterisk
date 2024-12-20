@@ -184,7 +184,7 @@ impl Scanner {
                     TokenCode::Identifier
                 }
             }
-            'v' => self.check_keyword(1, "ar", TokenCode::Var),
+            'l' => self.check_keyword(1, "et", TokenCode::Var),
             'w' => self.check_keyword(1, "hile", TokenCode::While),
             _ => TokenCode::Identifier,
         }

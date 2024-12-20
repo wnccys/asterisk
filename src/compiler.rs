@@ -43,7 +43,6 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
     };
 
     parser.advance();
-    parser.expression();
 
     // parser.consume(TokenCode::Eof, "expected end of expression.");
     while parser.current.unwrap().code != TokenCode::Eof {
@@ -147,7 +146,7 @@ impl<'a> Parser<'a> {
     }
 
     fn end_compiler(&mut self) {
-        self.emit_byte(OpCode::Return);
+        // self.emit_byte(OpCode::Return);
 
         if !self.had_error {
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
@@ -160,8 +159,6 @@ impl<'a> Parser<'a> {
         }
 
         let token = self.current.unwrap();
-        print!("Error [{}]", token.line);
-
         match token.code {
             TokenCode::Eof => println!(" at end."),
             TokenCode::Error => (),

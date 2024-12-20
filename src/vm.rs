@@ -146,6 +146,13 @@ impl Vm {
                     print_value(chunk);
 
                     InterpretResult::Ok
+                },
+                OpCode::Pop => {
+                    let chunk = self.chunk.as_mut();
+
+                    chunk.stack.pop().expect("Error on pop: stack underflow.");
+
+                    InterpretResult::Ok
                 }
             };
 

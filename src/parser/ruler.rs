@@ -44,9 +44,7 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-pub fn none(parser: &mut Parser) {
-    parser.error("expected expression.")
-}
+pub fn none(_parser: &mut Parser) {}
 
 fn grouping(parser: &mut Parser) {
     parser.expression();
@@ -57,6 +55,8 @@ pub fn number(parser: &mut Parser) {
     // gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
+
+    println!("NUMERBB");
 
     if value.contains(&'.') {
         let str_value: String = value.iter().collect();
@@ -76,7 +76,6 @@ fn unary(parser: &mut Parser) {
 
     parser.parse_precedence(Precedence::Unary);
 
-    #[allow(clippy::single_match)]
     match operator_type {
         TokenCode::Bang => parser.emit_byte(OpCode::Not),
         TokenCode::Minus => parser.emit_byte(OpCode::Negate),
@@ -88,8 +87,10 @@ pub fn binary(parser: &mut Parser) {
     let operator_type = parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
+    println!("rule: {:?}", rule);
     rule.precedence.increment();
 
+    println!("parsing prec!");
     parser.parse_precedence(rule.precedence);
 
     if let Some(token) = Some(operator_type) {

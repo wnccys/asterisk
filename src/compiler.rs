@@ -60,11 +60,38 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 impl<'a> Parser<'a> {
     pub fn declaration(&mut self) {
         self.statement();
+
+        if self.panic_mode { self.syncronize(); }
     }
 
     pub fn statement(&mut self) {
         if self.match_token(TokenCode::Print) {
             self.print_statement();
+        } else {
+            self.expression_statement();
+        }
+    }
+
+    pub fn syncronize(&mut self) {
+        self.panic_mode = false;
+
+        while self.current.unwrap().code != TokenCode::Eof {
+            if (self.previous.unwrap().code == TokenCode::SemiColon) {
+                match (self.current.unwrap().code) {
+                    TokenCode::Class |
+                    TokenCode::Fun |
+                    TokenCode::Var |
+                    TokenCode::For |
+                    TokenCode::If | 
+                    TokenCode::While |
+                    TokenCode::Print |
+                    TokenCode::Return => return,
+                    _ => (),
+                }
+
+            }
+
+            self.advance();
         }
     }
 
@@ -72,6 +99,12 @@ impl<'a> Parser<'a> {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
+    }
+
+    pub fn expression_statement(&mut self) {
+        self.expression();
+        self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
+        self.emit_byte(OpCode::Pop);
     }
 
     pub fn match_token(&mut self, token: TokenCode) -> bool {

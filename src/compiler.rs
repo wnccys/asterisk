@@ -62,9 +62,37 @@ impl<'a> Parser<'a> {
         if (self.match_token(TokenCode::Var)) {
             self.var_declaration();
         } else {
-        self.statement();
+            self.statement();
+        }
 
         if self.panic_mode { self.syncronize(); }
+    }
+
+    pub fn var_declaration(&mut self) {
+        let global = self.parse_variable("Expect variable name.");
+
+        if (self.match_token(TokenCode::Equal)) {
+            self.expression();
+        } else {
+            self.emit_byte(OpCode::False);
+        }
+
+        self.consume(TokenCode::SemiColon, "Expect ';' after variable declaration.");
+
+        self.define_variable(global);
+    }
+
+    pub fn define_variable(&mut self, global: Value) {
+    }
+
+    pub fn parse_variable(&mut self, error_msg: &str) {
+        self.consume(TokenCode::Identifier, error_msg);
+        
+        return self.identifier_constant();
+    }
+
+    pub fn identifier_constant(&mut self) {
+        return;
     }
 
     pub fn statement(&mut self) {

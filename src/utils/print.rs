@@ -32,6 +32,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::Less => simple_instruction("OP_LESS", offset),
         OpCode::Print => simple_instruction("OP_PRINT", offset),
         OpCode::Pop => simple_instruction("OP_POP", offset),
+        OpCode::Nil => simple_instruction("OP_NIL", offset)
     }
 }
 

@@ -6,6 +6,7 @@ pub enum OpCode {
     True,
     False,
     Equal,
+    Nil,
     Pop,
     Greater,
     Less,

@@ -59,6 +59,9 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 
 impl<'a> Parser<'a> {
     pub fn declaration(&mut self) {
+        if (self.match_token(TokenCode::Var)) {
+            self.var_declaration();
+        } else {
         self.statement();
 
         if self.panic_mode { self.syncronize(); }

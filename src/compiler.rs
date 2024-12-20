@@ -75,7 +75,9 @@ impl<'a> Parser<'a> {
     }
 
     pub fn match_token(&mut self, token: TokenCode) -> bool {
-        if !self.check(token) { return false; }
+        if !self.check(token) {
+            return false;
+        }
         self.advance();
         true
     }

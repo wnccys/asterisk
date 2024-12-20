@@ -56,8 +56,6 @@ pub fn number(parser: &mut Parser) {
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
-    println!("NUMERBB");
-
     if value.contains(&'.') {
         let str_value: String = value.iter().collect();
         let float_value: f64 = str_value.parse().expect("invalid float value.");
@@ -90,7 +88,6 @@ pub fn binary(parser: &mut Parser) {
     println!("rule: {:?}", rule);
     rule.precedence.increment();
 
-    println!("parsing prec!");
     parser.parse_precedence(rule.precedence);
 
     if let Some(token) = Some(operator_type) {

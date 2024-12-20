@@ -42,7 +42,9 @@ impl Vm {
 
         for i in 0..self.chunk.as_ref().code.len() {
             let opcode = &self.chunk.as_ref().code[i];
-            // print_stack(self.chunk.as_ref());
+
+            print_stack(self.chunk.as_ref());
+
             op_status = match opcode {
                 OpCode::Return => {
                     {
@@ -138,7 +140,7 @@ impl Vm {
                     self.binary_op("<");
 
                     InterpretResult::Ok
-                },
+                }
                 OpCode::Print => {
                     let chunk = &self.chunk.as_mut().stack.pop().unwrap();
                     print_value(chunk);

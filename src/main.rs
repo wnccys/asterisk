@@ -1,8 +1,8 @@
 mod chunk;
 mod compiler;
 mod parser;
-mod utils;
 mod types;
+mod utils;
 mod value;
 mod vm;
 use std::io::{BufRead, Write};

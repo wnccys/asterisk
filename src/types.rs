@@ -31,7 +31,9 @@ impl Table {
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
         let key = key.clone();
-        if key.len() == 0 { return false; };
+        if key.len() == 0 {
+            return false;
+        };
 
         // Applied when some new entry is found or None is returned
         match self.find_entry(&key) {
@@ -172,7 +174,10 @@ mod tests {
     fn test_table_del() {
         let mut table = Table::default();
 
-        table.set(&"name".chars().collect(), Value::String("JOJI".chars().collect()));
+        table.set(
+            &"name".chars().collect(),
+            Value::String("JOJI".chars().collect()),
+        );
         table.delete(&"name".chars().collect()).unwrap();
         assert_eq!(table.get(&"name".chars().collect()).is_none(), true);
     }

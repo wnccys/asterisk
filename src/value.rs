@@ -30,7 +30,7 @@ impl Add for Value {
                 let mut result = str1.clone();
                 result.extend(str2);
                 Value::String(result)
-            },
+            }
             _ => panic!("operation add not allowed."),
         }
     }

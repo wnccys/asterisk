@@ -13,6 +13,7 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Box<Chunk>,
+    globals: Table,
     strings: Table,
 }
 
@@ -20,6 +21,7 @@ impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Box::default(),
+            globals: Table::default(),
             strings: Table::default(),
         }
     }
@@ -153,7 +155,23 @@ impl Vm {
                     chunk.stack.pop().expect("Error on pop: stack underflow.");
 
                     InterpretResult::Ok
-                }
+                },
+                OpCode::Nil => InterpretResult::Ok,
+                OpCode::DefineGlobal(var_index) => {
+                    let temp_index = *var_index;
+
+                    let chunk = self.chunk.as_mut();
+                    let var_name = chunk.constants[temp_index].clone();
+
+                    match var_name {
+                        Value::String(name) => {
+                            self.globals.set(&name, chunk.stack.pop().unwrap());
+                        },
+                        _ => panic!("Invalid global variable name."),
+                    }
+
+                    InterpretResult::Ok
+                },
             };
 
             dynamize_vec(&mut self.chunk.as_mut().stack);

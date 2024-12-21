@@ -44,14 +44,14 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-pub fn none(_parser: &mut Parser) {}
+fn none(_parser: &mut Parser) {}
 
 fn grouping(parser: &mut Parser) {
     parser.expression();
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
 }
 
-pub fn number(parser: &mut Parser) {
+fn number(parser: &mut Parser) {
     // gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
@@ -81,7 +81,7 @@ fn unary(parser: &mut Parser) {
     }
 }
 
-pub fn binary(parser: &mut Parser) {
+fn binary(parser: &mut Parser) {
     let operator_type = parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
@@ -119,7 +119,7 @@ pub fn binary(parser: &mut Parser) {
     }
 }
 
-pub fn literal(parser: &mut Parser) {
+fn literal(parser: &mut Parser) {
     match parser.previous.unwrap().code {
         TokenCode::True => parser.emit_byte(OpCode::True),
         TokenCode::False => parser.emit_byte(OpCode::False),
@@ -128,7 +128,7 @@ pub fn literal(parser: &mut Parser) {
 }
 
 // TODO set string interning model
-pub fn string(parser: &mut Parser) {
+fn string(parser: &mut Parser) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
@@ -153,6 +153,14 @@ pub fn string(parser: &mut Parser) {
         .write_constant(Value::String(str));
     parser.emit_byte(OpCode::Constant(index));
 }
+
+// pub fn variable(parser: &mut Parser) {
+//     named_variable(parser.previous.unwrap())
+// }
+
+// fn named_variable() {
+
+// }
 
 // pub fn get_table_intern(parser: &mut Parser) -> Option<Rc<Entry>> {
 
@@ -256,7 +264,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::Comparison,
         },
         TokenCode::Identifier => ParseRule {
-            prefix: none,
+            prefix: variable,
             infix: none,
             precedence: Precedence::None,
         },

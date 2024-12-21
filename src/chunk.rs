@@ -16,6 +16,7 @@ pub enum OpCode {
     Divide,
     Negate,
     Print,
+    DefineGlobal(usize),
 }
 
 #[derive(Debug, Default)]

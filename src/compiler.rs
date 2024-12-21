@@ -65,7 +65,9 @@ impl<'a> Parser<'a> {
             self.statement();
         }
 
-        if self.panic_mode { self.syncronize(); }
+        if self.panic_mode {
+            self.syncronize();
+        }
     }
 
     pub fn var_declaration(&mut self) {
@@ -74,25 +76,34 @@ impl<'a> Parser<'a> {
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
         } else {
-            self.emit_byte(OpCode::False);
+            self.emit_byte(OpCode::Nil);
         }
 
-        self.consume(TokenCode::SemiColon, "Expect ';' after variable declaration.");
+        self.consume(
+            TokenCode::SemiColon,
+            "Expect ';' after variable declaration.",
+        );
 
         self.define_variable(global);
     }
 
-    pub fn define_variable(&mut self, global: Value) {
-    }
-
-    pub fn parse_variable(&mut self, error_msg: &str) {
+    pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
-        
-        return self.identifier_constant();
+
+        self.identifier_constant()
     }
 
-    pub fn identifier_constant(&mut self) {
-        return;
+    pub fn identifier_constant(&mut self) -> usize {
+        // Gets chars from token and set it as var name
+        let value = self.scanner.as_ref().unwrap().chars
+            [self.current.as_ref().unwrap().start..self.current.as_ref().unwrap().length]
+            .to_vec();
+
+        self.chunk.as_mut().unwrap().write_constant(Value::String(value))
+    }
+
+    pub fn define_variable(&mut self, var_index: usize) {
+        self.emit_byte(OpCode::DefineGlobal(var_index));
     }
 
     pub fn statement(&mut self) {
@@ -109,17 +120,16 @@ impl<'a> Parser<'a> {
         while self.current.unwrap().code != TokenCode::Eof {
             if (self.previous.unwrap().code == TokenCode::SemiColon) {
                 match (self.current.unwrap().code) {
-                    TokenCode::Class |
-                    TokenCode::Fun |
-                    TokenCode::Var |
-                    TokenCode::For |
-                    TokenCode::If | 
-                    TokenCode::While |
-                    TokenCode::Print |
-                    TokenCode::Return => return,
+                    TokenCode::Class
+                    | TokenCode::Fun
+                    | TokenCode::Var
+                    | TokenCode::For
+                    | TokenCode::If
+                    | TokenCode::While
+                    | TokenCode::Print
+                    | TokenCode::Return => return,
                     _ => (),
                 }
-
             }
 
             self.advance();

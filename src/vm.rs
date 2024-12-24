@@ -1,3 +1,6 @@
+use std::rc::Rc;
+use std::sync::Arc;
+
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::Table;
@@ -169,6 +172,24 @@ impl Vm {
                         },
                         _ => panic!("Invalid global variable name."),
                     }
+
+                    InterpretResult::Ok
+                },
+                OpCode::GetGlobal(index) => {
+                    let temp_index = *index;
+                    let chunk = self.chunk.as_mut();
+
+                    let name = match &chunk.constants[temp_index] {
+                        Value::String(name) => name,
+                        _ => panic!("Invalid global variable name."),
+                    };
+
+                    let value = match self.globals.get(name) {
+                        Some(value) => value.value.clone(),
+                        _ => panic!("Use of undeclared variable '{}'", name.into_iter().collect::<String>()),
+                    };
+                    
+                    chunk.stack.push(value);
 
                     InterpretResult::Ok
                 },

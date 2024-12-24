@@ -3,6 +3,8 @@ use crate::compiler::Parser;
 use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
+use super::scanner::Token;
+
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to higher precedence order
 pub enum Precedence {
@@ -154,13 +156,14 @@ fn string(parser: &mut Parser) {
     parser.emit_byte(OpCode::Constant(index));
 }
 
-// pub fn variable(parser: &mut Parser) {
-//     named_variable(parser.previous.unwrap())
-// }
+pub fn variable(parser: &mut Parser) {
+    named_variable(parser)
+}
 
-// fn named_variable() {
-
-// }
+fn named_variable(parser: &mut Parser) {
+    let index= parser.identifier_constant();
+    parser.emit_byte(OpCode::GetGlobal(index));
+}
 
 // pub fn get_table_intern(parser: &mut Parser) -> Option<Rc<Entry>> {
 

@@ -93,15 +93,18 @@ impl<'a> Parser<'a> {
         self.identifier_constant()
     }
 
-    // REVIEW be wary of previous and current token requisite order 
+    // REVIEW be wary of previous and current token requisite order
     pub fn identifier_constant(&mut self) -> usize {
         dbg!(self.previous.unwrap());
         // Gets chars from token and set it as var name
-        let value = self.scanner.as_ref().unwrap().chars
-            [self.previous.as_ref().unwrap().start..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]
+        let value = self.scanner.as_ref().unwrap().chars[self.previous.as_ref().unwrap().start
+            ..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]
             .to_vec();
 
-        self.chunk.as_mut().unwrap().write_constant(Value::String(value))
+        self.chunk
+            .as_mut()
+            .unwrap()
+            .write_constant(Value::String(value))
     }
 
     pub fn define_variable(&mut self, var_index: usize) {

@@ -151,14 +151,14 @@ impl Vm {
                     print_value(chunk);
 
                     InterpretResult::Ok
-                },
+                }
                 OpCode::Pop => {
                     let chunk = self.chunk.as_mut();
 
                     chunk.stack.pop().expect("Error on pop: stack underflow.");
 
                     InterpretResult::Ok
-                },
+                }
                 OpCode::Nil => InterpretResult::Ok,
                 OpCode::DefineGlobal(var_index) => {
                     let temp_index = *var_index;
@@ -169,12 +169,12 @@ impl Vm {
                     match var_name {
                         Value::String(name) => {
                             self.globals.set(&name, chunk.stack.pop().unwrap());
-                        },
+                        }
                         _ => panic!("Invalid global variable name."),
                     }
 
                     InterpretResult::Ok
-                },
+                }
                 OpCode::GetGlobal(index) => {
                     let temp_index = *index;
                     let chunk = self.chunk.as_mut();
@@ -186,13 +186,16 @@ impl Vm {
 
                     let value = match self.globals.get(name) {
                         Some(value) => value.value.clone(),
-                        _ => panic!("Use of undeclared variable '{}'", name.into_iter().collect::<String>()),
+                        _ => panic!(
+                            "Use of undeclared variable '{}'",
+                            name.into_iter().collect::<String>()
+                        ),
                     };
-                    
+
                     chunk.stack.push(value);
 
                     InterpretResult::Ok
-                },
+                }
             };
 
             dynamize_vec(&mut self.chunk.as_mut().stack);

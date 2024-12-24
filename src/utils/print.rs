@@ -33,8 +33,10 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::Print => simple_instruction("OP_PRINT", offset),
         OpCode::Pop => simple_instruction("OP_POP", offset),
         OpCode::Nil => simple_instruction("OP_NIL", offset),
-        OpCode::DefineGlobal(index) => constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
-        OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset)
+        OpCode::DefineGlobal(index) => {
+            constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset)
+        }
+        OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
     }
 }
 

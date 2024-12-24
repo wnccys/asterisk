@@ -161,7 +161,7 @@ pub fn variable(parser: &mut Parser) {
 }
 
 fn named_variable(parser: &mut Parser) {
-    let index= parser.identifier_constant();
+    let index = parser.identifier_constant();
     parser.emit_byte(OpCode::GetGlobal(index));
 }
 

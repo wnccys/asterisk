@@ -46,7 +46,7 @@ fn simple_instruction(name: &str, offset: usize) -> usize {
 }
 
 fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usize) -> usize {
-    let spaces: usize = 6;
+    let spaces: usize = 20 - name.len();
     print!("{name}{op_index:>spaces$} ");
 
     print_value(&chunk.constants[*op_index]);

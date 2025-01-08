@@ -30,6 +30,7 @@ impl Table {
     // TODO handle tombstone ghost counting
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
+
         let key = key.clone();
         if key.len() == 0 {
             return false;
@@ -78,7 +79,7 @@ impl Table {
         let mut index = hash_string(key) as usize % self.entries.capacity();
 
         loop {
-            let entry = self.entries[index].to_owned();
+            let entry = self.entries[index].clone();
 
             if entry.is_none() || entry.as_ref().unwrap().key == *key {
                 return (entry, index);
@@ -96,9 +97,9 @@ impl Table {
     }
 
     fn check_cap(&mut self) {
-        if ((self.count + 1 / self.entries.capacity()) as f32) > Self::MAX_LOAD {
+        if ((self.count + 1 / self.entries.capacity()) as f32) >= Self::MAX_LOAD {
             self.entries
-                .reserve((self.count as f32 / Self::MAX_LOAD).ceil() as usize);
+                .resize(((self.count + 1) as f32 / Self::MAX_LOAD).ceil() as usize, None);
         }
     }
 }

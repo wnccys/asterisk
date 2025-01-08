@@ -95,7 +95,6 @@ impl<'a> Parser<'a> {
 
     // REVIEW be wary of previous and current token requisite order
     pub fn identifier_constant(&mut self) -> usize {
-        dbg!(self.previous.unwrap());
         // Gets chars from token and set it as var name
         let value = self.scanner.as_ref().unwrap().chars[self.previous.as_ref().unwrap().start
             ..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]

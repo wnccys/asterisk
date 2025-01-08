@@ -70,7 +70,7 @@ impl Scanner {
     pub fn scan_token(&mut self) -> Token {
         // NOTE self.start is 1 index based, so 4 is the exact position on chars,
         // and self.start..self.start+self.length is a correct range
-        // so theer's no need to subtract 1 because the index is advanced by 1 already
+        // so there's no need to subtract 1 because the index is advanced by 1 already
         self.start = self.current;
         if self.reach_source_end() {
             return self.make_token(TokenCode::Eof);

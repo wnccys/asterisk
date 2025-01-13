@@ -19,7 +19,7 @@ impl Default for Table {
     fn default() -> Self {
         Self {
             count: 0,
-            entries: vec![None],
+            entries: vec![None, None, None, None],
         }
     }
 }
@@ -145,7 +145,7 @@ mod tests {
     #[test]
     fn test_find_entry_by_key() {
         let mut table = Table::default();
-        let str: Vec<char> = "lolo meu amor".chars().collect();
+        let str: Vec<char> = "meu amor".chars().collect();
         println!("cap before: {}", table.entries.capacity());
         println!("count before add element: {}", table.count);
         table.set(&"amor".chars().collect(), Value::String(str.clone()));

@@ -1,6 +1,3 @@
-use std::rc::Rc;
-use std::sync::Arc;
-
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::Table;
@@ -197,8 +194,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
             };
-
-            dynamize_vec(&mut self.chunk.as_mut().stack);
         }
 
         op_status

@@ -81,14 +81,16 @@ impl Scanner {
             self.current += 1;
             self.start += 1;
         }
+
         if self.chars[self.current - 1].is_alphabetic() {
             return self.alphanumeric();
         }
+
         if self.chars[self.current - 1].is_ascii_digit() {
             return self.number();
         }
 
-        if self.reach_source_end() { 
+        if self.reach_source_end() {
             return self.make_token(TokenCode::Eof);
         }
 

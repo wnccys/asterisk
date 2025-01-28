@@ -18,6 +18,7 @@ pub enum OpCode {
     Negate,
     Print,
     DefineGlobal(usize),
+    SetGlobal(usize),
     GetGlobal(usize),
 }
 

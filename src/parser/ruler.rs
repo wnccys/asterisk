@@ -3,8 +3,6 @@ use crate::compiler::Parser;
 use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
-use super::scanner::Token;
-
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to higher precedence order
 pub enum Precedence {

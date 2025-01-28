@@ -192,6 +192,24 @@ impl Vm {
                     chunk.stack.push(value);
 
                     InterpretResult::Ok
+                },
+                OpCode::SetGlobal(index) => {
+                    let temp_index = *index;
+                    let chunk = self.chunk.as_mut();
+
+                    let name = match &chunk.constants[temp_index] {
+                        Value::String(name) => name,
+                        _ => panic!("Invalid global variable name.")
+                    };
+
+                    if self.globals.set(name, chunk.stack.iter().last().unwrap().clone().to_owned()) {
+                        self.globals.delete(name);
+                        panic!("RUNTIME ERROR ON GLOBAL's SET");
+                        // return InterpretResult::RuntimeError;
+                    }
+                    break;
+
+                    // InterpretResult::Ok
                 }
             };
         }
@@ -206,6 +224,7 @@ impl Vm {
             .stack
             .pop()
             .expect("value b not loaded.");
+
         let a = self
             .chunk
             .as_mut()

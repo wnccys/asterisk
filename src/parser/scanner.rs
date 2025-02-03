@@ -81,11 +81,17 @@ impl Scanner {
             self.current += 1;
             self.start += 1;
         }
+
         if self.chars[self.current - 1].is_alphabetic() {
             return self.alphanumeric();
         }
+
         if self.chars[self.current - 1].is_ascii_digit() {
             return self.number();
+        }
+
+        if self.reach_source_end() {
+            return self.make_token(TokenCode::Eof);
         }
 
         match self.chars[self.current - 1] {
@@ -100,7 +106,8 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => {
-                if !self.reach_source_end() && self.chars[self.current] == '/' {
+                // Source end check
+                if self.chars[self.current] == '/' {
                     self.current += 1;
                     self.skip_comment()
                 } else {
@@ -108,7 +115,7 @@ impl Scanner {
                 }
             }
             '!' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::BangEqual)
                 } else {
@@ -116,7 +123,7 @@ impl Scanner {
                 }
             }
             '=' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::EqualEqual)
                 } else {
@@ -124,7 +131,7 @@ impl Scanner {
                 }
             }
             '<' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::LessEqual)
                 } else {
@@ -132,7 +139,7 @@ impl Scanner {
                 }
             }
             '>' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::GreaterEqual)
                 } else {

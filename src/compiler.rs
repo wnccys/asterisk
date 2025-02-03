@@ -75,8 +75,9 @@ impl<'a> Parser<'a> {
 
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
+            self.emit_byte(OpCode::SetGlobal(global));
         } else {
-            self.emit_byte(OpCode::Nil);
+            self.emit_byte(OpCode::GetGlobal(global));
         }
 
         self.consume(

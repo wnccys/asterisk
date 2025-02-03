@@ -3,8 +3,6 @@ use crate::compiler::Parser;
 use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
-use super::scanner::Token;
-
 #[derive(Debug, PartialEq, PartialOrd)]
 // lower to higher precedence order
 pub enum Precedence {
@@ -87,7 +85,6 @@ fn binary(parser: &mut Parser) {
     let operator_type = parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
-    println!("rule: {:?}", rule);
     rule.precedence.increment();
 
     parser.parse_precedence(rule.precedence);

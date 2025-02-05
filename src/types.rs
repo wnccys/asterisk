@@ -28,6 +28,9 @@ impl Table {
     const MAX_LOAD: f32 = 0.75;
 
     // TODO handle tombstone ghost counting
+    /// Set new entry to table.
+    /// Return true if key was not present.
+    /// 
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
 
@@ -40,7 +43,7 @@ impl Table {
         match self.find_entry(&key) {
             (Some(new_entry), index) => {
                 self.entries[index] = Some(new_entry);
-                return true;
+                return false;
             }
             (None, index) => {
                 self.entries[index] = Some(Rc::new(Entry { key, value }));
@@ -117,6 +120,7 @@ pub fn hash_string(key: &Vec<char>) -> Hash {
     hash
 }
 
+// TODO rewrite tests
 #[cfg(test)]
 mod tests {
     use super::*;

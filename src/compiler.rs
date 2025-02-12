@@ -191,13 +191,14 @@ impl<'a> Parser<'a> {
 
         let prefix_rule = get_rule(&self.previous.as_ref().unwrap().code).prefix;
 
-        (prefix_rule)(self);
+        let can_assign = precedence <= Precedence::Assignment;
+        (prefix_rule)(self, can_assign);
 
         while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
             self.advance();
 
             let infix_rule = get_rule(&self.previous.as_ref().unwrap().code).infix;
-            (infix_rule)(self)
+            (infix_rule)(self, can_assign)
         }
     }
 
@@ -227,8 +228,6 @@ impl<'a> Parser<'a> {
     }
 
     fn end_compiler(&mut self) {
-        // self.emit_byte(OpCode::Return);
-
         if !self.had_error {
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
         }

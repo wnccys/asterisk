@@ -41,8 +41,8 @@ impl Table {
 
         // Applied when some new entry is found or None is returned
         match self.find_entry(&key) {
-            (Some(new_entry), index) => {
-                self.entries[index] = Some(new_entry);
+            (Some(_), index) => {
+                self.entries[index] = Some(Rc::new(Entry { key, value }));
                 return false;
             }
             (None, index) => {
@@ -78,6 +78,8 @@ impl Table {
         }
     }
 
+    /// Checks with tombstone compatibility if value is present using cap arithmetic 
+    /// 
     fn find_entry(&self, key: &Vec<char>) -> (Option<Rc<Entry>>, usize) {
         let mut index = hash_string(key) as usize % self.entries.capacity();
 

@@ -172,8 +172,8 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                OpCode::GetGlobal(index) => {
-                    let temp_index = *index;
+                OpCode::GetGlobal(var_index) => {
+                    let temp_index = *var_index;
                     let chunk = self.chunk.as_mut();
 
                     let name = match &chunk.constants[temp_index] {
@@ -192,20 +192,28 @@ impl Vm {
                     chunk.stack.push(value);
 
                     InterpretResult::Ok
-                },
+                }
                 OpCode::SetGlobal(index) => {
                     let temp_index = *index;
                     let chunk = self.chunk.as_mut();
 
                     let name = match &chunk.constants[temp_index] {
                         Value::String(name) => name,
-                        _ => panic!("Invalid global variable name.")
+                        _ => panic!("Invalid global variable name."),
                     };
 
-                    if self.globals.set(name, chunk.stack.iter().last().unwrap().clone().to_owned()) {
-                        self.globals.delete(name);
-                        panic!("RUNTIME ERROR ON GLOBAL's SET");
-                        // return InterpretResult::RuntimeError;
+                    dbg!(self
+                        .globals
+                        .set(name, chunk.stack.iter().last().unwrap().clone().to_owned()));
+
+                    dbg!(chunk.stack.iter().last().unwrap().clone().to_owned());
+
+                    if self
+                        .globals
+                        .set(name, chunk.stack.iter().last().unwrap().clone().to_owned())
+                    {
+                        let _ = self.globals.delete(name);
+                        panic!("Global variable is used before it's initialization.");
                     }
                     break;
 

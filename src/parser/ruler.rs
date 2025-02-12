@@ -39,19 +39,19 @@ impl Precedence {
 
 #[derive(Debug)]
 pub struct ParseRule {
-    pub prefix: fn(&mut Parser),
-    pub infix: fn(&mut Parser),
+    pub prefix: fn(&mut Parser, bool),
+    pub infix: fn(&mut Parser, bool),
     pub precedence: Precedence,
 }
 
-fn none(_parser: &mut Parser) {}
+fn none(_parser: &mut Parser, can_assign: bool) {}
 
-fn grouping(parser: &mut Parser) {
+fn grouping(parser: &mut Parser, can_assign: bool) {
     parser.expression();
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
 }
 
-fn number(parser: &mut Parser) {
+fn number(parser: &mut Parser, can_assign: bool) {
     // gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
@@ -69,7 +69,7 @@ fn number(parser: &mut Parser) {
     }
 }
 
-fn unary(parser: &mut Parser) {
+fn unary(parser: &mut Parser, can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
     parser.parse_precedence(Precedence::Unary);
@@ -81,7 +81,7 @@ fn unary(parser: &mut Parser) {
     }
 }
 
-fn binary(parser: &mut Parser) {
+fn binary(parser: &mut Parser, can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
@@ -118,7 +118,7 @@ fn binary(parser: &mut Parser) {
     }
 }
 
-fn literal(parser: &mut Parser) {
+fn literal(parser: &mut Parser, can_assign: bool) {
     match parser.previous.unwrap().code {
         TokenCode::True => parser.emit_byte(OpCode::True),
         TokenCode::False => parser.emit_byte(OpCode::False),
@@ -127,7 +127,7 @@ fn literal(parser: &mut Parser) {
 }
 
 // TODO set string interning model
-fn string(parser: &mut Parser) {
+fn string(parser: &mut Parser, can_assign: bool) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
@@ -153,13 +153,19 @@ fn string(parser: &mut Parser) {
     parser.emit_byte(OpCode::Constant(index));
 }
 
-pub fn variable(parser: &mut Parser) {
-    named_variable(parser)
+fn variable(parser: &mut Parser, can_assign: bool) {
+    named_variable(parser, can_assign)
 }
 
-fn named_variable(parser: &mut Parser) {
+fn named_variable(parser: &mut Parser, can_assign: bool) {
     let index = parser.identifier_constant();
-    parser.emit_byte(OpCode::GetGlobal(index));
+
+    if can_assign && parser.match_token(TokenCode::Equal) {
+        parser.expression();
+        parser.emit_byte(OpCode::SetGlobal(index));
+    } else {
+        parser.emit_byte(OpCode::GetGlobal(index));
+    }
 }
 
 // pub fn get_table_intern(parser: &mut Parser) -> Option<Rc<Entry>> {

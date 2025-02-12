@@ -263,6 +263,8 @@ impl Scanner {
         self.make_token(TokenCode::String)
     }
 
+    /// Invokes a new VM which parses the code between "{ }"
+    /// 
     fn evaluate_expression(&mut self) {
         let mut inner_current = self.current + 1;
         let mut vm = Vm::default();

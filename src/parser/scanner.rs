@@ -90,10 +90,6 @@ impl Scanner {
             return self.number();
         }
 
-        if self.reach_source_end() {
-            return self.make_token(TokenCode::Eof);
-        }
-
         match self.chars[self.current - 1] {
             '(' => self.make_token(TokenCode::LeftParen),
             ')' => self.make_token(TokenCode::RightParen),

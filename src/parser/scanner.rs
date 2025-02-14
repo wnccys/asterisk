@@ -68,7 +68,8 @@ pub struct Token {
 
 impl Scanner {
     pub fn scan_token(&mut self) -> Token {
-        // NOTE self.start is 1 index based, so 4 is the exact position on chars,
+        // NOTE self.start is 0 index based but current is generally always 1 advanced, 
+        // so current-1 is the exact position on chars,
         // and self.start..self.start+self.length is a correct range
         // so there's no need to subtract 1 because the index is advanced by 1 already
         self.start = self.current;
@@ -102,7 +103,6 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => {
-                // Source end check
                 if self.chars[self.current] == '/' {
                     self.current += 1;
                     self.skip_comment()

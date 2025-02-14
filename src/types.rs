@@ -34,7 +34,6 @@ impl Table {
     pub fn set(&mut self, key: &Vec<char>, value: Value) -> bool {
         self.check_cap();
 
-        let key = key.clone();
         if key.len() == 0 {
             return false;
         };
@@ -42,11 +41,11 @@ impl Table {
         // Applied when some new entry is found or None is returned
         match self.find_entry(&key) {
             (Some(_), index) => {
-                self.entries[index] = Some(Rc::new(Entry { key, value }));
+                self.entries[index] = Some(Rc::new(Entry { key: key.to_owned(), value }));
                 return false;
             }
             (None, index) => {
-                self.entries[index] = Some(Rc::new(Entry { key, value }));
+                self.entries[index] = Some(Rc::new(Entry { key: key.to_owned(), value }));
                 self.count += 1;
                 return true;
             }

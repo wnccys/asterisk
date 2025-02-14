@@ -70,6 +70,8 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
+    /// 
     pub fn var_declaration(&mut self) {
         let global = self.parse_variable("Expect variable name.");
 
@@ -88,13 +90,15 @@ impl<'a> Parser<'a> {
         self.define_variable(global);
     }
 
+    /// Consume identifier token and emit new constant.
+    /// 
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
 
         self.identifier_constant()
     }
 
-    // REVIEW be wary of previous and current token requisite order
+    // REVIEW be wary of previous and current token requisite order.
     /// Get var's name and emit it's Value (String) to constants vec. 
     /// 
     pub fn identifier_constant(&mut self) -> usize {

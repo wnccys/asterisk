@@ -4,7 +4,8 @@ use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
 #[derive(Debug, PartialEq, PartialOrd)]
-// lower to higher precedence order
+/// Defines lower to higher operation precedence order
+/// 
 pub enum Precedence {
     None,
     Assignment, // =
@@ -172,6 +173,8 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
 
 // }
 
+/// Define which tokens will call which functions on prefix or infix.
+/// 
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {

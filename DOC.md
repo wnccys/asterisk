@@ -9,7 +9,8 @@ This document exposes some shades the compiler/language itself has as well as ot
 
 
 ### The Language Itself
-asterisk is a lightweight scripting language; It's code is compiled to bytecode representation and the current OP_CODES are:
+asterisk is a lightweight scripting language; It's code is compiled to a bytecode representation which the availables are:
+
 - Return,
 - Constant(usize),
 - True,
@@ -31,8 +32,10 @@ asterisk is a lightweight scripting language; It's code is compiled to bytecode 
 
 To execute asterisk code a .ask file is required or the language REPL can be used.
 Usage: 
-    > Read From File: > cargo run -- {file_name}.ask_
-    > REPL: > cargo run_
+
+    Read From File: cargo run -- [path-to-file].ask
+
+    REPL: cargo run
 
 ### The Language Grammar
 asterisk uses a basic

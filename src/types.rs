@@ -83,7 +83,7 @@ impl Table {
         let mut index = hash_string(key) as usize % self.entries.capacity();
 
         loop {
-            let entry = self.entries[index].clone();
+            let entry = self.entries[index].to_owned();
 
             if entry.is_none() || entry.as_ref().unwrap().key == *key {
                 return (entry, index);

@@ -95,6 +95,8 @@ impl<'a> Parser<'a> {
     }
 
     // REVIEW be wary of previous and current token requisite order
+    /// Get var's name and emit it's Value (String) to constants vec. 
+    /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
         let value = self.scanner.as_ref().unwrap().chars[self.previous.as_ref().unwrap().start

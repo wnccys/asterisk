@@ -172,6 +172,7 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                // TODO implement better global var get
                 OpCode::GetGlobal(var_index) => {
                     let temp_index = *var_index;
                     let chunk = self.chunk.as_mut();

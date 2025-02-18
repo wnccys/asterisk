@@ -15,7 +15,23 @@ pub struct Parser<'a> {
     pub scanner: Option<Scanner>,
     pub had_error: bool,
     pub panic_mode: bool,
+    /// String interning model
     pub strings: Option<&'a mut Table>,
+}
+
+struct Compiler {
+    locals: Local,
+    local_count: u16,
+    scope_depth: u16,
+}
+
+/// Represents a block-scope
+/// 
+struct Local {
+    name: Token,
+    /// Scope depth of block where variable was defined
+    /// 
+    depth: u16,
 }
 
 impl<'a> Default for Parser<'a> {

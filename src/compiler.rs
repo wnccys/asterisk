@@ -9,6 +9,7 @@ use crate::vm::{InterpretResult, Vm};
 
 #[derive(Debug)]
 pub struct Parser<'a> {
+    compiler: Compiler,
     pub current: Option<Token>,
     pub previous: Option<Token>,
     pub chunk: Option<Chunk>,
@@ -19,21 +20,23 @@ pub struct Parser<'a> {
     pub strings: Option<&'a mut Table>,
 }
 
-struct Compiler {
-    locals: Local,
+#[derive(Debug)]
+pub struct Compiler {
+    pub locals: Local,
     /// Represents how many are in the scope
     /// 
-    local_count: u16,
+    pub local_count: u16,
     /// Represents the number of blocks surrounding the chunk of code whose are being compiled. 
     /// 
     /// Note:. (0) = global scope.
     /// 
-    scope_depth: u16,
+    pub scope_depth: u16,
 }
 
 /// Represents a block-scope
 /// 
-struct Local {
+#[derive(Debug)]
+pub struct Local {
     name: Token,
     /// Scope depth of block where variable was defined
     /// 
@@ -43,6 +46,7 @@ struct Local {
 impl<'a> Default for Parser<'a> {
     fn default() -> Self {
         Self {
+            compiler: Compiler::new(),
             current: None,
             previous: None,
             chunk: Some(Chunk::default()),
@@ -90,7 +94,13 @@ impl<'a> Parser<'a> {
     pub fn declaration(&mut self) {
         if (self.match_token(TokenCode::Var)) {
             self.var_declaration();
-        } else {
+        } 
+        else if self.match_token(TokenCode::LeftBrace) {
+            self.compiler.begin_scope();
+            self.block();
+            self.compiler.end_scope();
+        }
+        else {
             // Declaration Control Flow Fallback
             self.statement();
         }
@@ -202,6 +212,14 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Pop);
     }
 
+    fn block(&mut self) {
+        while (self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof)) {
+            self.declaration();
+        }
+
+        self.consume(TokenCode::RightBrace, "Expected '}' end-of-block.");
+    }
+
     pub fn match_token(&mut self, token: TokenCode) -> bool {
         if !self.check(token) {
             return false;
@@ -297,5 +315,32 @@ impl<'a> Parser<'a> {
         }
 
         println!("{}", msg);
+    }
+}
+
+impl Compiler {
+    pub fn new() -> Self {
+        Compiler {
+            locals: Local::new(),
+            local_count: 0,
+            scope_depth: 0,
+        }
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.scope_depth += 1;
+    }
+
+    pub fn end_scope(&mut self) {
+        self.scope_depth -= 1;
+    }
+}
+
+impl Local {
+    fn new() -> Self {
+        Local {
+            depth: 0,
+            name: Token { code: TokenCode::Nil, length: 0, line: 0, start: 0 }
+        }
     }
 }

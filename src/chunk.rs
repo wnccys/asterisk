@@ -24,8 +24,11 @@ pub enum OpCode {
 
 #[derive(Debug, Default)]
 pub struct Chunk {
+    /// The sequence of Bytecodes' used to change the stack state.
     pub code: Vec<OpCode>,
+    /// Where the Bytecodes' operations itself are executed.
     pub stack: Vec<Value>,
+    /// Where values are saved before being used.
     pub constants: Vec<Value>,
     pub lines: Vec<i32>,
 }

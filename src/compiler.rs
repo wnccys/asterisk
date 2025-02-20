@@ -66,7 +66,6 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 
     parser.advance();
 
-    // parser.consume(TokenCode::Eof, "expected end of expression.");
     while parser.current.unwrap().code != TokenCode::Eof {
         parser.declaration();
     }
@@ -130,7 +129,7 @@ impl<'a> Parser<'a> {
     }
 
     // REVIEW be wary of previous and current token requisite order.
-    /// Get variable's name and emit it's Value (String) to constants vec. 
+    /// Get variable's name and emit it's Value (String) to constants vec.
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name

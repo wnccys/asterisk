@@ -115,6 +115,7 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let global = self.parse_variable("Expect variable name.");
 
+        // Checks if after consuming identifier a = is present.
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
             self.emit_byte(OpCode::SetGlobal(global));
@@ -153,6 +154,7 @@ impl<'a> Parser<'a> {
             .write_constant(Value::String(value))
     }
 
+    /// TODO Remove call when variable just need to be peeked.
     pub fn define_variable(&mut self, var_index: usize) {
         self.emit_byte(OpCode::DefineGlobal(var_index));
     }

@@ -21,7 +21,13 @@ pub struct Parser<'a> {
 
 struct Compiler {
     locals: Local,
+    /// Represents how many are in the scope
+    /// 
     local_count: u16,
+    /// Represents the number of blocks surrounding the chunk of code whose are being compiled. 
+    /// 
+    /// Note:. (0) = global scope.
+    /// 
     scope_depth: u16,
 }
 
@@ -74,10 +80,19 @@ pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult
 }
 
 impl<'a> Parser<'a> {
+    /// Declaration Flow Order
+    /// → exprStmt
+    ///    | forStmt
+    ///    | ifStmt
+    ///    | printStmt
+    ///    | returnStmt
+    ///    | whileStmt
+    ///    | block ;
     pub fn declaration(&mut self) {
         if (self.match_token(TokenCode::Var)) {
             self.var_declaration();
         } else {
+            // Declaration Control Flow Fallback
             self.statement();
         }
 
@@ -115,7 +130,7 @@ impl<'a> Parser<'a> {
     }
 
     // REVIEW be wary of previous and current token requisite order.
-    /// Get var's name and emit it's Value (String) to constants vec. 
+    /// Get variable's name and emit it's Value (String) to constants vec. 
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
@@ -133,6 +148,17 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::DefineGlobal(var_index));
     }
 
+    /// Currently this function is only called inside
+    /// 
+    /// Statement Flow Order 
+    /// → exprStmt
+    ///    | forStmt
+    ///    | ifStmt
+    ///    | printStmt
+    ///    | returnStmt
+    ///    | whileStmt
+    ///    | block ;
+    /// 
     pub fn statement(&mut self) {
         if self.match_token(TokenCode::Print) {
             self.print_statement();
@@ -169,6 +195,8 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Print);
     }
 
+    /// Evaluate expression and consume ';' token.
+    /// 
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
@@ -187,6 +215,8 @@ impl<'a> Parser<'a> {
         self.current.unwrap().code == token
     }
 
+    /// Scan new token and set it as self.current
+    /// 
     pub fn advance(&mut self) {
         self.previous = self.current;
 

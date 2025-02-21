@@ -203,15 +203,15 @@ impl Vm {
                         _ => panic!("Invalid global variable name."),
                     };
 
-                    dbg!(self
-                        .globals
-                        .set(name, chunk.stack.iter().last().unwrap().clone().to_owned()));
+                    // dbg!(self
+                    //    .globals
+                    //     .set(name, chunk.stack.iter().last().unwrap().clone().to_owned()));
 
-                    dbg!(chunk.stack.iter().last().unwrap().clone().to_owned());
+                    // dbg!(chuntack.iter().last().unwrap().clone().to_owned());
 
                     if self
                         .globals
-                        .set(name, chunk.stack.iter().last().unwrap().clone().to_owned())
+                        .set(name, chunk.stack.iter().last().unwrap().to_owned())
                     {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");

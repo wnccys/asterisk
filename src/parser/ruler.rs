@@ -158,6 +158,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
     named_variable(parser, can_assign)
 }
 
+/// Distinguise between re-assign and get variable already set value
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let index = parser.identifier_constant();
 

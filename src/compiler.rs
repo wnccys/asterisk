@@ -144,7 +144,7 @@ impl<'a> Parser<'a> {
     }
 
     // REVIEW be wary of previous and current token requisite order.
-    /// Get variable's name and emit it's Value (String) to constants vec.
+    /// Get variable's name and emit it's Identifier as String to constants vector.
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name

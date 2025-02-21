@@ -131,10 +131,14 @@ impl<'a> Parser<'a> {
         self.define_variable(global);
     }
 
-    /// Consume identifier token and emit new constant.
+    /// Consume identifier token and emit new (only global) constant.
+    /// TODO Local variables are 
     /// 
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
+
+        self.declare_variable();
+        if (self.compiler.scope_depth > 0) { return 0 }
 
         self.identifier_constant()
     }
@@ -154,8 +158,20 @@ impl<'a> Parser<'a> {
             .write_constant(Value::String(value))
     }
 
+    pub fn declare_variable(&mut self) {
+        if (self.compiler.scope_depth == 0) { return }
+
+        self.add_local();
+    }
+
+    fn add_local(&mut self) {
+        let name = &self.previous.unwrap_or_else(|| panic!("Could not get previous variable"));
+    }
+
     /// TODO Remove call when variable just need to be peeked.
-    pub fn define_variable(&mut self, var_index: usize) {
+    fn define_variable(&mut self, var_index: usize) {
+        if (self.compiler.scope_depth > 0) { return }
+
         self.emit_byte(OpCode::DefineGlobal(var_index));
     }
 

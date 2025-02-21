@@ -131,7 +131,7 @@ impl<'a> Parser<'a> {
         self.define_variable(global);
     }
 
-    /// Consume identifier token and emit new (only global) constant.
+    /// Consume identifier token and emit new constant.
     /// TODO Local variables are 
     /// 
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {

@@ -38,6 +38,8 @@ impl Precedence {
     }
 }
 
+/// Determine the rules which each Token are equivalent to
+/// 
 #[derive(Debug)]
 pub struct ParseRule {
     pub prefix: fn(&mut Parser, bool),
@@ -45,14 +47,14 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
-fn none(_parser: &mut Parser, can_assign: bool) {}
+fn none(_parser: &mut Parser, _can_assign: bool) {}
 
-fn grouping(parser: &mut Parser, can_assign: bool) {
+fn grouping(parser: &mut Parser, _can_assign: bool) {
     parser.expression();
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
 }
 
-fn number(parser: &mut Parser, can_assign: bool) {
+fn number(parser: &mut Parser, _can_assign: bool) {
     // gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
@@ -70,7 +72,7 @@ fn number(parser: &mut Parser, can_assign: bool) {
     }
 }
 
-fn unary(parser: &mut Parser, can_assign: bool) {
+fn unary(parser: &mut Parser, _can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
     parser.parse_precedence(Precedence::Unary);
@@ -82,7 +84,7 @@ fn unary(parser: &mut Parser, can_assign: bool) {
     }
 }
 
-fn binary(parser: &mut Parser, can_assign: bool) {
+fn binary(parser: &mut Parser, _can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
@@ -119,7 +121,7 @@ fn binary(parser: &mut Parser, can_assign: bool) {
     }
 }
 
-fn literal(parser: &mut Parser, can_assign: bool) {
+fn literal(parser: &mut Parser, _can_assign: bool) {
     match parser.previous.unwrap().code {
         TokenCode::True => parser.emit_byte(OpCode::True),
         TokenCode::False => parser.emit_byte(OpCode::False),
@@ -159,6 +161,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 }
 
 /// Distinguise between re-assign and get variable already set value
+/// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let index = parser.identifier_constant();
 

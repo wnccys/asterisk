@@ -42,9 +42,10 @@ impl Vm {
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
-        for i in 0..self.chunk.as_ref().code.len() {
+        for i in 0..self.chunk.code.len() {
             let opcode = &self.chunk.as_ref().code[i];
 
+            // STUB
             print_stack(self.chunk.as_ref());
 
             op_status = match opcode {
@@ -157,6 +158,7 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Nil => InterpretResult::Ok,
+                // Get variable name from constants and assign it to globals vec
                 OpCode::DefineGlobal(var_index) => {
                     let temp_index = *var_index;
 
@@ -172,7 +174,7 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                // TODO implement better global var get
+                // TODO Implement better global var get
                 OpCode::GetGlobal(var_index) => {
                     let temp_index = *var_index;
                     let chunk = self.chunk.as_mut();
@@ -194,6 +196,7 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                // Re-assign to already set global variable.
                 OpCode::SetGlobal(index) => {
                     let temp_index = *index;
                     let chunk = self.chunk.as_mut();
@@ -207,7 +210,7 @@ impl Vm {
                     //    .globals
                     //     .set(name, chunk.stack.iter().last().unwrap().clone().to_owned()));
 
-                    // dbg!(chuntack.iter().last().unwrap().clone().to_owned());
+                    // dbg!(chunk.stack.iter().last().unwrap().clone().to_owned());
 
                     if self
                         .globals
@@ -229,26 +232,24 @@ impl Vm {
     fn binary_op(&mut self, op: &str) -> InterpretResult {
         let b = self
             .chunk
-            .as_mut()
             .stack
             .pop()
             .expect("value b not loaded.");
 
         let a = self
             .chunk
-            .as_mut()
             .stack
             .pop()
             .expect("value a not loaded.");
 
         match op {
-            "+" => self.chunk.as_mut().stack.push(a + b),
-            "*" => self.chunk.as_mut().stack.push(a * b),
-            "/" => self.chunk.as_mut().stack.push(a / b),
+            "+" => self.chunk.stack.push(a + b),
+            "*" => self.chunk.stack.push(a * b),
+            "/" => self.chunk.stack.push(a / b),
             // REVIEW check for >, < partialOrd inconvenient (apply the condition on other variants)
             // in this case a same type as b is false;
-            ">" => self.chunk.as_mut().stack.push(Value::Bool(a > b)),
-            "<" => self.chunk.as_mut().stack.push(Value::Bool(a < b)),
+            ">" => self.chunk.stack.push(Value::Bool(a > b)),
+            "<" => self.chunk.stack.push(Value::Bool(a < b)),
             _ => panic!("invalid operation."),
         }
 

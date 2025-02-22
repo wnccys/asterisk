@@ -118,9 +118,8 @@ impl<'a> Parser<'a> {
         // Checks if after consuming identifier '=' Token is present.
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
-            self.emit_byte(OpCode::SetGlobal(global));
         } else {
-            self.emit_byte(OpCode::GetGlobal(global));
+            self.emit_byte(OpCode::Nil);
         }
 
         self.consume(

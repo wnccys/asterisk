@@ -182,14 +182,15 @@ impl<'a> Parser<'a> {
         self.compiler.local_count += 1;
     }
 
-    /// TODO Remove call when variable just need to be peeked.
+    // TODO Remove call when variable just need to be peek'd.
+    /// Emit DefineGlobal ByteCode with provided index.
     fn define_variable(&mut self, var_index: usize) {
         if (self.compiler.scope_depth > 0) { return }
 
         self.emit_byte(OpCode::DefineGlobal(var_index));
     }
 
-    /// Currently this function is only called inside
+    /// Currently this function is only called inside self.declaration().
     /// 
     /// Statement Flow Order 
     /// → exprStmt
@@ -267,7 +268,7 @@ impl<'a> Parser<'a> {
         self.current.unwrap().code == token
     }
 
-    /// Scan new token and set it as self.current
+    /// Scan new token and set it as self.current.
     /// 
     pub fn advance(&mut self) {
         self.previous = self.current;
@@ -306,6 +307,8 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Match token_code with self.current and advance if true.
+    /// 
     pub fn consume(&mut self, token_code: TokenCode, msg: &str) {
         if self.current.unwrap().code == token_code {
             self.advance();

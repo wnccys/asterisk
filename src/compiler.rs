@@ -119,6 +119,7 @@ impl<'a> Parser<'a> {
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
         } else {
+            // TODO Set handling for null values (not allowed in asterisk)
             self.emit_byte(OpCode::Nil);
         }
 
@@ -352,6 +353,7 @@ impl<'a> Parser<'a> {
         }
 
         println!("{}", msg);
+        panic!();
     }
 }
 

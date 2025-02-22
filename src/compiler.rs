@@ -174,10 +174,11 @@ impl<'a> Parser<'a> {
         local.depth = self.compiler.scope_depth;
 
         dbg!(&local, "===============");
+        println!("LOCALLLLL------====");
 
         self
         .compiler
-        .locals[self.compiler.local_count] = local;
+        .locals.push(local);
 
         self.compiler.local_count += 1;
     }
@@ -246,7 +247,7 @@ impl<'a> Parser<'a> {
     }
 
     fn block(&mut self) {
-        while (self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof)) {
+        while (!self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof)) {
             self.declaration();
         }
 
@@ -353,7 +354,7 @@ impl<'a> Parser<'a> {
         }
 
         println!("{}", msg);
-        panic!();
+        // panic!();
     }
 }
 

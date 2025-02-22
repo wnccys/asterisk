@@ -27,7 +27,7 @@ impl Default for Table {
 impl Table {
     const MAX_LOAD: f32 = 0.75;
 
-    // TODO handle tombstone ghost counting
+    // TODO Handle tombstone ghost counting
     /// Set new entry to table.
     /// Return true if key was not present.
     /// 

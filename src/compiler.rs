@@ -22,10 +22,10 @@ pub struct Parser<'a> {
 
 #[derive(Debug)]
 pub struct Compiler {
-    pub locals: Local,
-    /// Represents how many are in the scope
+    pub locals: Vec<Local>,
+    /// Represents how many locals are in the scope
     /// 
-    pub local_count: u16,
+    pub local_count: usize,
     /// Represents the number of blocks surrounding the chunk of code whose are being compiled. 
     /// 
     /// Note:. (0) = global scope.
@@ -115,7 +115,7 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let global = self.parse_variable("Expect variable name.");
 
-        // Checks if after consuming identifier a = is present.
+        // Checks if after consuming identifier '=' Token is present.
         if (self.match_token(TokenCode::Equal)) {
             self.expression();
             self.emit_byte(OpCode::SetGlobal(global));
@@ -132,7 +132,10 @@ impl<'a> Parser<'a> {
     }
 
     /// Consume identifier token and emit new constant.
-    /// TODO Local variables are 
+    /// 
+    /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
+    /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
+    /// of which indexes behaves to which variables by scope_depth and local_count when local vars are set.
     /// 
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
@@ -143,7 +146,6 @@ impl<'a> Parser<'a> {
         self.identifier_constant()
     }
 
-    // REVIEW be wary of previous and current token requisite order.
     /// Get variable's name and emit it's Identifier as String to constants vector.
     /// 
     pub fn identifier_constant(&mut self) -> usize {
@@ -166,6 +168,18 @@ impl<'a> Parser<'a> {
 
     fn add_local(&mut self) {
         let name = &self.previous.unwrap_or_else(|| panic!("Could not get previous variable"));
+
+        let mut local = Local::new();
+        local.name = name.clone();
+        local.depth = self.compiler.scope_depth;
+
+        dbg!(&local, "===============");
+
+        self
+        .compiler
+        .locals[self.compiler.local_count] = local;
+
+        self.compiler.local_count += 1;
     }
 
     /// TODO Remove call when variable just need to be peeked.
@@ -238,6 +252,9 @@ impl<'a> Parser<'a> {
         self.consume(TokenCode::RightBrace, "Expected '}' end-of-block.");
     }
 
+    /// Check if current Token matches argument Token. </br>
+    /// Advance parser current Token on call.
+    /// 
     pub fn match_token(&mut self, token: TokenCode) -> bool {
         if !self.check(token) {
             return false;
@@ -339,7 +356,7 @@ impl<'a> Parser<'a> {
 impl Compiler {
     pub fn new() -> Self {
         Compiler {
-            locals: Local::new(),
+            locals: vec![],
             local_count: 0,
             scope_depth: 0,
         }

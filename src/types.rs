@@ -122,9 +122,16 @@ pub fn hash_string(key: &Vec<char>) -> Hash {
 }
 
 // TODO rewrite tests
+// TODO set test to new/already set results on Table::set() return;
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    /// Tests if new entries returns false on set over existent entry or true for new entries.
+    fn test_set_new_entry_bool() {
+
+    }
 
     #[test]
     fn test_hashing() {

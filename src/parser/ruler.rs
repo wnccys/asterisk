@@ -55,7 +55,7 @@ fn grouping(parser: &mut Parser, _can_assign: bool) {
 }
 
 fn number(parser: &mut Parser, _can_assign: bool) {
-    // gets slice containing token stringify'ed number (token start .. token length);
+    // Gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
@@ -129,8 +129,8 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
     }
 }
 
-// TODO set string interning model
-fn string(parser: &mut Parser, can_assign: bool) {
+// TODO Set string interning model
+fn string(parser: &mut Parser, _can_assign: bool) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .to_owned();
@@ -177,7 +177,7 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
 
 // }
 
-/// Define which tokens will call which functions on prefix or infix.
+/// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.
 /// 
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {

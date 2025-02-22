@@ -157,7 +157,12 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                OpCode::Nil => InterpretResult::Ok,
+                // TODO Add correct nil value handling
+                OpCode::Nil => {
+                    self.chunk.stack.push(Value::String("()".chars().collect::<Vec<char>>())); 
+
+                    InterpretResult::Ok
+                },
                 // Get variable name from constants and assign it to globals vec
                 OpCode::DefineGlobal(var_index) => {
                     let temp_index = *var_index;

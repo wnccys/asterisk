@@ -164,6 +164,24 @@ impl Vm {
 
                     InterpretResult::Ok
                 },
+                // NOTE Check for duplicated variable
+                // Get value from value position and load it into the top of stack,
+                // this way other operations can interact with the value.
+                OpCode::GetLocal(var_index) => {
+                    let value = self.chunk.stack[*var_index].clone();
+
+                    self.chunk.stack.push(value);
+
+                    break;
+                }
+                // Set new value to local variable.
+                OpCode::SetLocal(var_index) => {
+                    let temp_index = *var_index;
+
+                    self.chunk.stack[temp_index] = self.chunk.stack.last().unwrap().clone();
+
+                    break;
+                }
                 // Get variable name from constants and assign it to globals vec
                 OpCode::DefineGlobal(var_index) => {
                     let temp_index = *var_index;

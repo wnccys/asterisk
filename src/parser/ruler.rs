@@ -163,13 +163,26 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 /// Distinguish between re-assign and get variable already set value
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
-    let index = parser.identifier_constant();
+    let (get_op, set_op): (OpCode, OpCode); 
+
+    let var_index = parser.resolve_local();
+
+    if var_index != -1 {
+        get_op = OpCode::GetLocal(var_index as usize);
+        set_op = OpCode::SetLocal(var_index as usize);
+    } else {
+        let var_index = parser.identifier_constant();
+
+        get_op = OpCode::GetGlobal(var_index);
+        set_op = OpCode::SetGlobal(var_index);
+    }
+
 
     if can_assign && parser.match_token(TokenCode::Equal) {
         parser.expression();
-        parser.emit_byte(OpCode::SetGlobal(index));
+        parser.emit_byte(set_op);
     } else {
-        parser.emit_byte(OpCode::GetGlobal(index));
+        parser.emit_byte(get_op);
     }
 }
 

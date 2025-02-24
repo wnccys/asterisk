@@ -167,6 +167,7 @@ impl<'a> Parser<'a> {
     }
 
     // TODO Add variable shadowing support
+    /// 
     fn add_local(&mut self) {
         let name = &self.previous.unwrap_or_else(|| panic!("Could not get previous variable"));
 
@@ -174,7 +175,7 @@ impl<'a> Parser<'a> {
         local.name = name.clone();
         local.depth = self.compiler.scope_depth;
 
-        dbg!(&local, "===============");
+        // dbg!(&local);
         println!("LOCALLLLL------====");
 
         self
@@ -319,6 +320,41 @@ impl<'a> Parser<'a> {
         }
     }
 
+    // TODO Change to Option<usize>
+    /// Check for current identifier token variable name, walking backward in locals array.
+    /// Returns i32 because of -1 (No var name was found) fallback.
+    pub fn resolve_local(&mut self) -> i32 {
+        for i in (0..self.compiler.local_count).rev() {
+            let local = &self.compiler.locals[i];
+
+            dbg!(&local.name);
+            dbg!(&self.previous.unwrap());
+            println!("ON COMPARE LOCAL");
+
+            if identify_constant(&local.name, &self.previous.unwrap()) {
+                return i as i32;
+            }
+        }
+
+        return -1;
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.compiler.scope_depth += 1;
+    }
+
+    pub fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+
+        while self.compiler.local_count > 0 &&
+            self.compiler.locals[self.compiler.local_count - 1].depth >
+            self.compiler.scope_depth 
+        {
+            self.emit_byte(OpCode::Pop);
+            self.compiler.local_count -= 1;
+        }
+    }
+
     pub fn emit_byte(&mut self, code: OpCode) {
         self.chunk
             .as_mut()
@@ -339,22 +375,6 @@ impl<'a> Parser<'a> {
     fn end_compiler(&mut self) {
         if !self.had_error {
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
-        }
-    }
-
-    pub fn begin_scope(&mut self) {
-        self.compiler.scope_depth += 1;
-    }
-
-    pub fn end_scope(&mut self) {
-        self.compiler.scope_depth -= 1;
-
-        while self.compiler.local_count > 0 &&
-            self.compiler.locals[self.compiler.local_count - 1].depth >
-            self.compiler.scope_depth 
-        {
-            self.emit_byte(OpCode::Pop);
-            self.compiler.local_count -= 1;
         }
     }
 
@@ -392,4 +412,12 @@ impl Local {
             name: Token { code: TokenCode::Nil, length: 0, line: 0, start: 0 }
         }
     }
+}
+
+/// Compare 2 identifiers.
+/// 
+fn identify_constant(a: &Token, b: &Token) -> bool {
+    if a.length != b.length { return false; }
+
+    return a.code == b.code;
 }

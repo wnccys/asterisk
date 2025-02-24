@@ -17,6 +17,8 @@ pub enum OpCode {
     Divide,
     Negate,
     Print,
+    GetLocal(usize),
+    SetLocal(usize),
     DefineGlobal(usize),
     SetGlobal(usize),
     GetGlobal(usize),

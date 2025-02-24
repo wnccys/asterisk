@@ -96,9 +96,9 @@ impl<'a> Parser<'a> {
             self.var_declaration();
         } 
         else if self.match_token(TokenCode::LeftBrace) {
-            self.compiler.begin_scope();
+            self.begin_scope();
             self.block();
-            self.compiler.end_scope();
+            self.end_scope();
         }
         else {
             // Declaration Control Flow Fallback
@@ -166,6 +166,7 @@ impl<'a> Parser<'a> {
         self.add_local();
     }
 
+    // TODO Add variable shadowing support
     fn add_local(&mut self) {
         let name = &self.previous.unwrap_or_else(|| panic!("Could not get previous variable"));
 
@@ -341,6 +342,14 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn begin_scope(&mut self) {
+        self.compiler.scope_depth += 1;
+    }
+
+    pub fn end_scope(&mut self) {
+        self.compiler.scope_depth -= 1;
+    }
+
     pub fn error(&self, msg: &str) {
         if self.panic_mode {
             return;
@@ -365,14 +374,6 @@ impl Compiler {
             local_count: 0,
             scope_depth: 0,
         }
-    }
-
-    pub fn begin_scope(&mut self) {
-        self.scope_depth += 1;
-    }
-
-    pub fn end_scope(&mut self) {
-        self.scope_depth -= 1;
     }
 }
 

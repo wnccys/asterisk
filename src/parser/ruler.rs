@@ -163,7 +163,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 /// Distinguish between re-assign and get variable already set value
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
-    let (get_op, set_op): (OpCode, OpCode); 
+    let (get_op, set_op): (OpCode, OpCode);
 
     let var_index = parser.resolve_local();
 

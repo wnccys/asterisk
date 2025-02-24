@@ -62,6 +62,7 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                // Bring constant value to stack
                 OpCode::Constant(index) => {
                     let temp_index = *index;
                     {

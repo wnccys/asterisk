@@ -348,6 +348,14 @@ impl<'a> Parser<'a> {
 
     pub fn end_scope(&mut self) {
         self.compiler.scope_depth -= 1;
+
+        while self.compiler.local_count > 0 &&
+            self.compiler.locals[self.compiler.local_count - 1].depth >
+            self.compiler.scope_depth 
+        {
+            self.emit_byte(OpCode::Pop);
+            self.compiler.local_count -= 1;
+        }
     }
 
     pub fn error(&self, msg: &str) {

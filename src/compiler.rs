@@ -374,6 +374,7 @@ impl<'a> Parser<'a> {
 
     fn end_compiler(&mut self) {
         if !self.had_error {
+            // STUB
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
         }
     }
@@ -387,7 +388,7 @@ impl<'a> Parser<'a> {
         match token.code {
             TokenCode::Eof => println!(" at end."),
             TokenCode::Error => (),
-            _ => println!(" at {} | position: {}", token.line + 1, token.start),
+            _ => println!(" at line {} | position: {}", token.line + 1, token.start),
         }
 
         println!("{}", msg);

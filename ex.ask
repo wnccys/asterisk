@@ -1,14 +1,11 @@
 let a = 32;
 print a;
 
-{
-    let a = "new scoped 'a' !!";
-    print a;
-    {
-        let a = "even more new scoped a!!";
-        print a;
-    } 
-}
-
 let b = 50;
 print b;
+
+{
+    let x = "x here!!!!";
+    x = "x is NOT HERE ANYMORE!!";
+    print x;
+}

@@ -1,7 +1,9 @@
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::Table;
-use crate::utils::print::{print_stack, print_value};
+use crate::utils::print::{
+    print_stack, 
+    print_value};
 use crate::value::{values_equal, Value};
 
 #[derive(Debug, PartialEq)]
@@ -29,7 +31,6 @@ impl Default for Vm {
 
 impl Vm {
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        println!("source: {source:?}");
         let (chunk, result) = compile(&mut self.strings, source);
 
         if result != InterpretResult::Ok {
@@ -43,14 +44,14 @@ impl Vm {
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
-        println!("code vec: {:?}", self.chunk.code);
-        println!("stack vec: {:?}", self.chunk.stack);
-
         for i in 0..self.chunk.code.len() {
             let opcode = &self.chunk.as_ref().code[i];
 
             // STUB
+            #[cfg(feature = "debug")]
             print_stack(self.chunk.as_ref());
+            #[cfg(feature = "debug")]
+            println!("current code: {:?}", opcode);
 
             op_status = match opcode {
                 OpCode::Return => {
@@ -86,7 +87,7 @@ impl Vm {
                             Value::Int(value) => chunk.stack.push(Value::Int(-value)),
                             Value::Float(value) => chunk.stack.push(Value::Float(-value)),
                             Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
-                            _ => todo!("Operation not allowed."),
+                            _ => panic!("Operation not allowed."),
                         }
                     }
 
@@ -150,8 +151,13 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Print => {
-                    let chunk = &self.chunk.as_mut().stack.pop().unwrap();
-                    println!("value print!!{chunk:?}");
+                    let chunk = &self
+                        .chunk
+                        .as_mut()
+                        .stack
+                        .pop()
+                        .expect("Could not find value to print.");
+
                     print_value(chunk);
 
                     InterpretResult::Ok
@@ -177,7 +183,7 @@ impl Vm {
 
                     self.chunk.stack.push(value);
 
-                    break;
+                    InterpretResult::Ok
                 }
                 // Set new value to local variable.
                 OpCode::SetLocal(var_index) => {
@@ -185,7 +191,7 @@ impl Vm {
 
                     self.chunk.stack[temp_index] = self.chunk.stack.last().unwrap().clone();
 
-                    break;
+                    InterpretResult::Ok
                 }
                 // Get variable name from constants and assign it to globals vec
                 OpCode::DefineGlobal(var_index) => {
@@ -220,8 +226,6 @@ impl Vm {
                             name.into_iter().collect::<String>()
                         ),
                     };
-
-                    println!("get VALUE!!::: {value:?}");
 
                     chunk.stack.push(value);
 

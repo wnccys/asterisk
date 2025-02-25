@@ -160,7 +160,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
     named_variable(parser, can_assign)
 }
 
-/// Distinguish between re-assign and get variable already set value
+/// Distinguish between re-assign and get variable already set value.
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);
@@ -176,7 +176,6 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
         get_op = OpCode::GetGlobal(var_index);
         set_op = OpCode::SetGlobal(var_index);
     }
-
 
     if can_assign && parser.match_token(TokenCode::Equal) {
         parser.expression();

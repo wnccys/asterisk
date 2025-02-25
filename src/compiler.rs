@@ -175,9 +175,6 @@ impl<'a> Parser<'a> {
         local.name = name.clone();
         local.depth = self.compiler.scope_depth;
 
-        // dbg!(&local);
-        println!("LOCALLLLL------====");
-
         self
         .compiler
         .locals.push(local);
@@ -278,6 +275,7 @@ impl<'a> Parser<'a> {
 
         loop {
             self.current = Some(self.scanner.as_mut().unwrap().scan_token());
+            #[cfg(feature = "debug")]
             dbg!(self.current);
 
             if let Some(current) = self.current {
@@ -327,9 +325,11 @@ impl<'a> Parser<'a> {
         for i in (0..self.compiler.local_count).rev() {
             let local = &self.compiler.locals[i];
 
-            dbg!(&local.name);
-            dbg!(&self.previous.unwrap());
-            println!("ON COMPARE LOCAL");
+            #[cfg(feature = "debug")]
+            {
+                dbg!(&local.name);
+                dbg!(&self.previous.unwrap());
+            }
 
             if identify_constant(&local.name, &self.previous.unwrap()) {
                 return i as i32;

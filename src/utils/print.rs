@@ -38,8 +38,8 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         }
         OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetGlobal(index) => constant_instruction("OP_SET_GLOBAL", chunk, index, offset),
-        OpCode::GetLocal(index) => constant_instruction("OP_GET_LOCAL", chunk, index, offset),
-        OpCode::SetLocal(index) => constant_instruction("OP_SET_LOCAL", chunk, index, offset)
+        OpCode::GetLocal(index) => byte_instruction("OP_GET_LOCAL", chunk, index, offset),
+        OpCode::SetLocal(index) => byte_instruction("OP_SET_LOCAL", chunk, index, offset)
     }
 }
 
@@ -55,6 +55,13 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
     print_value(&chunk.constants[*op_index]);
 
     offset + 1
+}
+
+fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> usize {
+    let slot = &chunk.code[*index];
+
+    println!("{name}        {slot:?}");
+    return offset + 1;
 }
 
 pub fn print_value(value: &Value) {

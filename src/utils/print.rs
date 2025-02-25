@@ -60,7 +60,7 @@ fn constant_instruction(name: &str, chunk: &Chunk, op_index: &usize, offset: usi
 fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> usize {
     let slot = &chunk.code[*index];
 
-    println!("{name}        {slot:?}");
+    println!("{name}      {slot:?}");
     return offset + 1;
 }
 
@@ -78,11 +78,12 @@ pub fn print_value(value: &Value) {
 }
 
 pub fn print_stack(chunk: &Chunk) {
-    println!("=====stack-trace=====");
+    println!("==stack-trace==");
     for value in chunk.stack.iter() {
         print!(">");
         print_value(value);
     }
+    println!("===end--trace===")
 }
 
 fn verify_lines(offset: usize, chunk: &Chunk) {

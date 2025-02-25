@@ -66,8 +66,8 @@ fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> 
 
 pub fn print_value(value: &Value) {
     match value {
-        Value::Float(f) => println!("'{f:.1}'"),
-        Value::Int(i) => println!("'{i}'"),
+        Value::Float(f) => println!("{f:.1}"),
+        Value::Int(i) => println!("{i}"),
         Value::Bool(b) => println!("{b}"),
         Value::String(str) => {
             let stringified: String = str.iter().collect();

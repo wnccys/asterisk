@@ -169,9 +169,9 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                // TODO Add correct nil value handling
+                // TODO Add correct nil value handling (not permitted)
                 OpCode::Nil => {
-                    self.chunk.stack.push(Value::String("()".chars().collect::<Vec<char>>()));
+                    self.chunk.stack.push(Value::Void(()));
 
                     InterpretResult::Ok
                 },

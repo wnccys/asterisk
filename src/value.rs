@@ -6,6 +6,7 @@ pub enum Value {
     Int(i32),
     Bool(bool),
     String(Vec<char>),
+    Void(()),
 }
 
 // REVIEW probably resolvable with macro

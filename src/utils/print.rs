@@ -72,7 +72,8 @@ pub fn print_value(value: &Value) {
         Value::String(str) => {
             let stringified: String = str.iter().collect();
             println!("{stringified}")
-        }
+        },
+        Value::Void(t) => println!("{t:?}"),
         _ => panic!("invalid value."),
     }
 }

@@ -160,7 +160,7 @@ impl Vm {
                 }
                 // TODO Add correct nil value handling
                 OpCode::Nil => {
-                    self.chunk.stack.push(Value::String("()".chars().collect::<Vec<char>>())); 
+                    self.chunk.stack.push(Value::String("()".chars().collect::<Vec<char>>()));
 
                     InterpretResult::Ok
                 },

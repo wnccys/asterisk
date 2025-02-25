@@ -375,6 +375,7 @@ impl<'a> Parser<'a> {
     fn end_compiler(&mut self) {
         if !self.had_error {
             // STUB
+            #[cfg(feature = "debug")]
             disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
         }
     }

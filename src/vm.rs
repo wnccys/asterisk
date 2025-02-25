@@ -29,6 +29,7 @@ impl Default for Vm {
 
 impl Vm {
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
+        println!("source: {source:?}");
         let (chunk, result) = compile(&mut self.strings, source);
 
         if result != InterpretResult::Ok {
@@ -41,6 +42,9 @@ impl Vm {
 
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
+
+        println!("code vec: {:?}", self.chunk.code);
+        println!("stack vec: {:?}", self.chunk.stack);
 
         for i in 0..self.chunk.code.len() {
             let opcode = &self.chunk.as_ref().code[i];
@@ -147,6 +151,7 @@ impl Vm {
                 }
                 OpCode::Print => {
                     let chunk = &self.chunk.as_mut().stack.pop().unwrap();
+                    println!("value print!!{chunk:?}");
                     print_value(chunk);
 
                     InterpretResult::Ok
@@ -215,6 +220,8 @@ impl Vm {
                             name.into_iter().collect::<String>()
                         ),
                     };
+
+                    println!("get VALUE!!::: {value:?}");
 
                     chunk.stack.push(value);
 

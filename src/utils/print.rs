@@ -5,19 +5,22 @@ use crate::value::Value;
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 
-    let mut i = 0;
-    for _ in 0..chunk.code.len() {
-        i = disassemble_instruction(chunk, i);
-    }
+    // let mut i = 0;
+    // for _ in 0..chunk.code.len() {
+        disassemble_instruction(chunk, 0);
+    // }
 }
 
-fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
+fn disassemble_instruction(chunk: &Chunk, offset: usize) {
+    // Recursion base case
+    if offset >= chunk.code.len() { return }
+
     print!("{offset:0>4} ");
     verify_lines(offset, chunk);
 
     let instruction = &chunk.code[offset];
 
-    match instruction {
+    let offset = match instruction {
         OpCode::Return => simple_instruction("OP_RETURN", offset),
         OpCode::Constant(index) => constant_instruction("OP_CONSTANT", chunk, index, offset),
         OpCode::Add => simple_instruction("OP_ADD", offset),
@@ -40,7 +43,9 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) -> usize {
         OpCode::SetGlobal(index) => constant_instruction("OP_SET_GLOBAL", chunk, index, offset),
         OpCode::GetLocal(index) => byte_instruction("OP_GET_LOCAL", chunk, index, offset),
         OpCode::SetLocal(index) => byte_instruction("OP_SET_LOCAL", chunk, index, offset)
-    }
+    };
+
+    disassemble_instruction(chunk, offset);
 }
 
 fn simple_instruction(name: &str, offset: usize) -> usize {

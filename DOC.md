@@ -68,7 +68,7 @@ print b;
 }
 ``` rust
 
-Next, we present a basic workflow of the function calls as well as how the stack, the code array, and the constants array behaviors when the above code is executed; Below are the Bytecodes emmited:
+Below is present a basic workflow of the function calls as well as how the stack, the code array, and the constants array behavior when the above code is executed:
 
 NOTE: OpCodes disassemble formatting as seen below in constants print is {bytecode}{bytecode_index}{value}.
 

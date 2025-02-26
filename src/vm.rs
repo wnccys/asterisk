@@ -44,14 +44,19 @@ impl Vm {
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
+        // STUB
+        #[cfg(feature = "debug")]
+        println!("Constants Vec: {:?}", self.chunk.constants);
+
         for i in 0..self.chunk.code.len() {
             let opcode = &self.chunk.as_ref().code[i];
 
             // STUB
             #[cfg(feature = "debug")]
-            print_stack(self.chunk.as_ref());
-            #[cfg(feature = "debug")]
-            println!("current code: {:?}", opcode);
+            {
+                println!("current code: {:?}", opcode);
+                print_stack(self.chunk.as_ref());
+            }
 
             op_status = match opcode {
                 OpCode::Return => {
@@ -67,14 +72,13 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                // Bring constant value to stack
+                // Bring value from constants vector to stack
                 OpCode::Constant(index) => {
                     let temp_index = *index;
-                    {
-                        let chunk = self.chunk.as_mut();
-                        let constant = chunk.constants[temp_index].clone();
-                        chunk.stack.push(constant);
-                    }
+
+                    let chunk = self.chunk.as_mut();
+                    let constant = chunk.constants[temp_index].clone();
+                    chunk.stack.push(constant);
 
                     InterpretResult::Ok
                 }
@@ -254,9 +258,8 @@ impl Vm {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");
                     }
-                    break;
 
-                    // InterpretResult::Ok
+                    InterpretResult::Ok
                 }
             };
         }

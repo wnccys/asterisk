@@ -362,6 +362,8 @@ impl<'a> Parser<'a> {
             .write(code, self.current.unwrap().line);
     }
 
+    /// Write value to constant vec and emit Constant bytecode to let it available in stack.
+    /// 
     pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk

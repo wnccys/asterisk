@@ -5,10 +5,7 @@ use crate::value::Value;
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 
-    // let mut i = 0;
-    // for _ in 0..chunk.code.len() {
-        disassemble_instruction(chunk, 0);
-    // }
+    disassemble_instruction(chunk, 0);
 }
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) {
@@ -89,7 +86,7 @@ pub fn print_stack(chunk: &Chunk) {
         print!(">");
         print_value(value);
     }
-    println!("===end--trace===")
+    println!("===end-trace===")
 }
 
 fn verify_lines(offset: usize, chunk: &Chunk) {

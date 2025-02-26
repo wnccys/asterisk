@@ -66,11 +66,13 @@ print b;
     x = "x is NOT HERE ANYMORE!!";
     print x;
 }
-``` rust
+```
 
 Below is present a basic workflow of the function calls as well as how the stack, the code array, and the constants array behavior when the above code is executed:
 
-NOTE: OpCodes disassemble formatting as seen below in constants print is {bytecode}{bytecode_index}{value}.
+NOTE: OpCodes disassemble formatting as seen below in constants print is {bytecode}{index of variable received for}{value}.
+
+``` rust
 
 0000 0 OP_CONSTANT        1 32
 0001 | OP_DEFINE_GLOBAL   0 a
@@ -82,7 +84,10 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
     we passed to function is equal or not to Assignment which in our case is true, so variable can be assigned. Next we enter a loop, where while the precendece we passed firstly to **parse_precedence** (Assignment)
     is lower than the current token (Semicolon which is none) the condition is false, so we don't execute nothing. Now we are back in **var_declaration** function,
     we consume Semicolon Token and define the global variable (in this case 'a') by passing the index of the value already read and set to constants to the **DefineGlobal(usize)**
-    which take the value in the specified index (variable name) on constants and set it to globals HashTable using the element in the top of stack.
+    which take the value in the specified index (variable name) on constants and set it to globals HashTable using the element in the top of stack. The general order is finally: 
+    The name of variable are load into **Constants** vector, number rule is found, executed and a **OpConstant(index)** is emitted carrying the index of the new variable pushed to **Constants**
+    the **OpDefineGlobal(index)** Bytecode is set carrying the index of the variable's name, the Bytecode takes the name of variable and set the globals HashTable<variable name, **stack.pop()**> 
+    as the value is already set in the **Stack** by the previous **OpCode::Constant(_)**.
 
 0002 | OP_GET_GLOBAL      2 a
 0003 | OP_PRINT
@@ -97,6 +102,7 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
 0012 | OP_GET_LOCAL      Constant(1)
 0013 | OP_PRINT
 0014 | OP_POP
+```
 
 Wow, that's a lot. Take your time to think a little about all the code architecture which is involved in parsing this "simple code".
 

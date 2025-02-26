@@ -66,7 +66,7 @@ print b;
     x = "x is NOT HERE ANYMORE!!";
     print x;
 }
-```
+``` rust
 
 Next, we present a basic workflow of the function calls as well as how the stack, the code array, and the constants array behaviors when the above code is executed; Below are the Bytecodes emmited:
 
@@ -75,7 +75,14 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
 0000 0 OP_CONSTANT        1 32
 0001 | OP_DEFINE_GLOBAL   0 a
 
-    Var identifier is reached by **advance()**, them, in **parse_variable()**, the identifier (variable name) is consumed and the global variable is set, getting the Token's name and setting in in **Constants** vector. After that the **Compiler** check for equal sign which in this case match, consuming it and calling **expression()** which execute the recursive ruler which evaluate the expressions and set them in **Stack**, which in our specific case do the following: call **parse_precedence(Precedence::Assignment)** which advance Token (previous is Number and current is Semicolon) executing the prefix of previous which set a value (Int or Float) to the **Constants** vector returning to our **parse_precedence** call, which also set a **can_assign** variable that check if the precedence we passed to function is equal or not to Assignment which in our case is true, so variable can be assigned. Next we enter a loop, where while the precendece we passed firstly to **parse_precedence** (Assignment) is lower than the current token (Semicolon which is none) the condition is false, so we don't execute nothing. Now we are back in **var_declaration** function, we consume Semicolon Token and define the global variable (in this case 'a') by passing the index of the value already read and set to constants to the **DefineGlobal(usize)** which take the value in the specified index on constants and set it to globals HashTable.
+    Var identifier is reached by **advance()**, then, in **parse_variable()** the identifier (variable name) is consumed getting the Token's name and set it up in **Constants** vector.
+    After that the **Compiler** check for equal sign which in this case match, consuming it and calling **expression()** which execute the recursive ruler which evaluate the expressions and set them in **Stack**,
+    which in our specific case do the following: call **parse_precedence(Precedence::Assignment)** which advance Token (now previous is Number and current is Semicolon),
+    executing the prefix of previous which set a value (Int or Float) to the **Constants** vector returning to our **parse_precedence** call, which also set a **can_assign** variable that check if the precedence
+    we passed to function is equal or not to Assignment which in our case is true, so variable can be assigned. Next we enter a loop, where while the precendece we passed firstly to **parse_precedence** (Assignment)
+    is lower than the current token (Semicolon which is none) the condition is false, so we don't execute nothing. Now we are back in **var_declaration** function,
+    we consume Semicolon Token and define the global variable (in this case 'a') by passing the index of the value already read and set to constants to the **DefineGlobal(usize)**
+    which take the value in the specified index (variable name) on constants and set it to globals HashTable using the element in the top of stack.
 
 0002 | OP_GET_GLOBAL      2 a
 0003 | OP_PRINT

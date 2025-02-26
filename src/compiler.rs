@@ -146,7 +146,7 @@ impl<'a> Parser<'a> {
         self.identifier_constant()
     }
 
-    /// Get variable's name and emit it's Identifier as String to constants vector.
+    /// Get variable's name by analising lexeme and emit it's Identifier as String to constants vector.
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name

@@ -94,8 +94,10 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
 
     After that we are back in **compile()** initial loop which calls **declaration()** which matches **statement()** call, which matches our current token **Print** that parses the expression in front of the Token, 
     calling **expression()** that advances the Token once more (Print match advanced too), now we got Identifier as previous and ';' as current, so we execute the prefix of Identifier which calls **variable** rule.
-    This rule check for local variables, if not local (our case now), **identifier_constant()** is called, getting the variable name from token, emmiting a **Constant(var_index)** which set our variable name in constants and set it to stack. After that it emit a **GetGlobal(usize)** Bytecode, which will get this name as we passed its index, and get it from globals HashTable and set it to the stack, next we are back to **parse_precedence()** where our current token is still ';' Semicolon, we check for it's precedence, if it's higher of equal **Assignment**, what is false, then we don't execute nothing and return to our **Print** statement which consume our actual Token ';' correctly
-    and emit the **Print** Bytecode, which **pop()** a value from stack, and print it to STDOUT.
+    This rule check for local variables, if not local (our case now), **identifier_constant()** is called, getting the variable name from token, emmiting a **Constant(var_index)** which set our variable name in constants 
+    and set it to stack. After that it emit a **GetGlobal(usize)** Bytecode, which will get this name as we passed its index, and get it from globals HashTable and set it to the stack, next we are back to 
+    **parse_precedence()** where our current token is still ';' Semicolon, we check for it's precedence, if it's higher of equal **Assignment**, what is false, then we don't execute nothing and return to our **Print** 
+    statement which consume our actual Token ';' correctly and emit the **Print** Bytecode, which **pop()** a value from stack, and print it to STDOUT.
 
 
 0004 | OP_CONSTANT        4 50

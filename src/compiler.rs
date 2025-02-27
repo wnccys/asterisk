@@ -254,7 +254,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Check if current Token matches argument Token. </br>
-    /// Advance parser current Token on call.
+    /// Advance parser current Token on match.
     /// 
     pub fn match_token(&mut self, token: TokenCode) -> bool {
         if !self.check(token) {

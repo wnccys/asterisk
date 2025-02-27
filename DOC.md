@@ -81,7 +81,7 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
     After that the **Compiler** check for equal sign which in this case match, consuming it and calling **expression()** which execute the recursive ruler which evaluate the expressions and set them in **Stack**,
     which in our specific case do the following: call **parse_precedence(Precedence::Assignment)** which advance Token (now previous is Number and current is Semicolon),
     executing the prefix of previous which set a value (Int or Float) to the **Constants** vector returning to our **parse_precedence** call, which also set a **can_assign** variable that check if the precedence
-    we passed to function is equal or not to Assignment which in our case is true, so variable can be assigned. Next we enter a loop, where while the precendece we passed firstly to **parse_precedence** (Assignment)
+    we passed to function is equal or not to Assignment which in our case is true, so variable can be assigned. Next we enter a loop, where while the precedence we passed firstly to **parse_precedence** (Assignment)
     is lower than the current token (Semicolon which is none) the condition is false, so we don't execute nothing. Now we are back in **var_declaration** function,
     we consume Semicolon Token and define the global variable (in this case 'a') by passing the index of the value already read and set to constants to the **DefineGlobal(usize)**
     which take the value in the specified index (variable name) on constants and set it to globals HashTable using the element in the top of stack. The general order is finally: 
@@ -91,6 +91,13 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
 
 0002 | OP_GET_GLOBAL      2 a
 0003 | OP_PRINT
+
+    After that we are back in **compile()** initial loop which calls **declaration()** which matches **statement()** call, which matches our current token **Print** that parses the expression in front of the Token, 
+    calling **expression()** that advances the Token once more (Print match advanced too), now we got Identifier as previous and ';' as current, so we execute the prefix of Identifier which calls **variable** rule.
+    This rule check for local variables, if not local (our case now), **identifier_constant()** is called, getting the variable name from token, emmiting a **Constant(var_index)** 
+    which set our variable name in constants and set it to stack. Ffter that it emit a **GetGlobal(usize)** Bytecode, which will get this name as we passed its index, and get it from globals HashTable;
+
+
 0004 | OP_CONSTANT        4 50
 0005 | OP_DEFINE_GLOBAL   3 b
 0006 | OP_GET_GLOBAL      5 b

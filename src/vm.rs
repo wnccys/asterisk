@@ -245,12 +245,6 @@ impl Vm {
                         _ => panic!("Invalid global variable name."),
                     };
 
-                    // dbg!(self
-                    //    .globals
-                    //     .set(name, chunk.stack.iter().last().unwrap().clone().to_owned()));
-
-                    // dbg!(chunk.stack.iter().last().unwrap().clone().to_owned());
-
                     if self
                         .globals
                         .set(name, chunk.stack.iter().last().unwrap().to_owned())

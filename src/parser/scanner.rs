@@ -81,8 +81,8 @@ impl Scanner {
         while self.chars[self.current - 1].is_whitespace() ||
             self.chars[self.current - 1].is_ascii_control() 
         {
-                self.current += 1;
-                self.start += 1;
+            self.current += 1;
+            self.start += 1;
         }
 
         if self.chars[self.current - 1].is_alphabetic() {

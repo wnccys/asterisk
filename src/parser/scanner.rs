@@ -144,9 +144,8 @@ impl Scanner {
         }
     }
 
-    /// If source doesn't reach the end and current char self.chars\[self.current - 1\] 
-    /// doesn't match space char, '\n', or '\r'
-    /// 
+    /// Check if source self.chars\[self.current - 1\] doesn't match space char, '\n', or '\r'
+    /// advancing current and adding lines until new chars are found.
     fn handle_lines(&mut self) {
         while !self.reach_source_end() && match self.chars[self.current - 1] {
             x if x == ' ' || x == '\n' || x == '\r' => true,

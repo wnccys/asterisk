@@ -151,13 +151,13 @@ impl Scanner {
             x if x == ' ' || x == '\n' || x == '\r' => true,
             _ => false,
         } {
-            while self.chars[self.current - 1] == ' '
+            if self.chars[self.current - 1] == ' '
             {
                 self.current += 1;
                 self.start += 1;
             }
 
-            while self.chars[self.current - 1] == '\r'  {
+            if self.chars[self.current - 1] == '\r'  {
                 self.current += 1;
                 self.start += 1;
                 self.line += 1;
@@ -168,7 +168,7 @@ impl Scanner {
                 }
             }
 
-            while self.chars[self.current - 1] == '\n'  {
+            if self.chars[self.current - 1] == '\n'  {
                 self.current += 1;
                 self.start += 1;
                 self.line += 1;

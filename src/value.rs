@@ -6,6 +6,7 @@ pub enum Value {
     Int(i32),
     Bool(bool),
     String(Vec<char>),
+    Void(()),
 }
 
 // REVIEW probably resolvable with macro
@@ -30,7 +31,7 @@ impl Add for Value {
                 let mut result = str1.clone();
                 result.extend(str2);
                 Value::String(result)
-            },
+            }
             _ => panic!("operation add not allowed."),
         }
     }

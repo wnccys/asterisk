@@ -1,4 +1,5 @@
 use crate::value::Value;
+
 #[derive(Debug, Clone)]
 pub enum OpCode {
     Return,
@@ -6,6 +7,8 @@ pub enum OpCode {
     True,
     False,
     Equal,
+    Nil,
+    Pop,
     Greater,
     Less,
     Not,
@@ -13,31 +16,37 @@ pub enum OpCode {
     Multiply,
     Divide,
     Negate,
+    Print,
+    GetLocal(usize),
+    SetLocal(usize),
+    DefineGlobal(usize),
+    SetGlobal(usize),
+    GetGlobal(usize),
 }
 
 #[derive(Debug, Default)]
 pub struct Chunk {
+    /// The sequence of Bytecodes used to change the stack state.
     pub code: Vec<OpCode>,
+    /// Where the Bytecodes' operations itself are executed.
     pub stack: Vec<Value>,
+    /// Where values are saved before being used.
     pub constants: Vec<Value>,
     pub lines: Vec<i32>,
 }
 
 impl Chunk {
+    /// Write to code vec.
+    /// 
     pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.lines.push(line);
-        dynamize_vec(&mut self.code);
     }
 
+    /// Write to constants vec.
+    /// 
     pub fn write_constant(&mut self, value: Value) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
-    }
-}
-
-pub fn dynamize_vec<T: Clone>(vec: &mut Vec<T>) {
-    if vec.len() == vec.capacity() {
-        vec.reserve(vec.capacity())
     }
 }

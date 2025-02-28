@@ -68,19 +68,22 @@ pub struct Token {
 
 impl Scanner {
     pub fn scan_token(&mut self) -> Token {
+        // NOTE self.start is 0 index based but current is generally always 1 advanced,
+        // so current-1 is the exact position on chars,
+        // and self.start..self.start+self.length is a correct range
+        // so there's no need to subtract 1 because the index is advanced by 1 already
         self.start = self.current;
         if self.reach_source_end() {
             return self.make_token(TokenCode::Eof);
         }
 
         self.current += 1;
-        if self.chars[self.current - 1].is_whitespace() {
-            self.current += 1;
-            self.start += 1;
-        }
+        self.handle_lines();
+
         if self.chars[self.current - 1].is_alphabetic() {
             return self.alphanumeric();
         }
+
         if self.chars[self.current - 1].is_ascii_digit() {
             return self.number();
         }
@@ -97,7 +100,7 @@ impl Scanner {
             '-' => self.make_token(TokenCode::Minus),
             '*' => self.make_token(TokenCode::Star),
             '/' => {
-                if !self.reach_source_end() && self.chars[self.current] == '/' {
+                if self.chars[self.current] == '/' {
                     self.current += 1;
                     self.skip_comment()
                 } else {
@@ -105,7 +108,7 @@ impl Scanner {
                 }
             }
             '!' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::BangEqual)
                 } else {
@@ -113,7 +116,7 @@ impl Scanner {
                 }
             }
             '=' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::EqualEqual)
                 } else {
@@ -121,7 +124,7 @@ impl Scanner {
                 }
             }
             '<' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::LessEqual)
                 } else {
@@ -129,7 +132,7 @@ impl Scanner {
                 }
             }
             '>' => {
-                if !self.reach_source_end() && self.chars[self.current] == '=' {
+                if self.chars[self.current] == '=' {
                     self.current += 1;
                     self.make_token(TokenCode::GreaterEqual)
                 } else {
@@ -137,7 +140,39 @@ impl Scanner {
                 }
             }
             '"' => self.string(),
-            _ => self.error_token("not implemented yet."),
+            _ => self.error_token(&format!("not implemented yet. {:?}", self.chars[self.current - 1])),
+        }
+    }
+
+    /// Check if source self.chars\[self.current - 1\] doesn't match space char, '\n', or '\r'
+    /// advancing current and adding lines until new chars are found.
+    fn handle_lines(&mut self) {
+        while !self.reach_source_end() && match self.chars[self.current - 1] {
+            x if x == ' ' || x == '\n' || x == '\r' => true,
+            _ => false,
+        } {
+            if self.chars[self.current - 1] == ' '
+            {
+                self.current += 1;
+                self.start += 1;
+            }
+
+            if self.chars[self.current - 1] == '\r'  {
+                self.current += 1;
+                self.start += 1;
+                self.line += 1;
+
+                if !self.reach_source_end() && self.chars[self.current - 1] == '\n' {
+                    self.current += 1;
+                    self.start += 1;
+                }
+            }
+
+            if self.chars[self.current - 1] == '\n'  {
+                self.current += 1;
+                self.start += 1;
+                self.line += 1;
+            }
         }
     }
 
@@ -160,7 +195,7 @@ impl Scanner {
                     match self.chars[self.start + 1] {
                         'a' => self.check_keyword(2, "lse", TokenCode::False),
                         'o' => self.check_keyword(2, "r", TokenCode::For),
-                        'u' => self.check_keyword(2, "n", TokenCode::Fun),
+                        'n' => self.check_keyword(1, "n", TokenCode::Fun),
                         _ => panic!("invalid identifier."),
                     }
                 } else {
@@ -184,7 +219,7 @@ impl Scanner {
                     TokenCode::Identifier
                 }
             }
-            'v' => self.check_keyword(1, "ar", TokenCode::Var),
+            'l' => self.check_keyword(1, "et", TokenCode::Var),
             'w' => self.check_keyword(1, "hile", TokenCode::While),
             _ => TokenCode::Identifier,
         }
@@ -235,7 +270,7 @@ impl Scanner {
             };
             self.current += 1;
 
-            // safelly verifies if ${} expression is present
+            // Safelly verifies if ${} expression is present
             if !self.reach_source_end() && self.chars[self.current] == '$' {
                 self.current += 1;
 
@@ -253,6 +288,8 @@ impl Scanner {
         self.make_token(TokenCode::String)
     }
 
+    /// Invokes a new VM which parses the code between "{ }"
+    /// 
     fn evaluate_expression(&mut self) {
         let mut inner_current = self.current + 1;
         let mut vm = Vm::default();

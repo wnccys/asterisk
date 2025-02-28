@@ -78,12 +78,7 @@ impl Scanner {
         }
 
         self.current += 1;
-        while self.chars[self.current - 1].is_whitespace() ||
-            self.chars[self.current - 1].is_ascii_control() 
-        {
-            self.current += 1;
-            self.start += 1;
-        }
+        self.handle_lines();
 
         if self.chars[self.current - 1].is_alphabetic() {
             return self.alphanumeric();
@@ -145,7 +140,40 @@ impl Scanner {
                 }
             }
             '"' => self.string(),
-            _ => self.error_token("not implemented yet."),
+            _ => self.error_token(&format!("not implemented yet. {:?}", self.chars[self.current - 1])),
+        }
+    }
+
+    /// If source doesn't reach the end and current char self.chars\[self.current - 1\] 
+    /// doesn't match space char, '\n', or '\r'
+    /// 
+    fn handle_lines(&mut self) {
+        while !self.reach_source_end() && match self.chars[self.current - 1] {
+            x if x == ' ' || x == '\n' || x == '\r' => true,
+            _ => false,
+        } {
+            while self.chars[self.current - 1] == ' '
+            {
+                self.current += 1;
+                self.start += 1;
+            }
+
+            while self.chars[self.current - 1] == '\r'  {
+                self.current += 1;
+                self.start += 1;
+                self.line += 1;
+
+                if !self.reach_source_end() && self.chars[self.current - 1] == '\n' {
+                    self.current += 1;
+                    self.start += 1;
+                }
+            }
+
+            while self.chars[self.current - 1] == '\n'  {
+                self.current += 1;
+                self.start += 1;
+                self.line += 1;
+            }
         }
     }
 

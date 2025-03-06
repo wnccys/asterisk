@@ -69,7 +69,7 @@ impl Table {
                 // Unreachable key
                 self.entries[index] = Some(Rc::new(Entry {
                     key: "".chars().collect(),
-                    value: Value::Bool(true),
+                    value: Value::Void(()),
                 }));
                 Ok(())
             }

@@ -9,16 +9,13 @@ pub enum Value {
     Void(()),
 }
 
-// REVIEW probably resolvable with macro
-pub fn values_equal(a: Value, b: Value) -> Value {
-    match (a, b) {
-        (Value::Bool(value_a), Value::Bool(value_b)) => Value::Bool(value_a == value_b),
-        (Value::Int(value_a), Value::Int(value_b)) => Value::Bool(value_a == value_b),
-        (Value::Float(value_a), Value::Float(value_b)) => Value::Bool(value_a == value_b),
-        (Value::String(value_a), Value::String(value_b)) => Value::Bool(value_a == value_b),
-        _ => panic!("only equal-types are allowed to be compared."),
-    }
-}
+crate::macros::gen_values_equal!(
+    Float(f64),
+    Int(i32),
+    Bool(bool),
+    String(Vec<char>),
+    Void(())
+);
 
 impl Add for Value {
     type Output = Value;

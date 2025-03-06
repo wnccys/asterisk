@@ -5,6 +5,7 @@ mod types;
 mod utils;
 mod value;
 mod vm;
+mod macros;
 use std::io::{BufRead, Write};
 use std::{env, fs, io};
 use vm::{InterpretResult, Vm};

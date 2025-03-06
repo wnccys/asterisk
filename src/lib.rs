@@ -5,3 +5,4 @@ pub mod types;
 pub mod utils;
 pub mod value;
 pub mod vm;
+pub mod macros;

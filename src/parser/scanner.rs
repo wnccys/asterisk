@@ -269,15 +269,6 @@ impl Scanner {
                 self.line += 1;
             };
             self.current += 1;
-
-            // Safelly verifies if ${} expression is present
-            if !self.reach_source_end() && self.chars[self.current] == '$' {
-                self.current += 1;
-
-                if !self.reach_source_end() && self.chars[self.current] == '{' {
-                    self.evaluate_expression();
-                }
-            }
         }
 
         if self.reach_source_end() && self.chars[self.current - 1] != '"' {
@@ -286,26 +277,6 @@ impl Scanner {
 
         self.current += 1;
         self.make_token(TokenCode::String)
-    }
-
-    /// Invokes a new VM which parses the code between "{ }"
-    /// 
-    fn evaluate_expression(&mut self) {
-        let mut inner_current = self.current + 1;
-        let mut vm = Vm::default();
-        let mut expression = Vec::with_capacity(4);
-
-        while self.chars.len() > inner_current && self.chars[inner_current] != '}' {
-            expression.push(self.chars[inner_current]);
-            inner_current += 1;
-        }
-
-        if self.chars.len() > inner_current && self.chars[inner_current] == '}' {
-            let source = expression;
-            vm.interpret(source);
-        }
-
-        self.current += inner_current - self.current - 1;
     }
 
     fn skip_comment(&mut self) -> Token {

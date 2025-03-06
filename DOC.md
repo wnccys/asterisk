@@ -99,11 +99,13 @@ NOTE: OpCodes disassemble formatting as seen below in constants print is {byteco
     **parse_precedence()** where our current token is still ';' Semicolon, we check for it's precedence, if it's higher of equal **Assignment**, what is false, then we don't execute nothing and return to our **Print** 
     statement which consume our actual Token ';' correctly and emit the **Print** Bytecode, which **pop()** a value from stack, and print it to STDOUT.
 
-
 0004 | OP_CONSTANT        4 50
 0005 | OP_DEFINE_GLOBAL   3 b
 0006 | OP_GET_GLOBAL      5 b
 0007 | OP_PRINT
+
+    These one's are identical behaviorally to the 4 first Bytecodes!
+
 0008 | OP_CONSTANT        6 x here!!!!
 0009 | OP_CONSTANT        7 x is NOT HERE ANYMORE!!
 0010 | OP_SET_LOCAL      Constant(1)

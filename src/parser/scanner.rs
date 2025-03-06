@@ -225,6 +225,8 @@ impl Scanner {
         }
     }
 
+    /// Determine wheter the string is a identifier or reserved keyword.
+    /// 
     fn check_keyword(
         &mut self,
         matcher_start: usize,

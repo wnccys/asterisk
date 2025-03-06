@@ -140,7 +140,7 @@ impl Scanner {
                 }
             }
             '"' => self.string(),
-            _ => self.error_token(&format!("not implemented yet. {:?}", self.chars[self.current - 1])),
+            _ => self.error_token(&format!("Invalid syntax at line {}.", self.line)),
         }
     }
 

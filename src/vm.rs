@@ -278,8 +278,6 @@ impl Vm {
             "+" => self.chunk.stack.push(a + b),
             "*" => self.chunk.stack.push(a * b),
             "/" => self.chunk.stack.push(a / b),
-            // REVIEW check for >, < partialOrd inconvenient (apply the condition on other variants)
-            // in this case a same type as b is false;
             ">" => self.chunk.stack.push(Value::Bool(a > b)),
             "<" => self.chunk.stack.push(Value::Bool(a < b)),
             _ => panic!("invalid operation."),

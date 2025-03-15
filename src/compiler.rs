@@ -2,7 +2,7 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::parser::ruler::*;
 use crate::parser::scanner::*;
-use crate::types::Table;
+use crate::types::hash_table::Table;
 use crate::utils::print::{disassemble_chunk, print_stack};
 use crate::value::Value;
 use crate::vm::{InterpretResult, Vm};

@@ -1,6 +1,6 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::types::Table;
+use crate::types::hash_table::HashTable;
 use crate::utils::print::{
     print_stack, 
     print_value};
@@ -15,16 +15,16 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Box<Chunk>,
-    globals: Table,
-    strings: Table,
+    globals: HashTable<String>,
+    strings: HashTable<String>,
 }
 
 impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Box::default(),
-            globals: Table::default(),
-            strings: Table::default(),
+            globals: HashTable::default(),
+            strings: HashTable::default(),
         }
     }
 }
@@ -206,7 +206,7 @@ impl Vm {
 
                     match var_name {
                         Value::String(name) => {
-                            self.globals.set(&name, chunk.stack.pop().unwrap());
+                            self.globals.insert(&name, chunk.stack.pop().unwrap());
                         }
                         _ => panic!("Invalid global variable name."),
                     }
@@ -224,11 +224,8 @@ impl Vm {
                     };
 
                     let value = match self.globals.get(name) {
-                        Some(value) => value.value.clone(),
-                        _ => panic!(
-                            "Use of undeclared variable '{}'",
-                            name.into_iter().collect::<String>()
-                        ),
+                        Some(value) => value,
+                        _ => panic!("Use of undeclared variable '{}'", &name),
                     };
 
                     chunk.stack.push(value);
@@ -247,7 +244,15 @@ impl Vm {
 
                     if self
                         .globals
-                        .set(name, chunk.stack.iter().last().unwrap().to_owned())
+                        .insert(
+                                name, 
+                                chunk
+                                    .stack
+                                    .iter()
+                                    .last()
+                                    .unwrap()
+                                    .to_owned()
+                                )
                     {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");

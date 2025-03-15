@@ -5,7 +5,7 @@ pub enum Value {
     Float(f64),
     Int(i32),
     Bool(bool),
-    String(Vec<char>),
+    String(String),
     Void(()),
 }
 
@@ -13,7 +13,7 @@ crate::macros::gen_values_equal!(
     Float(f64),
     Int(i32),
     Bool(bool),
-    String(Vec<char>),
+    String(String),
     Void(())
 );
 
@@ -24,11 +24,7 @@ impl Add for Value {
         match (self, other) {
             (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
             (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            (Value::String(str1), Value::String(str2)) => {
-                let mut result = str1.clone();
-                result.extend(str2);
-                Value::String(result)
-            }
+            (Value::String(str1), Value::String(str2)) => Value::String(str1.add(&str2[..])),
             _ => panic!("operation add not allowed."),
         }
     }

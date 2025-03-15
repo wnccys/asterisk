@@ -2,7 +2,7 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::parser::ruler::*;
 use crate::parser::scanner::*;
-use crate::types::hash_table::Table;
+use crate::types::hash_table::HashTable;
 use crate::utils::print::{disassemble_chunk, print_stack};
 use crate::value::Value;
 use crate::vm::{InterpretResult, Vm};
@@ -17,7 +17,7 @@ pub struct Parser<'a> {
     pub had_error: bool,
     pub panic_mode: bool,
     /// String interning model
-    pub strings: Option<&'a mut Table>,
+    pub strings: Option<&'a mut HashTable<String>>,
 }
 
 #[derive(Debug)]
@@ -58,7 +58,7 @@ impl<'a> Default for Parser<'a> {
     }
 }
 
-pub fn compile(strings: &mut Table, chars: Vec<char>) -> (Chunk, InterpretResult) {
+pub fn compile(strings: &mut HashTable<String>, chars: Vec<char>) -> (Chunk, InterpretResult) {
     let mut parser = Parser {
         scanner: Some(Scanner {
             chars,
@@ -150,9 +150,12 @@ impl<'a> Parser<'a> {
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
-        let value = self.scanner.as_ref().unwrap().chars[self.previous.as_ref().unwrap().start
-            ..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]
-            .to_vec();
+        let value = self.scanner.as_ref().unwrap()
+            .chars[self.previous.as_ref().unwrap().start
+                ..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]
+            .iter()
+            .cloned()
+            .collect::<String>();
 
         self.chunk
             .as_mut()

@@ -14,14 +14,14 @@ impl FNV1aHasher {
 }
 
 impl Hasher for FNV1aHasher {
-    fn finish(&self) -> u64 {
-        self.hash
-    }
-
     fn write(&mut self, bytes: &[u8]) {
         for &byte in bytes {
             self.hash ^= byte as u64;
             self.hash = self.hash.wrapping_mul(FNV_PRIME);
         }
+    }
+
+    fn finish(&self) -> u64 {
+        self.hash
     }
 }

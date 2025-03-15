@@ -135,20 +135,7 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 fn string(parser: &mut Parser, _can_assign: bool) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
-        .to_owned();
-
-    // match get_table_intern(parser) {
-    //     Some(intern) => {
-    //         let index = parser
-    //             .chunk
-    //             .as_mut()
-    //             .unwrap()
-    //             .write_constant(intern.value.clone());
-    //         parser.emit_byte(OpCode::Constant(index));
-    //     },
-    //     None => {
-    //     }
-    // };
+        .iter().cloned().collect();
 
     let index = parser
         .chunk

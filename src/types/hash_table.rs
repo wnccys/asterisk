@@ -1,4 +1,4 @@
-use std::{fmt::Error, hash::{Hash, Hasher}};
+use std::{fmt::{Display, Error}, hash::{Hash, Hasher}};
 use crate::value::Value;
 use super::hasher::FNV1aHasher;
 
@@ -15,7 +15,7 @@ impl<K: Clone> Default for HashTable<K> {
     }
 }
 
-impl<K> HashTable<K> where K: Hash + Clone + Eq {
+impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
     const MAX_LOAD_FACTOR: f64 = 0.75;
 
     /// Set new entry to table.
@@ -70,12 +70,7 @@ impl<K> HashTable<K> where K: Hash + Clone + Eq {
                 return (Some(entry.as_ref().unwrap().1.clone()), index);
             }
 
-            // Tombstone handling
-            if entry.as_ref().unwrap().1 == Value::Void(())
-                && entry.as_ref().unwrap().1 == Value::Bool(true)
-            {
-                return (None, index);
-            }
+            /* TODO Add tombstone handling */
 
             index = (index + 1) % self.entries.capacity();
         }
@@ -87,16 +82,33 @@ impl<K> HashTable<K> where K: Hash + Clone + Eq {
         * + 1 because it checks for future entry (assume it is a new one)
         */
         if (self.entries.len() + 1) as f64 > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR) {
-            self.entries.resize(self.entries.capacity() * 2, None);
+            self.resize();
         }
+    }
+
+    /// Custom resize implementation because all entries needs to be re-hashed after resize
+    fn resize(&mut self) {
+        let new_num_buckets = self.entries.capacity() * 2;
+        let mut new_entries: Vec<Option<(K, Value)>> = vec![None; new_num_buckets];
+
+        for bucket in self.entries.drain(..) {
+            if let Some((k, v)) = bucket {
+                let index = hash_key(&k, new_num_buckets);
+                new_entries[index] = Some((k, v));
+            }
+        }
+
+        self.entries = new_entries;
     }
 }
 
 /// Hash given key based on entries capacity
 /// 
-pub fn hash_key<K: Hash + Clone>(key: &K, num_buckets: usize) -> usize {
+pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize {
     let mut hasher = FNV1aHasher::new();
     key.hash(&mut hasher);
+    println!("HASH FOR {key}: {}", hasher.finish());
+    println!("num buckets: {}", num_buckets);
 
     (hasher.finish() % num_buckets as u64) as usize
 }

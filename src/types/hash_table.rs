@@ -86,7 +86,8 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
         }
     }
 
-    /// Custom resize implementation because all entries needs to be re-hashed after resize
+    /// Custom resize implementation because all entries needs 
+    /// to be re-hashed after resize for proper late hash recover
     fn resize(&mut self) {
         let new_num_buckets = self.entries.capacity() * 2;
         let mut new_entries: Vec<Option<(K, Value)>> = vec![None; new_num_buckets];
@@ -109,4 +110,35 @@ pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize
     key.hash(&mut hasher);
 
     (hasher.finish() % num_buckets as u64) as usize
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn same_key_same_value_test() {
+        let mut table: HashTable<String> = HashTable::default();
+
+        table.insert(&String::from("a"), Value::Int(1));
+        table.insert(&String::from("b"), Value::Int(2));
+        
+        let a = table.get(&String::from("a"));
+        let b = table.get(&String::from("b"));
+
+        assert_eq!(a.unwrap(), Value::Int(1));
+        assert_eq!(b.unwrap(), Value::Int(2));
+    }
+
+    #[test]
+    fn swap_values_on_insert_test() {
+        let mut table: HashTable<String> =  HashTable::default();
+
+        table.insert(&String::from("a"), Value::String(String::from("some")));
+        table.insert(&String::from("a"), Value::String(String::from("another")));
+
+        let a = table.get(&String::from("a"));
+
+        assert_eq!(a.unwrap(), Value::String(String::from("another")));
+    }
 }

@@ -107,8 +107,6 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
 pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize {
     let mut hasher = FNV1aHasher::new();
     key.hash(&mut hasher);
-    println!("HASH FOR {key}: {}", hasher.finish());
-    println!("num buckets: {}", num_buckets);
 
     (hasher.finish() % num_buckets as u64) as usize
 }

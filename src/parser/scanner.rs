@@ -185,6 +185,8 @@ impl Scanner {
         self.make_token(identifier_token)
     }
 
+    /// Checks for language reserved keywords
+    /// 
     fn identifier(&mut self) -> TokenCode {
         match self.chars[self.start] {
             'a' => self.check_keyword(1, "nd", TokenCode::And),

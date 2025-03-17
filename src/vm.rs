@@ -225,7 +225,7 @@ impl Vm {
 
                     let value = match self.globals.get(name) {
                         Some(value) => value.value.clone(),
-                        _ => panic!(
+                        None => panic!(
                             "Use of undeclared variable '{}'",
                             name.into_iter().collect::<String>()
                         ),

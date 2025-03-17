@@ -256,7 +256,7 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Pop);
     }
 
-    /// Calls declaration() until "}" or EOF are found, consuming "}" on end.
+    /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
     /// 
     fn block(&mut self) {
         while (!self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof)) {

@@ -231,6 +231,9 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Parse further expression consuming semicolon on end.
+    /// 
+    /// Emit: OpCode::Print
     pub fn print_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");

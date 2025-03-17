@@ -192,16 +192,16 @@ impl Scanner {
             'e' => self.check_keyword(1, "lse", TokenCode::Else),
             'f' => {
                 if self.current - self.start > 1 {
-                    match self.chars[self.start + 1] {
+                    return match self.chars[self.start + 1] {
                         'a' => self.check_keyword(2, "lse", TokenCode::False),
                         'o' => self.check_keyword(2, "r", TokenCode::For),
                         'n' => self.check_keyword(1, "n", TokenCode::Fun),
                         _ => panic!("invalid identifier."),
                     }
-                } else {
-                    TokenCode::Identifier
                 }
-            }
+
+                TokenCode::Identifier
+            },
             'i' => self.check_keyword(1, "f", TokenCode::If),
             'n' => self.check_keyword(1, "il", TokenCode::Nil),
             'o' => self.check_keyword(1, "r", TokenCode::Or),

@@ -128,7 +128,7 @@ impl<'a> Parser<'a> {
         self.define_variable(global);
     }
 
-    /// Consume identifier token and emit new constant.
+    /// Consume identifier token and emit new constant (if global).
     /// 
     /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
     /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
@@ -137,10 +137,13 @@ impl<'a> Parser<'a> {
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
 
-        self.declare_variable();
-        if (self.compiler.scope_depth > 0) { return 0 }
+        // Check if var is global
+        if (self.compiler.scope_depth == 0) {
+            return self.identifier_constant();
+        }
 
-        self.identifier_constant()
+        self.declare_variable();
+        return 0;
     }
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
@@ -167,6 +170,7 @@ impl<'a> Parser<'a> {
     }
 
     // TODO Add variable shadowing support
+    /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     /// 
     fn add_local(&mut self) {
         let name = &self.previous.unwrap_or_else(|| panic!("Could not get previous variable"));
@@ -184,6 +188,7 @@ impl<'a> Parser<'a> {
 
     // TODO Remove call when variable just need to be peek'd.
     /// Emit DefineGlobal ByteCode with provided index.
+    /// 
     fn define_variable(&mut self, var_index: usize) {
         if (self.compiler.scope_depth > 0) { return }
 
@@ -336,8 +341,12 @@ impl<'a> Parser<'a> {
 
     /// Check for current identifier token variable name, walking backward in locals array.
     /// 
+    /// This function iterates over the Compiler's locals reverselly searching for a Token which 
+    /// matches parser.previous (self.previous) Token.
+    /// 
     /// Returns i32 because of -1 (No var name was found) conventional fallback.
     /// 
+    /// O(n)
     pub fn resolve_local(&mut self) -> i32 {
         for i in (0..self.compiler.local_count).rev() {
             let local = &self.compiler.locals[i];
@@ -445,7 +454,7 @@ impl Local {
     }
 }
 
-/// Compare 2 identifiers.
+/// Compare 2 identifiers by length and code.
 /// 
 fn identify_constant(a: &Token, b: &Token) -> bool {
     if a.length != b.length { return false; }

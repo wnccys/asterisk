@@ -162,8 +162,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
     named_variable(parser, can_assign)
 }
 
-/// Distinguish between re-assign and get variable already set value 
-/// as well as local and global variables.
+/// Distinguish between re-assign and get variable already set value as well as local and global variables.
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);

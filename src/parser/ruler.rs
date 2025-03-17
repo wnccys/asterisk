@@ -4,7 +4,7 @@ use crate::parser::scanner::TokenCode;
 use crate::value::Value;
 
 #[derive(Debug, PartialEq, PartialOrd)]
-/// Defines lower to higher operation precedence order
+/// Defines lower to higher operation precedence order.
 /// 
 pub enum Precedence {
     None,
@@ -38,7 +38,7 @@ impl Precedence {
     }
 }
 
-/// Determine the rules which each Token are equivalent to
+/// Determine which Rules are equivalent to which Token.
 /// 
 #[derive(Debug)]
 pub struct ParseRule {
@@ -47,8 +47,13 @@ pub struct ParseRule {
     pub precedence: Precedence,
 }
 
+/// Dummy prefix Rule.
+/// Every Token shall have a prefix, this one is a placeholder over the ones whose emit no Bytecodes.
+/// 
 fn none(_parser: &mut Parser, _can_assign: bool) {}
 
+/// Handle "()" precedence operator consuming ")" on final.
+/// 
 fn grouping(parser: &mut Parser, _can_assign: bool) {
     parser.expression();
     parser.consume(TokenCode::RightParen, "expected ')' after expression.");
@@ -74,6 +79,8 @@ fn number(parser: &mut Parser, _can_assign: bool) {
     }
 }
 
+/// Distinguish between negate (!) and minus (-) operations. 
+/// 
 fn unary(parser: &mut Parser, _can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
@@ -86,6 +93,8 @@ fn unary(parser: &mut Parser, _can_assign: bool) {
     }
 }
 
+/// Parse math operators recursivelly until all operations are evaluated in correct order.
+/// 
 fn binary(parser: &mut Parser, _can_assign: bool) {
     let operator_type = parser.previous.unwrap().code;
 
@@ -123,6 +132,8 @@ fn binary(parser: &mut Parser, _can_assign: bool) {
     }
 }
 
+/// Emit bool values Bytecodes.
+/// 
 fn literal(parser: &mut Parser, _can_assign: bool) {
     match parser.previous.unwrap().code {
         TokenCode::True => parser.emit_byte(OpCode::True),
@@ -132,6 +143,8 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 }
 
 // TODO Set string interning model
+/// Emit String to Contants.
+/// 
 fn string(parser: &mut Parser, _can_assign: bool) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
@@ -149,7 +162,8 @@ fn variable(parser: &mut Parser, can_assign: bool) {
     named_variable(parser, can_assign)
 }
 
-/// Distinguish between re-assign and get variable already set value.
+/// Distinguish between re-assign and get variable already set value 
+/// as well as local and global variables.
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);
@@ -173,10 +187,6 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
         parser.emit_byte(get_op);
     }
 }
-
-// pub fn get_table_intern(parser: &mut Parser) -> Option<Rc<Entry>> {
-
-// }
 
 /// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.
 /// 

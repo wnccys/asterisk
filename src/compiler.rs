@@ -288,6 +288,11 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Evaluate and emit or get values from Stack.
+    /// 
+    /// Expressions are Pratt-Parsed evaluated, each expression Bytecode are emitted
+    /// throught the prefix and infix rules which matches a Token and behavior like it.
+    /// 
     pub fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
     }

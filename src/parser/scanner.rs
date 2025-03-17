@@ -1,5 +1,3 @@
-use crate::vm::Vm;
-
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum TokenCode {
     // Single char tokens

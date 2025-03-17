@@ -1,6 +1,8 @@
 use std::ops::{Add, Div, Mul};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
+/// asterisk types definition
+/// 
 pub enum Value {
     Float(f64),
     Int(i32),

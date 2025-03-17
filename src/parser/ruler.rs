@@ -145,6 +145,8 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 // TODO Set string interning model
 /// Emit String to Contants.
 /// 
+/// Emit: Constant
+/// 
 fn string(parser: &mut Parser, _can_assign: bool) {
     let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
@@ -163,6 +165,8 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 }
 
 /// Distinguish between re-assign and get variable already set value as well as local and global variables.
+/// 
+/// Emit: (Local set or get) or (Global set or get Bytecode.)
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);

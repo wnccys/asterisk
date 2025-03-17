@@ -298,7 +298,7 @@ impl<'a> Parser<'a> {
         let prefix_rule = get_rule(&self.previous.as_ref().unwrap().code).prefix;
 
         let can_assign = precedence <= Precedence::Assignment;
-        (prefix_rule)(self, can_assign);
+        prefix_rule(self, can_assign);
 
         while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
             self.advance();

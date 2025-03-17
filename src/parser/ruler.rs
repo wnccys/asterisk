@@ -166,7 +166,7 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 
 /// Distinguish between re-assign and get variable already set value as well as local and global variables.
 /// 
-/// Emit: (Local set or get) or (Global set or get Bytecode.)
+/// Emit: (Local set or get) or (Global set or get Bytecode).
 /// 
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);

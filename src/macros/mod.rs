@@ -1,6 +1,5 @@
-/// This file repreesents all macros definition, as well as it's imports;
+/// Generate equal comparison code for Values
 /// 
-
 macro_rules! gen_values_equal{
     ($($variant:ident($inner:ty)), *) => {
         pub fn values_equal(a: Value, b: Value) -> Value {

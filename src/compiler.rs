@@ -143,7 +143,7 @@ impl<'a> Parser<'a> {
         self.identifier_constant()
     }
 
-    /// Get variable's name by analising lexeme and emit it's Identifier as String to constants vector.
+    /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
@@ -234,6 +234,7 @@ impl<'a> Parser<'a> {
     /// Parse further expression consuming semicolon on end.
     /// 
     /// Emit: OpCode::Print
+    /// 
     pub fn print_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
@@ -243,12 +244,15 @@ impl<'a> Parser<'a> {
     /// Evaluate expression and consume ';' token.
     /// 
     /// Emit: OpCode::Pop
+    /// 
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
         self.emit_byte(OpCode::Pop);
     }
 
+    /// Calls declaration() until "}" or EOF are found, consuming "}" on end.
+    /// 
     fn block(&mut self) {
         while (!self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof)) {
             self.declaration();
@@ -257,7 +261,8 @@ impl<'a> Parser<'a> {
         self.consume(TokenCode::RightBrace, "Expected '}' end-of-block.");
     }
 
-    /// Check if current Token matches argument Token. </br>
+    /// Check if current Token matches argument Token.
+    /// 
     /// Advance parser current Token on match.
     /// 
     pub fn match_token(&mut self, token: TokenCode) -> bool {
@@ -268,6 +273,8 @@ impl<'a> Parser<'a> {
         true
     }
 
+    /// Compare current Token with param Token.
+    /// 
     pub fn check(&self, token: TokenCode) -> bool {
         self.current.unwrap().code == token
     }
@@ -327,9 +334,10 @@ impl<'a> Parser<'a> {
         }
     }
 
-    // TODO Change to Option<usize>
     /// Check for current identifier token variable name, walking backward in locals array.
-    /// Returns i32 because of -1 (No var name was found) fallback.
+    /// 
+    /// Returns i32 because of -1 (No var name was found) conventional fallback.
+    /// 
     pub fn resolve_local(&mut self) -> i32 {
         for i in (0..self.compiler.local_count).rev() {
             let local = &self.compiler.locals[i];
@@ -352,6 +360,8 @@ impl<'a> Parser<'a> {
         self.compiler.scope_depth += 1;
     }
 
+    /// Decrease compiler scope_depth sanitizing (pop) values from stack
+    /// 
     pub fn end_scope(&mut self) {
         self.compiler.scope_depth -= 1;
 
@@ -364,6 +374,10 @@ impl<'a> Parser<'a> {
         }
     }
 
+    /// Emit arbitrary Bytecode.
+    /// 
+    /// Emit: param code 
+    /// 
     pub fn emit_byte(&mut self, code: OpCode) {
         self.chunk
             .as_mut()
@@ -374,6 +388,7 @@ impl<'a> Parser<'a> {
     /// Write value to constant vec and let it available in stack.
     /// 
     /// Emit: OpCode::Constant
+    /// 
     pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk
@@ -384,6 +399,8 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Constant(const_index));
     }
 
+    /// Check for errors and disassemble chunk if compiler is in debug mode.
+    /// 
     fn end_compiler(&mut self) {
         if !self.had_error {
             // STUB

@@ -30,6 +30,10 @@ impl Default for Vm {
 }
 
 impl Vm {
+    /// Parse a Vec<char> into valid asterisk state.
+    /// 
+    /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
+    /// 
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
         let (chunk, result) = compile(&mut self.strings, source);
 
@@ -41,6 +45,8 @@ impl Vm {
         self.run()
     }
 
+    /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
+    /// 
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 

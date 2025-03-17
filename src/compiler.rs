@@ -242,6 +242,7 @@ impl<'a> Parser<'a> {
 
     /// Evaluate expression and consume ';' token.
     /// 
+    /// Emit: OpCode::Pop
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
@@ -370,8 +371,9 @@ impl<'a> Parser<'a> {
             .write(code, self.current.unwrap().line);
     }
 
-    /// Write value to constant vec and emit Constant bytecode to let it available in stack.
+    /// Write value to constant vec and let it available in stack.
     /// 
+    /// Emit: OpCode::Constant
     pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk

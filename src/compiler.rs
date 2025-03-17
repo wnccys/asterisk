@@ -84,13 +84,10 @@ pub fn compile(strings: &mut HashTable<String>, chars: Vec<char>) -> (Chunk, Int
 
 impl<'a> Parser<'a> {
     /// Declaration Flow Order
-    /// → exprStmt
-    ///    | forStmt
-    ///    | ifStmt
-    ///    | printStmt
-    ///    | returnStmt
-    ///    | whileStmt
-    ///    | block ;
+    /// → classDecl
+    ///    | funDecl
+    ///    | varDecl
+    ///    | statement ;
     pub fn declaration(&mut self) {
         if (self.match_token(TokenCode::Var)) {
             self.var_declaration();

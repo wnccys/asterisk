@@ -24,7 +24,7 @@ pub enum OpCode {
     GetGlobal(usize),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Chunk {
     /// The sequence of Bytecodes used to change the stack state.
     pub code: Vec<OpCode>,

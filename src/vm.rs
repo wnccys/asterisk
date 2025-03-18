@@ -1,5 +1,6 @@
 use crate::chunk::*;
-use crate::compiler::compile;
+use crate::compiler::Compiler;
+use crate::parser::n_scanner::Scanner;
 use crate::types::hash_table::HashTable;
 use crate::utils::print::{
     print_stack, 
@@ -35,7 +36,7 @@ impl Vm {
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     /// 
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        let (chunk, result) = compile(&mut self.strings, source);
+        let (chunk, result) = Compiler::compile(&mut self.strings, source);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);

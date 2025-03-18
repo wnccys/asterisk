@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul};
 
 #[derive(Debug, Clone, PartialEq, PartialOrd)]
-/// asterisk types definition
+/// Asterisk types definition.
 /// 
 pub enum Value {
     Float(f64),
@@ -10,6 +10,14 @@ pub enum Value {
     String(String),
     Void(()),
 }
+
+pub enum RefType {
+    Owned,
+    Ref,
+    MutRef,
+}
+
+pub struct Let(Value, RefType);
 
 crate::macros::gen_values_equal!(
     Float(f64),

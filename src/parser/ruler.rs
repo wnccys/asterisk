@@ -63,7 +63,7 @@ fn grouping(parser: &mut Parser, _can_assign: bool) {
 /// 
 fn number(parser: &mut Parser, _can_assign: bool) {
     // Gets slice containing token stringify'ed number (token start .. token length);
-    let value = &parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start
+    let value = &parser.scanner.chars[parser.previous.unwrap().start
         ..parser.previous.unwrap().start + parser.previous.unwrap().length];
 
     if value.contains(&'.') {
@@ -148,14 +148,12 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 /// Emit: Constant
 /// 
 fn string(parser: &mut Parser, _can_assign: bool) {
-    let str = parser.scanner.as_ref().unwrap().chars[parser.previous.unwrap().start + 1
+    let str = parser.scanner.chars[parser.previous.unwrap().start + 1
         ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
         .iter().cloned().collect();
 
     let index = parser
         .chunk
-        .as_mut()
-        .unwrap()
         .write_constant(Value::String(str));
     parser.emit_byte(OpCode::Constant(index));
 }
@@ -376,6 +374,16 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Var => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::VarMut => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Const => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

@@ -28,6 +28,7 @@ pub enum TokenCode {
     // Keywords
     And,
     Class,
+    Const,
     Else,
     False,
     For,
@@ -41,6 +42,7 @@ pub enum TokenCode {
     This,
     True,
     Var,
+    VarMut,
     While,
 
     Error,
@@ -48,12 +50,25 @@ pub enum TokenCode {
     Comment,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
+/// Parse chars to Tokens.
+/// 
 pub struct Scanner {
     pub chars: Vec<char>,
     pub start: usize,
     pub current: usize,
     pub line: i32,
+}
+
+impl Default for Scanner {
+    fn default() -> Self {
+        Scanner {
+            chars: vec![],
+            start: 0,
+            current: 0,
+            line: 1,
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -188,7 +203,13 @@ impl Scanner {
     fn identifier(&mut self) -> TokenCode {
         match self.chars[self.start] {
             'a' => self.check_keyword(1, "nd", TokenCode::And),
-            'c' => self.check_keyword(1, "lass", TokenCode::Class),
+            'c' => {
+                return match self.chars[self.start + 1] {
+                        'o' => self.check_keyword(2, "nst", TokenCode::Const),
+                        'l' => self.check_keyword(2, "ass", TokenCode::Class),
+                        _ => panic!("invalid identifier."),
+                    }
+            }
             'e' => self.check_keyword(1, "lse", TokenCode::Else),
             'f' => {
                 if self.current - self.start > 1 {
@@ -282,7 +303,10 @@ impl Scanner {
     }
 
     fn skip_comment(&mut self) -> Token {
-        while !self.reach_source_end() && self.chars[self.current] != '\n' {
+        while !self.reach_source_end() 
+            && self.chars[self.current] != '\n' 
+            && self.chars[self.current] != '\r' 
+        {
             self.current += 1;
         }
 

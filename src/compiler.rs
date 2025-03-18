@@ -10,12 +10,12 @@ use crate::vm::{InterpretResult, Vm};
 #[derive(Debug)]
 pub struct Parser<'a> {
     compiler: Compiler,
-    pub current: Option<Token>,
-    pub previous: Option<Token>,
     pub chunk: Chunk,
     pub scanner: Scanner,
-    pub had_error: bool,
-    pub panic_mode: bool,
+    pub current: Option<Token>,
+    pub previous: Option<Token>,
+    had_error: bool,
+    panic_mode: bool,
     /// String interning model
     pub strings: &'a mut HashTable<String>,
 }

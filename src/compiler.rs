@@ -12,12 +12,12 @@ pub struct Parser<'a> {
     compiler: Compiler,
     pub current: Option<Token>,
     pub previous: Option<Token>,
-    pub chunk: Option<Chunk>,
-    pub scanner: Option<Scanner>,
+    pub chunk: Chunk,
+    pub scanner: Scanner,
     pub had_error: bool,
     pub panic_mode: bool,
     /// String interning model
-    pub strings: Option<&'a mut HashTable<String>>,
+    pub strings: &'a mut HashTable<String>,
 }
 
 #[derive(Debug)]
@@ -38,34 +38,24 @@ pub struct Compiler {
 #[derive(Debug)]
 pub struct Local {
     name: Token,
-    /// Scope depth of block where variable was defined
+    /// Scope depth of block where variable was defined.
     /// 
     depth: u16,
 }
 
-impl<'a> Default for Parser<'a> {
-    fn default() -> Self {
-        Self {
-            compiler: Compiler::new(),
-            current: None,
-            previous: None,
-            chunk: Some(Chunk::default()),
-            scanner: Some(Scanner::default()),
-            had_error: false,
-            panic_mode: false,
-            strings: None,
-        }
-    }
-}
-
 pub fn compile(strings: &mut HashTable<String>, chars: Vec<char>) -> (Chunk, InterpretResult) {
     let mut parser = Parser {
-        scanner: Some(Scanner {
+        scanner: Scanner {
             chars,
             ..Default::default()
-        }),
-        strings: Some(strings),
-        ..Default::default()
+        },
+        current: None,
+        previous: None,
+        compiler: Compiler::new(),
+        chunk: Chunk::default(),
+        strings: strings,
+        had_error: false,
+        panic_mode: false,
     };
 
     parser.advance();
@@ -76,10 +66,10 @@ pub fn compile(strings: &mut HashTable<String>, chars: Vec<char>) -> (Chunk, Int
 
     parser.end_compiler();
     if parser.had_error {
-        return (parser.chunk.unwrap(), InterpretResult::RuntimeError);
+        return (parser.chunk, InterpretResult::RuntimeError);
     }
 
-    (parser.chunk.unwrap(), InterpretResult::Ok)
+    (parser.chunk, InterpretResult::Ok)
 }
 
 impl<'a> Parser<'a> {
@@ -150,7 +140,7 @@ impl<'a> Parser<'a> {
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
-        let value = self.scanner.as_ref().unwrap()
+        let value = self.scanner
             .chars[self.previous.as_ref().unwrap().start
                 ..self.previous.unwrap().start + self.previous.as_ref().unwrap().length]
             .iter()
@@ -158,8 +148,6 @@ impl<'a> Parser<'a> {
             .collect::<String>();
 
         self.chunk
-            .as_mut()
-            .unwrap()
             .write_constant(Value::String(value))
     }
 
@@ -290,7 +278,7 @@ impl<'a> Parser<'a> {
         self.previous = self.current;
 
         loop {
-            self.current = Some(self.scanner.as_mut().unwrap().scan_token());
+            self.current = Some(self.scanner.scan_token());
             #[cfg(feature = "debug")]
             dbg!(self.current);
 
@@ -389,8 +377,6 @@ impl<'a> Parser<'a> {
     /// 
     pub fn emit_byte(&mut self, code: OpCode) {
         self.chunk
-            .as_mut()
-            .unwrap()
             .write(code, self.current.unwrap().line);
     }
 
@@ -401,8 +387,6 @@ impl<'a> Parser<'a> {
     pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk
-            .as_mut()
-            .unwrap()
             .write_constant(value.to_owned());
 
         self.emit_byte(OpCode::Constant(const_index));

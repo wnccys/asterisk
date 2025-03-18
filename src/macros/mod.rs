@@ -1,4 +1,4 @@
-/// Generate equal comparison code for Values
+/// Generate equal comparison code enabling Value(_) == Value(_) 
 /// 
 macro_rules! gen_values_equal{
     ($($variant:ident($inner:ty)), *) => {

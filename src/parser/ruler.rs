@@ -1,6 +1,6 @@
 use crate::chunk::OpCode;
-use crate::compiler::Parser;
-use crate::parser::scanner::TokenCode;
+use crate::parser::Parser;
+use crate::parser::n_scanner::TokenCode;
 use crate::value::Value;
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -41,9 +41,9 @@ impl Precedence {
 /// Determine which Rules are equivalent to which Token.
 /// 
 #[derive(Debug)]
-pub struct ParseRule {
-    pub prefix: fn(&mut Parser, bool),
-    pub infix: fn(&mut Parser, bool),
+pub struct ParseRule<'a> {
+    pub prefix: fn(&mut Parser<'a>, bool),
+    pub infix: fn(&mut Parser<'a>, bool),
     pub precedence: Precedence,
 }
 
@@ -63,8 +63,7 @@ fn grouping(parser: &mut Parser, _can_assign: bool) {
 /// 
 fn number(parser: &mut Parser, _can_assign: bool) {
     // Gets slice containing token stringify'ed number (token start .. token length);
-    let value = &parser.scanner.chars[parser.previous.unwrap().start
-        ..parser.previous.unwrap().start + parser.previous.unwrap().length];
+    let value = &parser.previous.unwrap().lexeme;
 
     if value.contains(&'.') {
         let str_value: String = value.iter().collect();
@@ -148,13 +147,11 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 /// Emit: Constant
 /// 
 fn string(parser: &mut Parser, _can_assign: bool) {
-    let str = parser.scanner.chars[parser.previous.unwrap().start + 1
-        ..parser.previous.unwrap().start + parser.previous.unwrap().length - 1]
-        .iter().cloned().collect();
+    let str = parser.previous.unwrap().lexeme;
 
     let index = parser
         .chunk
-        .write_constant(Value::String(str));
+        .write_constant(Value::String(str.iter().collect::<String>()));
     parser.emit_byte(OpCode::Constant(index));
 }
 
@@ -374,11 +371,6 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Var => ParseRule {
-            prefix: none,
-            infix: none,
-            precedence: Precedence::None,
-        },
-        TokenCode::VarMut => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

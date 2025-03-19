@@ -1,4 +1,4 @@
-use crate::value::Value;
+use crate::{value::Value, vm::InterpretResult};
 
 #[derive(Debug, Clone)]
 pub enum OpCode {

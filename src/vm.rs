@@ -1,6 +1,5 @@
 use crate::chunk::*;
-use crate::compiler::Compiler;
-use crate::parser::n_scanner::Scanner;
+use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
 use crate::utils::print::{
     print_stack, 
@@ -36,7 +35,7 @@ impl Vm {
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     /// 
     pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        let (chunk, result) = Compiler::compile(&mut self.strings, source);
+        let (chunk, result) = compile(&mut self.strings, source);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);
@@ -51,21 +50,17 @@ impl Vm {
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
-        // STUB
         #[cfg(feature = "debug")]
         println!("Constants Vec: {:?}", self.chunk.constants);
 
         for i in 0..self.chunk.code.len() {
-            let opcode = &self.chunk.as_ref().code[i];
-
-            // STUB
             #[cfg(feature = "debug")]
             {
                 println!("current code: {:?}", opcode);
                 print_stack(self.chunk.as_ref());
             }
 
-            op_status = match opcode {
+            op_status = match self.chunk.code[i] {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut();
@@ -76,16 +71,6 @@ impl Vm {
                                 .expect("Error on return: stack underflow."),
                         );
                     }
-
-                    InterpretResult::Ok
-                }
-                // Bring value from constants vector to stack
-                OpCode::Constant(index) => {
-                    let temp_index = *index;
-
-                    let chunk = self.chunk.as_mut();
-                    let constant = chunk.constants[temp_index].clone();
-                    chunk.stack.push(constant);
 
                     InterpretResult::Ok
                 }
@@ -182,15 +167,23 @@ impl Vm {
                 }
                 // TODO Add correct nil value handling (not permitted)
                 OpCode::Nil => {
-                    self.chunk.stack.push(Value::Void(()));
+                    self.chunk.stack.push(Value(Void(())));
 
                     InterpretResult::Ok
                 },
+                // Bring value from constants vector to stack
+                OpCode::Constant(var_index) => {
+                    let chunk = self.chunk.as_mut();
+                    let constant = chunk.constants[var_index].clone();
+                    chunk.stack.push(constant);
+
+                    InterpretResult::Ok
+                }
                 // NOTE Check for duplicated variable
                 // Get value from value position and load it into the top of stack,
                 // this way other operations can interact with the value.
                 OpCode::GetLocal(var_index) => {
-                    let value = self.chunk.stack[*var_index].clone();
+                    let value = self.chunk.stack[var_index].clone();
 
                     self.chunk.stack.push(value);
 
@@ -198,18 +191,17 @@ impl Vm {
                 }
                 // Set new value to local variable.
                 OpCode::SetLocal(var_index) => {
-                    let temp_index = *var_index;
+                    let temp_index = var_index;
+                    let value = self.chunk.stack.last().unwrap().clone();
 
-                    self.chunk.stack[temp_index] = self.chunk.stack.last().unwrap().clone();
+                    self.chunk.stack[temp_index] = value;
 
                     InterpretResult::Ok
                 }
                 // Get variable name from constants and assign it to globals vec
                 OpCode::DefineGlobal(var_index) => {
-                    let temp_index = *var_index;
-
                     let chunk = self.chunk.as_mut();
-                    let var_name = chunk.constants[temp_index].clone();
+                    let var_name = chunk.constants[var_index].clone(); // (Value, Modifier)
 
                     match var_name {
                         Value::String(name) => {
@@ -220,9 +212,9 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                // TODO Implement better global var get
+                // TODO Implement better global var get (No extra-const register)
                 OpCode::GetGlobal(var_index) => {
-                    let temp_index = *var_index;
+                    let temp_index = var_index;
                     let chunk = self.chunk.as_mut();
 
                     let name = match &chunk.constants[temp_index] {
@@ -241,10 +233,9 @@ impl Vm {
                 }
                 // Re-assign to already set global variable.
                 OpCode::SetGlobal(index) => {
-                    let temp_index = *index;
                     let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[temp_index] {
+                    let name = match &chunk.constants[index] {
                         Value::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };

@@ -1,14 +1,27 @@
 use std::ops::{Add, Div, Mul};
 
-#[derive(Debug, Clone, PartialEq, PartialOrd)]
 /// Asterisk types definition.
 /// 
-pub enum Value {
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub struct Value {
+    pub value: Primitive,
+    pub modifier: Modifier,
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum Primitive {
     Float(f64),
     Int(i32),
     Bool(bool),
     String(String),
     Void(()),
+}
+
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+pub enum Modifier {
+    Const,
+    Let,
+    LetMut,
 }
 
 pub enum RefType {
@@ -17,9 +30,7 @@ pub enum RefType {
     MutRef,
 }
 
-pub struct Let(Value, RefType);
-
-crate::macros::gen_values_equal!(
+crate::macros::gen_primitives_equal!(
     Float(f64),
     Int(i32),
     Bool(bool),
@@ -27,38 +38,43 @@ crate::macros::gen_values_equal!(
     Void(())
 );
 
-impl Add for Value {
-    type Output = Value;
+crate::macros::gen_values_operations!(
 
-    fn add(self, other: Value) -> Value {
+);
+
+
+impl Add for Primitive {
+    type Output = PrimitiveValue;
+
+    fn add(self, other: PrimitiveValue) -> PrimitiveValue {
         match (self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a + b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a + b),
-            (Value::String(str1), Value::String(str2)) => Value::String(str1.add(&str2[..])),
+            (PrimitiveValue::Float(a), PrimitiveValue::Float(b)) => PrimitiveValue::Float(a + b),
+            (PrimitiveValue::Int(a), PrimitiveValue::Int(b)) => PrimitiveValue::Int(a + b),
+            (PrimitiveValue::String(str1), PrimitiveValue::String(str2)) => PrimitiveValue::String(str1.add(&str2[..])),
             _ => panic!("operation add not allowed."),
         }
     }
 }
 
-impl Mul for Value {
-    type Output = Value;
+impl Mul for PrimitiveValue {
+    type Output = PrimitiveValue;
 
-    fn mul(self, other: Value) -> Value {
+    fn mul(self, other: PrimitiveValue) -> PrimitiveValue {
         match (self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a * b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a * b),
+            (PrimitiveValue::Float(a), PrimitiveValue::Float(b)) => PrimitiveValue::Float(a * b),
+            (PrimitiveValue::Int(a), PrimitiveValue::Int(b)) => PrimitiveValue::Int(a * b),
             _ => panic!("operation mult not allowed."),
         }
     }
 }
 
-impl Div for Value {
-    type Output = Value;
+impl Div for PrimitiveValue {
+    type Output = PrimitiveValue;
 
-    fn div(self, other: Value) -> Value {
+    fn div(self, other: PrimitiveValue) -> PrimitiveValue {
         match (self, other) {
-            (Value::Float(a), Value::Float(b)) => Value::Float(a / b),
-            (Value::Int(a), Value::Int(b)) => Value::Int(a / b),
+            (PrimitiveValue::Float(a), PrimitiveValue::Float(b)) => PrimitiveValue::Float(a / b),
+            (PrimitiveValue::Int(a), PrimitiveValue::Int(b)) => PrimitiveValue::Int(a / b),
             _ => panic!("operation divide not allowed."),
         }
     }

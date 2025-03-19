@@ -6,3 +6,4 @@ pub mod utils;
 pub mod value;
 pub mod vm;
 pub mod macros;
+pub mod errors;

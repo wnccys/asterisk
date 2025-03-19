@@ -13,9 +13,9 @@ pub struct Scanner {
 }
 
 impl Scanner {
-    pub fn scan<'a>(source_code: &'a Vec<char>) -> TokenStream<'a> {
+    pub fn scan(source_code: &Vec<char>) -> TokenStream {
         for token in source_code.iter().collect::<String>().split(' ') {
-            println!("{token}");
+            println!("{token:?}");
         }
 
         todo!()
@@ -99,7 +99,6 @@ pub enum TokenCode {
     This,
     True,
     Var,
-    VarMut,
     While,
 
     Error,

@@ -1,5 +1,7 @@
 use std::slice::Iter;
 
+/// Token Stream created from Scanning Asterisk code.
+/// 
 pub type TokenStream<'a> = Iter<'a, Token<'a>>;
 
 #[derive(Debug, Default)]
@@ -92,6 +94,7 @@ pub enum TokenCode {
     Fun,
     If,
     Nil,
+    Modifier,
     Or,
     Print,
     Return,

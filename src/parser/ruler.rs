@@ -1,7 +1,7 @@
 use crate::chunk::OpCode;
 use crate::parser::Parser;
 use crate::parser::n_scanner::TokenCode;
-use crate::value::Value;
+use crate::value::{Modifier, Primitive, Value};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 /// Defines lower to higher operation precedence order.
@@ -33,7 +33,7 @@ impl Precedence {
             Self::Factor => Self::Unary,
             Self::Unary => Self::Call,
             Self::Call => Self::Primary,
-            Self::Primary => Self::Primary,
+            Self::Primary => panic!("Cannot increment primary precedence."),
         }
     }
 }
@@ -52,7 +52,7 @@ pub struct ParseRule<'a> {
 /// 
 fn none(_parser: &mut Parser, _can_assign: bool) {}
 
-/// Handle "()" precedence operator consuming ")" on final.
+/// Handle "()" precedence operator consuming ")" on end.
 /// 
 fn grouping(parser: &mut Parser, _can_assign: bool) {
     parser.expression();
@@ -69,12 +69,12 @@ fn number(parser: &mut Parser, _can_assign: bool) {
         let str_value: String = value.iter().collect();
         let float_value: f64 = str_value.parse().expect("invalid float value.");
 
-        parser.emit_constant(Value::Float(float_value));
+        parser.emit_constant(Value { value: Primitive::Float(float_value), modifier: Modifier::Unassigned });
     } else {
         let str_value: String = value.iter().collect();
         let int_value: i32 = str_value.parse().expect("invalid int value.");
 
-        parser.emit_constant(Value::Int(int_value));
+        parser.emit_constant(Value { value: Primitive::Int(int_value), modifier: Modifier::Unassigned });
     }
 }
 
@@ -151,7 +151,7 @@ fn string(parser: &mut Parser, _can_assign: bool) {
 
     let index = parser
         .chunk
-        .write_constant(Value::String(str.iter().collect::<String>()));
+        .write_constant(Primitive::String(str.iter().collect::<String>()));
     parser.emit_byte(OpCode::Constant(index));
 }
 
@@ -331,6 +331,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::If => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::Modifier => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

@@ -1,7 +1,7 @@
 use n_scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
 
-use crate::{chunk::{Chunk, OpCode}, errors::parser_errors::ParserResult, types::hash_table::HashTable, value::Value};
+use crate::{chunk::{Chunk, OpCode}, errors::parser_errors::ParserResult, types::hash_table::HashTable, value::{Modifier, Primitive, Value}};
 
 pub mod n_scanner;
 pub mod ruler;
@@ -108,6 +108,7 @@ impl<'a> Parser<'a> {
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     /// 
     pub fn var_declaration(&mut self) {
+        let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.");
 
         // Checks if after consuming identifier '=' Token is present.
@@ -123,7 +124,17 @@ impl<'a> Parser<'a> {
             "Expect ';' after variable declaration.",
         );
 
-        self.define_variable(global);
+        self.define_variable(global, modifier);
+    }
+
+    /// Match current Token for Modifier(Mut) / Identifier(Const).
+    /// 
+    pub fn parse_modifier(&mut self) -> Modifier {
+        match self.current.unwrap().code {
+            TokenCode::Modifier => { self.advance(); Modifier::Mut },
+            TokenCode::Identifier => Modifier::Const,
+            _ => panic!("Error parsing variable.")
+        }
     }
 
     /// Consume identifier token and emit new constant (if global).
@@ -131,6 +142,8 @@ impl<'a> Parser<'a> {
     /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
     /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
     /// of which indexes behaves to which variables by scope_depth and local_count when local vars are set.
+    /// 
+    /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     /// 
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
@@ -150,7 +163,7 @@ impl<'a> Parser<'a> {
         // Gets chars from token and set it as var name
         let value = self.previous.unwrap().lexeme;
 
-        self.chunk.write_constant(Value::String(value.iter().collect::<String>()))
+        self.chunk.write_constant(Primitive::String(value.iter().collect::<String>()))
     }
 
     pub fn declare_variable(&mut self) {
@@ -170,14 +183,13 @@ impl<'a> Parser<'a> {
         self.scope.local_count += 1;
     }
 
-    // TODO Remove call when variable just need to be peek'd.
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     /// 
     /// 
-    pub fn define_variable(&mut self, var_index: usize) {
+    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
         if self.scope.scope_depth > 0 { return }
 
-        self.emit_byte(OpCode::DefineGlobal(var_index));
+        self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
     }
 
     /// Currently this function is only called inside self.declaration().
@@ -373,14 +385,14 @@ impl<'a> Parser<'a> {
             .write(code, self.current.unwrap().line);
     }
 
-    /// Write value to constant vec and let it available in stack.
+    /// Write value to constant vec and set it's bytecode.
     /// 
     /// Emit: OpCode::Constant
     /// 
     pub fn emit_constant(&mut self, value: Value) {
         let const_index = self
             .chunk
-            .write_constant(value.to_owned());
+            .write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
     }

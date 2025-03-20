@@ -17,8 +17,9 @@ pub enum Primitive {
     Void(()),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Modifier {
+    Unassigned,
     Const,
     Mut
 }
@@ -29,12 +30,9 @@ pub enum RefType {
     MutRef,
 }
 
-crate::macros::gen_primitives_eq_ord!(
+crate::macros::gen_primitives_operations!(
     Float(f64),
-    Int(i32),
-    Bool(bool),
-    String(String),
-    Void(())
+    Int(i32)
 );
 
 crate::macros::gen_values_operations!(

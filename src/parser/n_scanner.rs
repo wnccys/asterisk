@@ -4,20 +4,47 @@ use std::slice::Iter;
 /// 
 pub type TokenStream<'a> = Iter<'a, Token<'a>>;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 #[allow(unused)]
 /// Parse chars to Tokens.
 /// 
-pub struct Scanner {
+pub struct Scanner<'a> {
+    pub source_code: &'a Vec<char>,
     pub start: usize,
     pub current: usize,
     pub line: i32,
 }
 
-impl Scanner {
-    pub fn scan(source_code: &Vec<char>) -> TokenStream {
-        for token in source_code.iter().collect::<String>().split(' ') {
-            println!("{token:?}");
+impl<'a> Scanner<'a> {
+    pub fn new(source_code: &'a Vec<char>) -> Self {
+        Scanner {
+            current: 0,
+            line: 1,
+            source_code,
+            start: 0,
+        }
+    }
+
+    pub fn scan(&mut self) -> TokenStream {
+        for line in self.source_code.iter().collect::<String>().lines() {
+                let end_semi_c = line.ends_with(";");
+
+                for _token in line.split(" ") {
+                    let mut token = _token.to_owned();
+
+                    if end_semi_c {
+                        token = token.replace(";", "");
+                    }
+
+                    println!("{:?}", token);
+
+                    if end_semi_c {
+                        self.make_token(TokenCode::SemiColon);
+                    }
+                };
+
+                println!("EOL");
+                self.line += 1;
         }
 
         todo!()
@@ -25,22 +52,22 @@ impl Scanner {
 
     /// Craft Token from TokenCode.
     /// 
-    pub fn make_token<'a>(&self, token_code: TokenCode, source_code: &'a Vec<char>) -> Token<'a> {
+    pub fn make_token(&self, token_code: TokenCode) -> Token<'a> {
         Token {
             code: token_code,
-            lexeme: &source_code[self.current..self.start],
+            lexeme: &self.source_code[self.current..self.start],
             line: self.line,
         }
     }
 
     /// Print message returning error token.
     /// 
-    pub fn error_token<'a>(&self, message: &str, source_code: &'a Vec<char>) -> Token<'a> {
+    pub fn error_token(&self, message: &str) -> Token {
         println!("{}", message);
 
         Token {
             code: TokenCode::Error,
-            lexeme: &source_code[self.current..self.start],
+            lexeme: &self.source_code[self.current..self.start],
             line: self.line,
         }
     }

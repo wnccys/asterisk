@@ -5,9 +5,10 @@ use crate::types::hash_table::HashTable;
 use crate::vm::InterpretResult;
 
 pub fn compile(strings: &mut HashTable<String>, source_code: Vec<char>) -> (Chunk, InterpretResult) {
+    let mut scanner= Scanner::new(&source_code);
     let mut parser = Parser::new(
             strings, 
-            Scanner::scan(&source_code)
+            scanner.scan(),
         );
     parser.advance();
 

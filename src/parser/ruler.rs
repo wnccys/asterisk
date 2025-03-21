@@ -390,7 +390,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
-        TokenCode::Error => ParseRule {
+        TokenCode::Error(_) => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

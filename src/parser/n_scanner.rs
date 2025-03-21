@@ -10,18 +10,20 @@ pub type TokenStream<'a> = Iter<'a, Token<'a>>;
 /// 
 pub struct Scanner<'a> {
     pub source_code: &'a Vec<char>,
-    pub start: usize,
-    pub current: usize,
+    /// Lexeme start
+    pub lex_start: usize,
+    /// Lexeme end
+    pub lex_end: usize,
     pub line: i32,
 }
 
 impl<'a> Scanner<'a> {
     pub fn new(source_code: &'a Vec<char>) -> Self {
         Scanner {
-            current: 0,
+            lex_start: 0,
+            lex_end: 0,
             line: 1,
             source_code,
-            start: 0,
         }
     }
 
@@ -55,7 +57,7 @@ impl<'a> Scanner<'a> {
     pub fn make_token(&self, token_code: TokenCode) -> Token<'a> {
         Token {
             code: token_code,
-            lexeme: &self.source_code[self.current..self.start],
+            lexeme: &self.source_code[self.lex_start..self.lex_end],
             line: self.line,
         }
     }
@@ -67,7 +69,7 @@ impl<'a> Scanner<'a> {
 
         Token {
             code: TokenCode::Error,
-            lexeme: &self.source_code[self.current..self.start],
+            lexeme: &self.source_code[self.lex_start..self.lex_end],
             line: self.line,
         }
     }

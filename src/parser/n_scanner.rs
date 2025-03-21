@@ -46,13 +46,13 @@ impl<'a> Scanner<'a> {
                     let mut token = _token.to_owned();
                     if token.is_empty() { continue }
 
-                    // TODO set lex_st/lex_ed handling
+                    /* TODO set lex_st/lex_ed handling */
 
                     if end_semi_c {
                         token = token.replace(";", "");
                     }
 
-                    // Shadow token to &str
+                    /* Shadow token to &str so we can get it corresponding TokenCode as 'static in LazyLock */
                     let token = &token[..];
 
                     match token {
@@ -61,33 +61,6 @@ impl<'a> Scanner<'a> {
                         token if token.starts_with("\"") => self.string(token),
                         _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
                     };
-
-                    // match &token[..] {
-                    //     token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
-                    //     token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
-                    //     token if token.starts_with("\"") => self.string(token),
-                    //     "(" => self.make_token(TokenCode::LeftParen),
-                    //     ")" => self.make_token(TokenCode::RightParen),
-                    //     "{" => self.make_token(TokenCode::LeftBrace),
-                    //     "}" => self.make_token(TokenCode::RightBrace),
-                    //     ";" => self.make_token(TokenCode::SemiColon),
-                    //     "," => self.make_token(TokenCode::Comma),
-                    //     "." => self.make_token(TokenCode::Dot),
-                    //     "+" => self.make_token(TokenCode::Plus),
-                    //     "-" => self.make_token(TokenCode::Minus),
-                    //     "*" => self.make_token(TokenCode::Star),
-                    //     "/" => self.make_token(TokenCode::Slash),
-                    //     "//" => self.skip_comment(&token[..]),
-                    //     "!" => self.make_token(TokenCode::Bang),
-                    //     "!=" => self.make_token(TokenCode::BangEqual),
-                    //     "=" => self.make_token(TokenCode::Equal),
-                    //     "==" => self.make_token(TokenCode::EqualEqual),
-                    //     "<" => self.make_token(TokenCode::Less),
-                    //     "<=" => self.make_token(TokenCode::LessEqual),
-                    //     ">" => self.make_token(TokenCode::Greater),
-                    //     ">=" => self.make_token(TokenCode::GreaterEqual),
-                    //     _ => self.make_token(TokenCode::Error("Invalid token."))
-                    // };
 
                     if end_semi_c {
                         self.make_token(TokenCode::SemiColon);
@@ -122,10 +95,6 @@ impl<'a> Scanner<'a> {
 
         return true;
      }
-
-    //  fn check_keywords(&mut self, token: &str) -> Token {
-    //     KEYWORDS.get(token).unwrap_or(self.make_token(TokenCode::Identifier))
-    //  }
 
      fn skip_comment(&mut self, token: &str) {
         todo!()
@@ -230,7 +199,6 @@ impl Default for &TokenCode {
 static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     let mut map: HashMap<&'static str, TokenCode> = HashMap::new();
     map.insert("and", TokenCode::And);
-    map.insert("and", TokenCode::And);
     map.insert("const", TokenCode::Const);
     map.insert("class", TokenCode::Class);
     map.insert("else", TokenCode::Else);
@@ -245,7 +213,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("super", TokenCode::Super);
     map.insert("this", TokenCode::This);
     map.insert("true", TokenCode::True);
-    map.insert("let", TokenCode::Var); // "let" was checked as "l" + "et"
+    map.insert("let", TokenCode::Var);
     map.insert("while", TokenCode::While);
     map
 });

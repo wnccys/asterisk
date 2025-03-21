@@ -291,8 +291,8 @@ impl<'a> Parser<'a> {
         #[cfg(feature = "debug")]
         dbg!(self.current);
 
-        if self.current.unwrap().code == TokenCode::Error {
-            self.error("error advancing token.");
+        if let TokenCode::Error(msg)  = self.current.unwrap().code {
+            self.error(&format!("Error advancing token. {}", msg), );
         }
     }
 
@@ -425,11 +425,10 @@ impl<'a> Parser<'a> {
         let token = self.current.unwrap();
         match token.code {
             TokenCode::Eof => println!(" at end."),
-            TokenCode::Error => (),
+            TokenCode::Error(_) => (),
             _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme.iter().collect::<String>()),
         }
 
-        println!("{}", msg);
-        // panic!();
+        panic!("{}", msg);
     }
 }

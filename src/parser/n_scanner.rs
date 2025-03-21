@@ -40,6 +40,12 @@ impl<'a> Scanner<'a> {
             .collect::<String>()
             .lines() 
             {
+				/* 
+					Check for ";" at the end of line
+					This is needed because last split token has ; on it;
+					This is also the why TokenCode::Comment is not in KEYWORDS,
+					it is handled here, separatelly.
+				*/
                 let end_semi_c = line.ends_with(";");
 
                 for _token in line.split(" ") {
@@ -70,15 +76,14 @@ impl<'a> Scanner<'a> {
 
         self.line += 1;
 
-        let mut final_stream: Vec<Token<'a>> = vec![];
+        for i in 0..self.token_stream.len() {
+            let token = &self.token_stream[i];
 
-        for token in self.token_stream.iter() {
-            if token.code == TokenCode::Comment {
-                final_stream.push(token.clone());
-            }
-        };
+            if token.code == TokenCode::Comment { self.token_stream.remove(i); }
+        }
 
-        final_stream.into_iter().collect::<Vec<Token>>().iter()
+        self.token_stream.iter()
+
     }
 
     /// Match Number values for construct integer values and float values with ".".
@@ -105,9 +110,9 @@ impl<'a> Scanner<'a> {
         return true;
      }
 
-     fn skip_comment(&mut self, token: &str) {
-        self.make_token(TokenCode::Comment);
-     }
+    //  fn skip_comment(&mut self, token: &str) {
+    //     self.make_token(TokenCode::Comment);
+    //  }
 
     fn string(&mut self, token: &str) {
         if token.ends_with("\"") {

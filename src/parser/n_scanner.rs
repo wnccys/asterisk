@@ -57,7 +57,7 @@ impl<'a> Scanner<'a> {
 
                     match token {
                         token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
-                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
+                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.") )),
                         token if token.starts_with("\"") => self.string(token),
                         _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
                     };

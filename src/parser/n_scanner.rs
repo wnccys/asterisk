@@ -191,6 +191,7 @@ pub enum TokenCode {
 }
 
 impl Default for &TokenCode {
+    /// Fallback for generic error on Token scanning.
     fn default() -> Self {
         &TokenCode::Error("Invalid token.")
     }
@@ -198,6 +199,8 @@ impl Default for &TokenCode {
 
 static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     let mut map: HashMap<&'static str, TokenCode> = HashMap::new();
+
+    // Keywords
     map.insert("and", TokenCode::And);
     map.insert("const", TokenCode::Const);
     map.insert("class", TokenCode::Class);
@@ -215,5 +218,27 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("true", TokenCode::True);
     map.insert("let", TokenCode::Var);
     map.insert("while", TokenCode::While);
+
+    // Punctuation and operators
+    map.insert("(", TokenCode::LeftParen);
+    map.insert(")", TokenCode::RightParen);
+    map.insert("{", TokenCode::LeftBrace);
+    map.insert("}", TokenCode::RightBrace);
+    map.insert(";", TokenCode::SemiColon);
+    map.insert(",", TokenCode::Comma);
+    map.insert(".", TokenCode::Dot);
+    map.insert("+", TokenCode::Plus);
+    map.insert("-", TokenCode::Minus);
+    map.insert("*", TokenCode::Star);
+    map.insert("/", TokenCode::Slash);
+    map.insert("!", TokenCode::Bang);
+    map.insert("!=", TokenCode::BangEqual);
+    map.insert("=", TokenCode::Equal);
+    map.insert("==", TokenCode::EqualEqual);
+    map.insert("<", TokenCode::Less);
+    map.insert("<=", TokenCode::LessEqual);
+    map.insert(">", TokenCode::Greater);
+    map.insert(">=", TokenCode::GreaterEqual);
+
     map
 });

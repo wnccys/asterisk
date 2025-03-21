@@ -69,7 +69,16 @@ impl<'a> Scanner<'a> {
             }
 
         self.line += 1;
-        todo!();
+
+        let mut final_stream: Vec<Token<'a>> = vec![];
+
+        for token in self.token_stream.iter() {
+            if token.code == TokenCode::Comment {
+                final_stream.push(token.clone());
+            }
+        };
+
+        final_stream.into_iter().collect::<Vec<Token>>().iter()
     }
 
     /// Match Number values for construct integer values and float values with ".".
@@ -97,11 +106,15 @@ impl<'a> Scanner<'a> {
      }
 
      fn skip_comment(&mut self, token: &str) {
-        todo!()
+        self.make_token(TokenCode::Comment);
      }
 
-    fn string(&self, token: &str) {
-        todo!()
+    fn string(&mut self, token: &str) {
+        if token.ends_with("\"") {
+            self.make_token(TokenCode::String);
+        };
+
+        self.make_token(TokenCode::Error("Invalid string token."));
      }
 
     /// Craft Token from TokenCode handling TokenCode::Error internally.
@@ -127,7 +140,7 @@ impl<'a> Scanner<'a> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(unused)]
 pub struct Token<'a> {
     pub code: TokenCode,
@@ -224,13 +237,15 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert(")", TokenCode::RightParen);
     map.insert("{", TokenCode::LeftBrace);
     map.insert("}", TokenCode::RightBrace);
-    map.insert(";", TokenCode::SemiColon);
+    // This one is automatically handled by scanner.
+    // map.insert(";", TokenCode::SemiColon);
     map.insert(",", TokenCode::Comma);
     map.insert(".", TokenCode::Dot);
     map.insert("+", TokenCode::Plus);
     map.insert("-", TokenCode::Minus);
     map.insert("*", TokenCode::Star);
     map.insert("/", TokenCode::Slash);
+    map.insert("//", TokenCode::Comment);
     map.insert("!", TokenCode::Bang);
     map.insert("!=", TokenCode::BangEqual);
     map.insert("=", TokenCode::Equal);

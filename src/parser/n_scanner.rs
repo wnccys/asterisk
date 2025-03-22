@@ -2,7 +2,7 @@ use std::{collections::HashMap, slice::Iter, sync::LazyLock};
 
 /// Token Stream created from Scanning Asterisk code.
 /// 
-pub type TokenStream<'a> = Iter<'a, Token<'a>>;
+pub type TokenStream<'a> = Iter<'a, Token>;
 
 #[derive(Debug)]
 #[allow(unused)]
@@ -10,12 +10,9 @@ pub type TokenStream<'a> = Iter<'a, Token<'a>>;
 /// 
 pub struct Scanner<'a> {
     /// Transformed into Iterator after function execution
-    pub token_stream: Vec<Token<'a>>,
+    pub token_stream: Vec<Token>,
     pub source_code: &'a Vec<char>,
-    /// Lexeme start
-    pub lex_start: usize,
-    /// Lexeme end
-    pub lex_end: usize,
+    current: Option<String>,
     pub line: i32,
 }
 
@@ -23,10 +20,7 @@ impl<'a> Scanner<'a> {
     pub fn new(source_code: &'a Vec<char>) -> Self {
         Scanner {
             token_stream: vec![],
-            // Current lexeme start
-            lex_start: 0,
-            // Current lexeme end
-            lex_end: 0,
+            current: None,
             line: 1,
             source_code,
         }
@@ -42,7 +36,7 @@ impl<'a> Scanner<'a> {
             {
 				/* 
 					Check for ";" at the end of line
-					This is needed because last split token has ; on it;
+					This is needed because last split token may have ; on it;
 					This is also the why TokenCode::Comment is not in KEYWORDS,
 					it is handled here, separatelly.
 				*/
@@ -50,28 +44,33 @@ impl<'a> Scanner<'a> {
 
                 for _token in line.split(" ") {
                     let mut token = _token.to_owned();
-                    if token.is_empty() { continue }
-
-                    /* TODO set lex_st/lex_ed handling */
 
                     if end_semi_c {
                         token = token.replace(";", "");
                     }
 
+                    dbg!("START DEBUG ====");
                     /* Shadow token to &str so we can get it corresponding TokenCode as 'static in LazyLock */
                     let token = &token[..];
+                    self.current = Some(token.to_owned());
+                    println!("SELF CURRENT: {:?}", self.current);
 
                     match token {
+						/* Handle keywords and generate identifier token if no was found between the keywords */
                         token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
-                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.") )),
+						/* */
+                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token."))),
+						/* // comment handling */
+						token if token.starts_with("\\\\") => self.make_token(*(KEYWORDS.get("\\\\")).unwrap_or_else(|| &TokenCode::Error("Invalid comment token.") )),
                         token if token.starts_with("\"") => self.string(token),
                         _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
                     };
-
-                    if end_semi_c {
-                        self.make_token(TokenCode::SemiColon);
-                    }
                 };
+
+                if end_semi_c {
+                    self.current = Some(String::from(";"));
+                    self.make_token(TokenCode::SemiColon);
+                }
             }
 
         self.line += 1;
@@ -110,10 +109,6 @@ impl<'a> Scanner<'a> {
         return true;
      }
 
-    //  fn skip_comment(&mut self, token: &str) {
-    //     self.make_token(TokenCode::Comment);
-    //  }
-
     fn string(&mut self, token: &str) {
         if token.ends_with("\"") {
             self.make_token(TokenCode::String);
@@ -125,12 +120,19 @@ impl<'a> Scanner<'a> {
     /// Craft Token from TokenCode handling TokenCode::Error internally.
     /// 
     pub fn make_token(&mut self, token_code: TokenCode) {
+        dbg!(&self.current);
+
+        let lexeme = self.current.take();
+
+        dbg!(&lexeme);
+        dbg!(&token_code);
+
         if let TokenCode::Error(msg) = token_code {
             println!("{}", msg);
 
             self.token_stream.push(Token {
                 code: TokenCode::Error(msg),
-                lexeme: &self.source_code[self.lex_start..self.lex_end],
+                lexeme: lexeme.unwrap(),
                 line: self.line,
             });
 
@@ -139,7 +141,7 @@ impl<'a> Scanner<'a> {
 
         self.token_stream.push(Token {
             code: token_code,
-            lexeme: &self.source_code[self.lex_start..self.lex_end],
+            lexeme: lexeme.unwrap(),
             line: self.line,
         })
     }
@@ -147,9 +149,9 @@ impl<'a> Scanner<'a> {
 
 #[derive(Debug, Clone, PartialEq)]
 #[allow(unused)]
-pub struct Token<'a> {
+pub struct Token {
     pub code: TokenCode,
-    pub lexeme: &'a [char],
+    pub lexeme: String,
     // pub start: usize,
     // pub length: usize,
     pub line: i32,
@@ -227,6 +229,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("for", TokenCode::For);
     map.insert("fn", TokenCode::Fun);
     map.insert("if", TokenCode::If);
+    map.insert("mut", TokenCode::Modifier);
     map.insert("nil", TokenCode::Nil);
     map.insert("or", TokenCode::Or);
     map.insert("print", TokenCode::Print);

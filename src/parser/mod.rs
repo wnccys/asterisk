@@ -130,8 +130,6 @@ impl<'a> Parser<'a> {
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     /// 
     pub fn parse_modifier(&mut self) -> Modifier {
-        println!("SELF>CURRENT ON PARSER: {:?}", self.current);
-
         match &self.current.unwrap().code {
             TokenCode::Modifier => { self.advance(); Modifier::Mut },
             TokenCode::Identifier => Modifier::Const,

@@ -65,14 +65,12 @@ fn number(parser: &mut Parser, _can_assign: bool) {
     // Gets slice containing token stringify'ed number (token start .. token length);
     let value = &parser.previous.unwrap().lexeme;
 
-    if value.contains(&'.') {
-        let str_value: String = value.iter().collect();
-        let float_value: f64 = str_value.parse().expect("invalid float value.");
+    if value.contains('.') {
+        let float_value: f64 = value.parse().expect("invalid float value.");
 
         parser.emit_constant(Value { value: Primitive::Float(float_value), modifier: Modifier::Unassigned });
     } else {
-        let str_value: String = value.iter().collect();
-        let int_value: i32 = str_value.parse().expect("invalid int value.");
+        let int_value: i32 = value.parse().expect("invalid int value.");
 
         parser.emit_constant(Value { value: Primitive::Int(int_value), modifier: Modifier::Unassigned });
     }
@@ -147,11 +145,11 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 /// Emit: Constant
 /// 
 fn string(parser: &mut Parser, _can_assign: bool) {
-    let str = parser.previous.unwrap().lexeme;
+    let str = &parser.previous.unwrap().lexeme;
 
     let index = parser
         .chunk
-        .write_constant(Primitive::String(str.iter().collect::<String>()));
+        .write_constant(Primitive::String(str.clone()));
     parser.emit_byte(OpCode::Constant(index));
 }
 

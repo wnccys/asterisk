@@ -34,8 +34,8 @@ impl Vm {
     /// 
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     /// 
-    pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        let (chunk, result) = compile(&mut self.strings, source);
+    pub fn interpret(&mut self, source_code: String) -> InterpretResult {
+        let (chunk, result) = compile(&mut self.strings, source_code);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);

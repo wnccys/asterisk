@@ -12,8 +12,9 @@ pub fn compile(strings: &mut HashTable<String>, source_code: String) -> (Chunk, 
             strings, 
             scanner.scan(),
         );
+    #[cfg(feature = "debug-scan")]
     dbg!(&parser.token_stream);
-    // parser.advance();
+    parser.advance();
 
     while parser.current.unwrap().code != TokenCode::Eof {
         parser.declaration();

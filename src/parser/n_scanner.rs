@@ -143,12 +143,11 @@ impl<'a> Scanner<'a> {
     /// Craft Token from TokenCode handling TokenCode::Error internally.
     /// 
     pub fn make_token(&mut self, token_code: TokenCode) {
-        // dbg!(&self.current);
 
         let lexeme = self.current_token.take();
 
+        #[cfg(feature = "debug-scan")]
         dbg!(&lexeme);
-        // dbg!(&token_code);
 
         if let TokenCode::Error(msg) = token_code {
             println!("{}", msg);
@@ -175,8 +174,6 @@ impl<'a> Scanner<'a> {
 pub struct Token {
     pub code: TokenCode,
     pub lexeme: String,
-    // pub start: usize,
-    // pub length: usize,
     pub line: i32,
 }
 

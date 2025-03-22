@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
@@ -34,7 +36,9 @@ impl Vm {
     /// 
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     /// 
-    pub fn interpret(&mut self, source_code: String) -> InterpretResult {
+    pub fn interpret(&mut self, source_code: &mut String) -> InterpretResult {
+        let source_code = set_strings(source_code);
+
         let (chunk, result) = compile(&mut self.strings, source_code);
 
         if result != InterpretResult::Ok {
@@ -306,4 +310,28 @@ impl Vm {
 
         InterpretResult::Ok
     }
+}
+
+/// Set special \strspc identifier after spaces.
+/// This is needed because scanner will strip all spaces, being string values or not.
+/// 
+fn set_strings(source_code: &mut String) -> String {
+    for i in 0..source_code.len() {
+        let matches = source_code.match_indices("\"").collect::<Vec<(usize, &str)>>();
+
+        // if char == '\"' {
+        //     let inner_index = i + 1;
+        //     let new_str = ;
+
+        //     while char != '\"' {
+        //         str
+        //     }
+        // }
+    }
+
+    /* Insert EOF */
+    let source_code = format!("{source_code}
+    EOF");
+
+    source_code
 }

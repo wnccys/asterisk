@@ -45,8 +45,8 @@ fn repl(vm: &mut Vm) {
         }
 
         let trimmed_buffer = buffer.trim().to_string();
-        let chars = trimmed_buffer.to_owned().chars().collect();
-        vm.interpret(chars);
+        let mut chars = trimmed_buffer.to_owned().chars().collect::<String>();
+        vm.interpret(&mut chars);
     }
 }
 
@@ -56,8 +56,8 @@ fn run_file(vm: &mut Vm, file_path: &str) {
         panic!("could not read bytes from file.")
     }
 
-    let source_chars = source_code.unwrap().chars().collect();
-    match vm.interpret(source_chars) {
+    let mut source_chars = source_code.unwrap().chars().collect::<String>();
+    match vm.interpret(&mut source_chars) {
         InterpretResult::Ok => (),
         InterpretResult::RuntimeError => std::process::exit(2),
         InterpretResult::CompileError => std::process::exit(3),

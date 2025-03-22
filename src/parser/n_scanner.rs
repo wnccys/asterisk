@@ -140,6 +140,7 @@ impl<'a> Scanner<'a> {
 
         /* Advances token until token ends with " or token is EOF */
         while !self.current_token.as_ref().unwrap().ends_with("\";") 
+            || self.current_token.as_ref().unwrap().ends_with("\"")
         {
             self.advance_token();
             // if (self.current_token)
@@ -148,7 +149,8 @@ impl<'a> Scanner<'a> {
             str = str + self.current_token.clone().unwrap().as_str();
         }
 
-        if self.current_token.as_ref().unwrap().ends_with("\";") {
+        if self.current_token.as_ref().unwrap().ends_with("\";")
+            || self.current_token.as_ref().unwrap().ends_with("\"") {
             /* Set current to crafted str to make correct string lexeme, stripping "; terminator */
             self.current_token = Some(str[0..(str.len()-2)].to_owned());
             self.make_token(TokenCode::String);

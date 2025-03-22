@@ -1,4 +1,4 @@
-use std::{collections::HashMap, slice::Iter, sync::LazyLock};
+use std::{collections::HashMap, iter::Peekable, slice::Iter, str::{Lines, Split}, sync::LazyLock};
 
 /// Token Stream created from Scanning Asterisk code.
 /// 
@@ -11,82 +11,101 @@ pub type TokenStream<'a> = Iter<'a, Token>;
 pub struct Scanner<'a> {
     /// Transformed into Iterator after function execution
     pub token_stream: Vec<Token>,
-    pub source_code: &'a Vec<char>,
-    current: Option<String>,
+    // pub source_code: &'a Vec<char>,
+    lines: &'a mut Lines<'a>,
+    tokens: Option<Peekable<Split<'a, &'a str>>>,
+    current_token: Option<String>,
     pub line: i32,
 }
 
 impl<'a> Scanner<'a> {
-    pub fn new(source_code: &'a Vec<char>) -> Self {
+    pub fn new(lines: &'a mut Lines<'a>) -> Self {
         Scanner {
             token_stream: vec![],
-            current: None,
+            lines,
+            tokens: None,
+            current_token: None,
             line: 1,
-            source_code,
         }
     }
 
     /// Scan Asterisk tokens crafting TokenStream from them.
     /// 
     pub fn scan(&mut self) -> TokenStream {
-        for line in self.source_code
-            .iter()
-            .collect::<String>()
-            .lines() 
-            {
-				/* 
-					Check for ";" at the end of line
-					This is needed because last split token may have ; on it;
-					This is also the why TokenCode::Comment is not in KEYWORDS,
-					it is handled here, separatelly.
-				*/
-                let end_semi_c = line.ends_with(";");
-
-                for _token in line.split(" ") {
-                    let mut token = _token.to_owned();
-
-                    if token.is_empty() { continue }
-
-                    if end_semi_c {
-                        token = token.replace(";", "");
-                    }
-
-                    dbg!("START DEBUG ====");
-                    /* Shadow token to &str so we can get it corresponding TokenCode as 'static in LazyLock */
-                    let token = &token[..];
-                    self.current = Some(token.to_owned());
-                    println!("SELF CURRENT: {:?}", self.current);
-
-                    match token {
-						/* Handle keywords and generate identifier token if no was found between the keywords */
-                        token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
-						/* */
-                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get("number")).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token."))),
-						/* // comment handling */
-						token if token.starts_with("\\\\") => self.make_token(*(KEYWORDS.get("\\\\")).unwrap_or_else(|| &TokenCode::Error("Invalid comment token.") )),
-                        token if token.starts_with("\"") => self.string(token),
-                        _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
-                    };
-                };
-
-                if end_semi_c {
-                    self.current = Some(String::from(";"));
-                    self.make_token(TokenCode::SemiColon);
-                }
-            }
-
-        self.line += 1;
-        self.current = Some(String::from("EOF"));
-        self.make_token(TokenCode::Eof);
-
-        for i in 0..self.token_stream.len() {
-            let token = &self.token_stream[i];
-
-            if token.code == TokenCode::Comment { self.token_stream.remove(i); }
-        }
+        self.scan_l();
 
         self.token_stream.iter()
+    }
+    
+    /// Scan Asterisk code lines parsing it's tokens recursivelly.
+    /// 
+    fn scan_l(&mut self) {
+        let line = self.lines.next();
+        /* Recursion base case */
+        if line.is_none() {
+            self.current_token = Some(String::from("EOF"));
+            self.make_token(*(KEYWORDS.get("EOF").unwrap_or_default())); 
+            return;
+        }
 
+        /* Skip line parsing when comment are found */
+        if line.unwrap().starts_with("\\\\") { return }
+
+        let end_semi_c = line.unwrap().ends_with(";");
+
+        /* Get new line iterator over the line tokens on each scan_l() call  */
+        self.tokens = Some(line.unwrap().split(" ").peekable());
+
+        /* While tokens are available, iterates. */
+        while self.tokens.as_mut().unwrap().peek().is_some() {
+            self.advance_token();
+            self.parse_tokens();
+        }
+
+        if end_semi_c {
+            self.current_token = Some(String::from(";"));
+            self.make_token(TokenCode::SemiColon);
+        }
+
+        self.line += 1;
+
+        /* Iterates over line recursivelly */
+        self.scan_l()
+    }
+
+    fn parse_tokens(&mut self) {
+        /* ; on token final handling */
+        if self.current_token.as_ref().unwrap().ends_with(";") {
+            self.current_token = Some(self.current_token.take().unwrap().replace(";", ""))
+        };
+
+        /* 
+            This bind is necessary because inner functions can advance tokens pointer and current_token.
+            An example is the self.string() call which tries to match a " to craft token.
+            Also, to be used as KEYWORDS key.
+        */
+        let token  = &self.current_token.clone().unwrap()[..];
+
+        if token.is_empty() { return }
+
+        match token {
+            /* Handle keywords and generate identifier token if no was found between the keywords */
+            token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
+            /* Numeric values handling (Int, Float) */
+            token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get("number")).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token."))),
+            /* String handling */
+            token if token.starts_with("\"") => self.string(token),
+            _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
+        };
+    }
+
+    /// Advance token by advancing tokens Iter pointer.
+    /// This keeps tokens and current sync.
+    /// 
+    fn advance_token(&mut self) {
+        if self.tokens.as_mut().unwrap().peek().is_none() { panic!("Error advancing token") }
+
+        self.current_token = Some(self.tokens.as_mut().unwrap().next().unwrap().to_owned());
     }
 
     /// Match Number values for construct integer values and float values with ".".
@@ -124,12 +143,12 @@ impl<'a> Scanner<'a> {
     /// Craft Token from TokenCode handling TokenCode::Error internally.
     /// 
     pub fn make_token(&mut self, token_code: TokenCode) {
-        dbg!(&self.current);
+        // dbg!(&self.current);
 
-        let lexeme = self.current.take();
+        let lexeme = self.current_token.take();
 
         dbg!(&lexeme);
-        dbg!(&token_code);
+        // dbg!(&token_code);
 
         if let TokenCode::Error(msg) = token_code {
             println!("{}", msg);
@@ -267,6 +286,9 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("<=", TokenCode::LessEqual);
     map.insert(">", TokenCode::Greater);
     map.insert(">=", TokenCode::GreaterEqual);
+
+    // General compiler track
+    map.insert("EOF", TokenCode::Eof);
 
     map
 });

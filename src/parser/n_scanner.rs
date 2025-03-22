@@ -43,8 +43,8 @@ impl<'a> Scanner<'a> {
         let line = self.lines.next();
         /* Recursion base case */
         if line.is_none() {
-            self.current_token = Some(String::from("EOF"));
-            self.make_token(*(KEYWORDS.get("EOF").unwrap_or_default())); 
+            // self.current_token = Some(String::from("EOF"));
+            // self.make_token(*(KEYWORDS.get("EOF").unwrap_or_default())); 
             return;
         }
 
@@ -103,7 +103,7 @@ impl<'a> Scanner<'a> {
     /// This keeps tokens and current sync.
     /// 
     fn advance_token(&mut self) {
-        if self.tokens.as_mut().unwrap().peek().is_none() { panic!("Error advancing token") }
+        if self.tokens.as_mut().unwrap().peek().is_none() { panic!("Error advancing token: EOF reached.") }
 
         self.current_token = Some(self.tokens.as_mut().unwrap().next().unwrap().to_owned());
     }
@@ -132,10 +132,30 @@ impl<'a> Scanner<'a> {
         return true;
      }
 
+    /// Craft string tokens iterating until find or not (emit error) " string terminator.
+    /// 
     fn string(&mut self, token: &str) {
-        if token.ends_with("\"") {
+        /* Match string  */
+        let mut str = token[1..token.len()].to_owned();
+
+        /* Advances token until token ends with " or token is EOF */
+        while !self.current_token.as_ref().unwrap().ends_with("\";") 
+        {
+            self.advance_token();
+            // if (self.current_token)
+
+            /* Concat string while advancing token */
+            str = str + self.current_token.clone().unwrap().as_str();
+        }
+
+        if self.current_token.as_ref().unwrap().ends_with("\";") {
+            /* Set current to crafted str to make correct string lexeme, stripping "; terminator */
+            self.current_token = Some(str[0..(str.len()-2)].to_owned());
             self.make_token(TokenCode::String);
-        };
+
+            return;
+        }
+
 
         self.make_token(TokenCode::Error("Invalid string token."));
      }

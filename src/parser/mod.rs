@@ -10,8 +10,8 @@ pub mod ruler;
 pub struct Parser<'a> {
     pub chunk: Chunk,
     pub token_stream: TokenStream<'a>,
-    pub current: Option<&'a Token<'a>>,
-    pub previous: Option<&'a Token<'a>>,
+    pub current: Option<&'a Token>,
+    pub previous: Option<&'a Token>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scope: Scope<'a>,
@@ -24,7 +24,7 @@ pub struct Parser<'a> {
 /// 
 #[derive(Debug)]
 pub struct Local<'a> {
-    pub token: &'a Token<'a>,
+    pub token: &'a Token,
     /// Scope depth of block where variable was defined.
     /// 
     pub depth: u16,
@@ -130,7 +130,9 @@ impl<'a> Parser<'a> {
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     /// 
     pub fn parse_modifier(&mut self) -> Modifier {
-        match self.current.unwrap().code {
+        println!("SELF>CURRENT ON PARSER: {:?}", self.current);
+
+        match &self.current.unwrap().code {
             TokenCode::Modifier => { self.advance(); Modifier::Mut },
             TokenCode::Identifier => Modifier::Const,
             _ => panic!("Error parsing variable.")
@@ -161,9 +163,9 @@ impl<'a> Parser<'a> {
     /// 
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
-        let value = self.previous.unwrap().lexeme;
+        let value = &self.previous.unwrap().lexeme;
 
-        self.chunk.write_constant(Primitive::String(value.iter().collect::<String>()))
+        self.chunk.write_constant(Primitive::String(value.clone()))
     }
 
     pub fn declare_variable(&mut self) {
@@ -426,7 +428,7 @@ impl<'a> Parser<'a> {
         match token.code {
             TokenCode::Eof => println!(" at end."),
             TokenCode::Error(_) => (),
-            _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme.iter().collect::<String>()),
+            _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme),
         }
 
         panic!("{}", msg);

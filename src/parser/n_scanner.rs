@@ -45,6 +45,8 @@ impl<'a> Scanner<'a> {
                 for _token in line.split(" ") {
                     let mut token = _token.to_owned();
 
+                    if token.is_empty() { continue }
+
                     if end_semi_c {
                         token = token.replace(";", "");
                     }
@@ -59,7 +61,7 @@ impl<'a> Scanner<'a> {
 						/* Handle keywords and generate identifier token if no was found between the keywords */
                         token if self.is_alphabetic(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier )),
 						/* */
-                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token."))),
+                        token if self.is_numeric(token) => self.make_token(*(KEYWORDS.get("number")).unwrap_or_else(|| &TokenCode::Error("Invalid numeric token."))),
 						/* // comment handling */
 						token if token.starts_with("\\\\") => self.make_token(*(KEYWORDS.get("\\\\")).unwrap_or_else(|| &TokenCode::Error("Invalid comment token.") )),
                         token if token.starts_with("\"") => self.string(token),
@@ -74,6 +76,8 @@ impl<'a> Scanner<'a> {
             }
 
         self.line += 1;
+        self.current = Some(String::from("EOF"));
+        self.make_token(TokenCode::Eof);
 
         for i in 0..self.token_stream.len() {
             let token = &self.token_stream[i];
@@ -101,7 +105,7 @@ impl<'a> Scanner<'a> {
     /// 
     fn is_alphabetic(&self, token: &str) -> bool {
         for char in token.chars() {
-            if !char.is_alphanumeric() {
+            if !char.is_alphabetic() {
                 return false;
             }
         }
@@ -230,6 +234,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("fn", TokenCode::Fun);
     map.insert("if", TokenCode::If);
     map.insert("mut", TokenCode::Modifier);
+    map.insert("number", TokenCode::Number);
     map.insert("nil", TokenCode::Nil);
     map.insert("or", TokenCode::Or);
     map.insert("print", TokenCode::Print);

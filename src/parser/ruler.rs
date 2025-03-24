@@ -1,5 +1,5 @@
 use crate::chunk::OpCode;
-use crate::parser::n_scanner::TokenCode;
+use crate::parser::scanner::TokenCode;
 use crate::parser::Parser;
 use crate::value::{Modifier, Primitive, Value};
 

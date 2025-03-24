@@ -1,4 +1,4 @@
-use n_scanner::{Token, TokenCode, TokenStream};
+use scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
 
 use crate::{
@@ -8,7 +8,7 @@ use crate::{
     value::{Modifier, Primitive, Value},
 };
 
-pub mod n_scanner;
+pub mod scanner;
 pub mod ruler;
 
 #[derive(Debug)]

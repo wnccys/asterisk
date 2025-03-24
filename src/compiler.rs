@@ -1,5 +1,5 @@
 use crate::chunk::Chunk;
-use crate::parser::n_scanner::*;
+use crate::parser::scanner::*;
 use crate::parser::Parser;
 use crate::types::hash_table::HashTable;
 use crate::vm::InterpretResult;

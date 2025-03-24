@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::Peekable, slice::Iter, str::{Lines, Split}, sync::LazyLock};
+use std::{collections::HashMap, iter::Peekable, slice::Iter, str::{Lines, Split}, sync::LazyLock, thread::sleep};
 
 /// Token Stream created from Scanning Asterisk code.
 /// 
@@ -23,35 +23,54 @@ impl<'a> Iterator for TokenIterator<'a> {
     type Item = &'a str;
 
     fn next(&mut self) -> Option<Self::Item> {
+        /* Skip whitespaces before some token char are found */
         while self.pos < self.s.len() && self.s.as_bytes()[self.pos].is_ascii_whitespace() {
             self.pos += 1;
         }
 
+        /* Source end reached */
         if self.pos >= self.s.len() {
             return None;
         }
         
         let start = self.pos;
 
+        /* Skip all whitespace parsing while between a string ("SKIPPED CHARS") */
         if self.s.as_bytes()[self.pos] == b'"' {
             self.pos += 1;
 
+            /* While line end is not reached, skip chars by incrementing counter */
             while self.pos <= self.s.len() && self.s.as_bytes()[self.pos] != b'"' {
                 self.pos += 1;
             }
 
+            /* Advance " in final parsed string */
             if self.pos < self.s.len() {
                 self.pos += 1;
             }
         } else {
+            /* Advance until a whitespace is found */
             while self.pos < self.s.len()
-                && !self.s.as_bytes()[self.pos].is_ascii_whitespace() 
-                && self.s.as_bytes()[self.pos] != b'"'
+                && !self.s.as_bytes()[self.pos].is_ascii_whitespace()
             {
+                /* 
+                    This makes the validation for tokens which ends with ';'.
+                    It prevents the current token to be increased when in pos,
+                    making the scanner correctly pass the ';' token to the next iteration.
+                    this would cause, for example let a = 32; to pos be in whitespace in the final of loop,
+                    invalidating the ';' semicolon token, this way, when a token has ; on final, 
+                    as the Some(..) return on function's final are not inclusive, it return the correct stripped token,
+                    the condition start != self.pos validate that ';' correct match, without this, when pure ';' token
+                    are scanned, it would restart the while loop, causing a infinite loop.
+                */
+                if self.s.as_bytes()[self.pos] == b';' && start != self.pos { break }
+
                 self.pos += 1;
             }
         }
 
+        #[cfg(feature = "debug-scan")]
+        dbg!(&self.s[start..self.pos]);
         Some(&self.s[start..self.pos])
     }
 }
@@ -64,11 +83,12 @@ impl<'a> Iterator for TokenIterator<'a> {
 pub struct Scanner<'a> {
     /// Transformed into Iterator after function execution
     pub token_stream: Vec<Token>,
-    // pub source_code: &'a Vec<char>,
+    // Iterator over source code lines
     lines: &'a mut Lines<'a>,
+    // Current line index
+    pub line: i32,
     tokens: Option<Peekable<TokenIterator<'a>>>,
     current_token: Option<String>,
-    pub line: i32,
 }
 
 impl<'a> Scanner<'a> {
@@ -100,23 +120,15 @@ impl<'a> Scanner<'a> {
         }
 
         /* Skip line parsing when comment are found */
-        if line.unwrap().starts_with("\\\\") { return }
-
-        let end_semi_c = line.unwrap().ends_with(";");
+        if line.unwrap().starts_with("//") { self.scan_l(); self.line +=1; return; }
 
         /* Get new line iterator over the line tokens on each scan_l() call  */
-        // TODO set manual line handling
         self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
         /* While tokens are available, iterates. */
         while self.tokens.as_mut().unwrap().peek().is_some() {
             self.advance_token();
             self.parse_tokens();
-        }
-
-        if end_semi_c {
-            self.current_token = Some(String::from(";"));
-            self.make_token(TokenCode::SemiColon);
         }
 
         self.line += 1;
@@ -126,8 +138,8 @@ impl<'a> Scanner<'a> {
     }
 
     fn parse_tokens(&mut self) {
-        /* ; on token final handling */
-        if self.current_token.as_ref().unwrap().ends_with(";") {
+        /* ; on token final handling, also check if it is the semicolon token itself */
+        if self.current_token.as_ref().unwrap().ends_with(";") && self.current_token.as_ref().unwrap().len() > 1 {
             self.current_token = Some(self.current_token.take().unwrap().replace(";", ""))
         };
 
@@ -187,24 +199,9 @@ impl<'a> Scanner<'a> {
     /// Craft string tokens iterating until find or not (emit error) " string terminator.
     /// 
     fn string(&mut self, token: &str) {
-        /* Match string  */
-        let mut str = token[1..token.len()].to_owned();
-
-        /* Advances token until token ends with " or token is EOF */
-        while !self.current_token.as_ref().unwrap().ends_with("\";") 
-            || self.current_token.as_ref().unwrap().ends_with("\"")
-        {
-            self.advance_token();
-            // if (self.current_token)
-
-            /* Concat string while advancing token */
-            str = str + self.current_token.clone().unwrap().as_str();
-        }
-
-        if self.current_token.as_ref().unwrap().ends_with("\";")
-            || self.current_token.as_ref().unwrap().ends_with("\"") {
-            /* Set current to crafted str to make correct string lexeme, stripping "; terminator */
-            self.current_token = Some(str[0..(str.len()-2)].to_owned());
+        if self.current_token.as_ref().unwrap().ends_with("\"") {
+            /* Strip "" string starter and terminator */
+            self.current_token = Some(token[1..(token.len()-1)].to_owned());
             self.make_token(TokenCode::String);
 
             return;
@@ -340,8 +337,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert(")", TokenCode::RightParen);
     map.insert("{", TokenCode::LeftBrace);
     map.insert("}", TokenCode::RightBrace);
-    // This one is automatically handled by scanner.
-    // map.insert(";", TokenCode::SemiColon);
+    map.insert(";", TokenCode::SemiColon);
     map.insert(",", TokenCode::Comma);
     map.insert(".", TokenCode::Dot);
     map.insert("+", TokenCode::Plus);

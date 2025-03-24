@@ -144,13 +144,6 @@ impl<'a> Scanner<'a> {
     }
 
     fn parse_tokens(&mut self) {
-        /* ; on token final handling, also check if it is the semicolon token itself */
-        if self.current_token.as_ref().unwrap().ends_with(";")
-            && self.current_token.as_ref().unwrap().len() > 1
-        {
-            self.current_token = Some(self.current_token.take().unwrap().replace(";", ""))
-        };
-
         /*
             This bind is necessary because inner functions can advance tokens pointer and current_token.
             An example is the self.string() call which tries to match a " to craft token.

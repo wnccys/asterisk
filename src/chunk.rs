@@ -18,7 +18,7 @@ pub enum OpCode {
     Negate,
     Print,
     GetLocal(usize),
-    SetLocal(usize),
+    SetLocal(usize, Modifier),
     DefineGlobal(usize, Modifier),
     SetGlobal(usize),
     GetGlobal(usize),

@@ -1,6 +1,9 @@
-use std::{fmt::{Display, Error}, hash::{Hash, Hasher}};
-use crate::value::{Modifier, Primitive, Value};
 use super::hasher::FNV1aHasher;
+use crate::value::{Modifier, Primitive, Value};
+use std::{
+    fmt::{Display, Error},
+    hash::{Hash, Hasher},
+};
 
 #[derive(Debug)]
 pub struct HashTable<K> {
@@ -15,17 +18,20 @@ impl<K: Clone> Default for HashTable<K> {
     }
 }
 
-impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
+impl<K> HashTable<K>
+where
+    K: Hash + Clone + PartialEq + Display,
+{
     const MAX_LOAD_FACTOR: f64 = 0.75;
 
     /// Set new entry to table.
     /// Return true if key was not present.
-    /// 
+    ///
     pub fn insert(&mut self, key: &K, value: Value) -> bool {
         self.check_cap();
 
         match self.find_entry(&key) {
-            // If key already exists, return false (no entry was added) 
+            // If key already exists, return false (no entry was added)
             // and assign new value to bucket
             (Some(_), index) => {
                 self.entries[index] = Some((key.clone(), value));
@@ -39,7 +45,7 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
     }
 
     /// Get value given a key
-    /// 
+    ///
     pub fn get(&self, key: &K) -> Option<Value> {
         self.find_entry(key).0
     }
@@ -48,7 +54,13 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
         match self.find_entry(&key) {
             (Some(_), index) => {
                 // Set tombstone (soft delete) if key is found
-                self.entries[index] = Some(( key.clone(), Value { value: Primitive::Void(()), modifier: Modifier::Unassigned} ));
+                self.entries[index] = Some((
+                    key.clone(),
+                    Value {
+                        value: Primitive::Void(()),
+                        modifier: Modifier::Unassigned,
+                    },
+                ));
 
                 Ok(())
             }
@@ -56,15 +68,17 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
         }
     }
 
-    /// Checks with tombstone compatibility if value is present using cap arithmetic 
-    /// 
+    /// Checks with tombstone compatibility if value is present using cap arithmetic
+    ///
     fn find_entry(&self, key: &K) -> (Option<Value>, usize) {
         let mut index = hash_key(key, self.entries.capacity());
 
         loop {
             let entry = &self.entries[index];
 
-            if entry.is_none() { return (None, index) }
+            if entry.is_none() {
+                return (None, index);
+            }
 
             if entry.as_ref().unwrap().0 == *key {
                 return (Some(entry.as_ref().unwrap().1.clone()), index);
@@ -78,15 +92,17 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
 
     fn check_cap(&mut self) {
         /* Check if num_elements > num_buckets
-        *
-        * + 1 because it checks for future entry (assume it is a new one)
-        */
-        if (self.entries.len() + 1) as f64 > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR) {
+         *
+         * + 1 because it checks for future entry (assume it is a new one)
+         */
+        if (self.entries.len() + 1) as f64
+            > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR)
+        {
             self.resize();
         }
     }
 
-    /// Custom resize implementation because all entries needs 
+    /// Custom resize implementation because all entries needs
     /// to be re-hashed after resize for proper late hash recover
     fn resize(&mut self) {
         let new_num_buckets = self.entries.capacity() * 2;
@@ -104,7 +120,7 @@ impl<K> HashTable<K> where K: Hash + Clone + PartialEq + Display {
 }
 
 /// Hash given key based on entries capacity
-/// 
+///
 pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize {
     let mut hasher = FNV1aHasher::new();
     key.hash(&mut hasher);
@@ -120,14 +136,38 @@ mod tests {
     fn same_key_same_value_test() {
         let mut table: HashTable<String> = HashTable::default();
 
-        table.insert(&String::from("a"), Value { value: Primitive::Int(1), modifier: Modifier::Unassigned } );
-        table.insert(&String::from("b"), Value { value: Primitive::Int(2), modifier: Modifier::Unassigned } );
-        
+        table.insert(
+            &String::from("a"),
+            Value {
+                value: Primitive::Int(1),
+                modifier: Modifier::Unassigned,
+            },
+        );
+        table.insert(
+            &String::from("b"),
+            Value {
+                value: Primitive::Int(2),
+                modifier: Modifier::Unassigned,
+            },
+        );
+
         let a = table.get(&String::from("a"));
         let b = table.get(&String::from("b"));
 
-        assert_eq!(a.unwrap(), Value { value: Primitive::Int(1), modifier: Modifier::Unassigned } );
-        assert_eq!(b.unwrap(), Value { value: Primitive::Int(2), modifier: Modifier::Unassigned } );
+        assert_eq!(
+            a.unwrap(),
+            Value {
+                value: Primitive::Int(1),
+                modifier: Modifier::Unassigned
+            }
+        );
+        assert_eq!(
+            b.unwrap(),
+            Value {
+                value: Primitive::Int(2),
+                modifier: Modifier::Unassigned
+            }
+        );
     }
 
     // #[test]

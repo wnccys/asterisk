@@ -1,6 +1,3 @@
-let mut a: &Int = 40;
-let b: &String = "20";
-let c: String = &b;
-
+let a = "manoj mule";
+// let b = 32;
 print a;
-print b;

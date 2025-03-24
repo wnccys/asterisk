@@ -1,0 +1,6 @@
+let mut a: &Int = 40;
+let b: &String = "20";
+let c: String = &b;
+
+print a;
+print b;

@@ -1,7 +1,12 @@
 use n_scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
 
-use crate::{chunk::{Chunk, OpCode}, errors::parser_errors::ParserResult, types::hash_table::HashTable, value::{Modifier, Primitive, Value}};
+use crate::{
+    chunk::{Chunk, OpCode},
+    errors::parser_errors::ParserResult,
+    types::hash_table::HashTable,
+    value::{Modifier, Primitive, Value},
+};
 
 pub mod n_scanner;
 pub mod ruler;
@@ -16,43 +21,40 @@ pub struct Parser<'a> {
     pub panic_mode: bool,
     pub scope: Scope<'a>,
     /// String interning model
-    /// 
+    ///
     pub _strings: &'a mut HashTable<String>,
 }
 
 /// Represents a block-scope.
-/// 
+///
 #[derive(Debug)]
 pub struct Local<'a> {
     pub token: &'a Token,
     /// Scope depth of block where variable was defined.
-    /// 
+    ///
     pub depth: u16,
 }
 
 impl<'a> Local<'a> {
     fn new(token: &'a Token, depth: u16) -> Self {
-        Local {
-            token,
-            depth
-        }
+        Local { token, depth }
     }
 }
 
 /// General scope handler.
-/// 
+///
 #[derive(Debug)]
 pub struct Scope<'a> {
     /// Represents all local variables, resolved dynamically at runtime, without a Constant Bytecode.
-    /// 
+    ///
     pub locals: Vec<Local<'a>>,
     /// Represents how many locals are in the scope
-    /// 
+    ///
     pub local_count: usize,
-    /// Represents the number of blocks surrounding the chunk of code whose are being compiled. 
-    /// 
+    /// Represents the number of blocks surrounding the chunk of code whose are being compiled.
+    ///
     /// Note:. (0) = global scope.
-    /// 
+    ///
     pub scope_depth: u16,
 }
 
@@ -85,17 +87,15 @@ impl<'a> Parser<'a> {
     ///    | funDecl
     ///    | varDecl
     ///    | statement ;
-    /// 
+    ///
     pub fn declaration(&mut self) {
         if self.match_token(TokenCode::Var) {
             self.var_declaration();
-        } 
-        else if self.match_token(TokenCode::LeftBrace) {
+        } else if self.match_token(TokenCode::LeftBrace) {
             self.begin_scope();
             self.block();
             self.end_scope();
-        }
-        else {
+        } else {
             // Declaration Control Flow Fallback
             self.statement();
         }
@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
-    /// 
+    ///
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.");
@@ -128,23 +128,26 @@ impl<'a> Parser<'a> {
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
-    /// 
+    ///
     pub fn parse_modifier(&mut self) -> Modifier {
         match &self.current.unwrap().code {
-            TokenCode::Modifier => { self.advance(); Modifier::Mut },
+            TokenCode::Modifier => {
+                self.advance();
+                Modifier::Mut
+            }
             TokenCode::Identifier => Modifier::Const,
-            _ => panic!("Error parsing variable.")
+            _ => panic!("Error parsing variable."),
         }
     }
 
     /// Consume identifier token and emit new constant (if global).
-    /// 
+    ///
     /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
     /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
     /// of which indexes behaves to which variables by scope_depth and local_count when local vars are set.
-    /// 
+    ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
-    /// 
+    ///
     pub fn parse_variable(&mut self, error_msg: &str) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
 
@@ -158,7 +161,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
-    /// 
+    ///
     pub fn identifier_constant(&mut self) -> usize {
         // Gets chars from token and set it as var name
         let value = &self.previous.unwrap().lexeme;
@@ -167,14 +170,16 @@ impl<'a> Parser<'a> {
     }
 
     pub fn declare_variable(&mut self) {
-        if self.scope.scope_depth == 0 { return }
+        if self.scope.scope_depth == 0 {
+            return;
+        }
 
         self.add_local();
     }
 
     // TODO Add variable shadowing support
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
-    /// 
+    ///
     fn add_local(&mut self) {
         let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth);
         local.depth = self.scope.scope_depth;
@@ -184,17 +189,19 @@ impl<'a> Parser<'a> {
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
-    /// 
-    /// 
+    ///
+    ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        if self.scope.scope_depth > 0 { return }
+        if self.scope.scope_depth > 0 {
+            return;
+        }
 
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
     }
 
     /// Currently this function is only called inside self.declaration().
-    /// 
-    /// Statement Flow Order 
+    ///
+    /// Statement Flow Order
     /// → exprStmt
     ///    | forStmt
     ///    | ifStmt
@@ -202,7 +209,7 @@ impl<'a> Parser<'a> {
     ///    | returnStmt
     ///    | whileStmt
     ///    | block ;
-    /// 
+    ///
     pub fn statement(&mut self) {
         if self.match_token(TokenCode::Print) {
             self.print_statement();
@@ -234,9 +241,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse further expression consuming semicolon on end.
-    /// 
+    ///
     /// Emit: OpCode::Print
-    /// 
+    ///
     pub fn print_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
@@ -244,9 +251,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Evaluate expression and consume ';' token.
-    /// 
+    ///
     /// Emit: OpCode::Pop
-    /// 
+    ///
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
@@ -254,7 +261,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
-    /// 
+    ///
     pub fn block(&mut self) {
         while !self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof) {
             self.declaration();
@@ -264,9 +271,9 @@ impl<'a> Parser<'a> {
     }
 
     /// Check if current Token matches argument Token.
-    /// 
+    ///
     /// Advance parser current Token on match.
-    /// 
+    ///
     pub fn match_token(&mut self, token: TokenCode) -> bool {
         if !self.check(token) {
             return false;
@@ -276,13 +283,13 @@ impl<'a> Parser<'a> {
     }
 
     /// Compare current Token with param Token.
-    /// 
+    ///
     pub fn check(&self, token: TokenCode) -> bool {
         self.current.unwrap().code == token
     }
 
     /// Scan new token and set it as self.current.
-    /// 
+    ///
     pub fn advance(&mut self) {
         self.previous = self.current;
 
@@ -291,16 +298,16 @@ impl<'a> Parser<'a> {
         #[cfg(feature = "debug")]
         dbg!(self.current);
 
-        if let TokenCode::Error(msg)  = self.current.unwrap().code {
-            self.error(&format!("Error advancing token. {}", msg), );
+        if let TokenCode::Error(msg) = self.current.unwrap().code {
+            self.error(&format!("Error advancing token. {}", msg));
         }
     }
 
     /// Evaluate and emit or get values from Stack.
-    /// 
-    /// Expressions are Pratt-Parsed evaluated, each expression Bytecode are emitted throught 
+    ///
+    /// Expressions are Pratt-Parsed evaluated, each expression Bytecode are emitted throught
     /// the prefix and infix rules which matches a Token and handle it's correct behavior.
-    /// 
+    ///
     pub fn expression(&mut self) {
         self.parse_precedence(Precedence::Assignment);
     }
@@ -322,7 +329,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Match token_code with self.current and advance if true.
-    /// 
+    ///
     pub fn consume(&mut self, token_code: TokenCode, msg: &str) {
         if self.current.unwrap().code == token_code {
             self.advance();
@@ -332,14 +339,14 @@ impl<'a> Parser<'a> {
     }
 
     /// Check for current identifier token variable name, walking backward in locals array.
-    /// 
-    /// This function iterates over the Compiler's locals reverselly searching for a Token which 
+    ///
+    /// This function iterates over the Compiler's locals reverselly searching for a Token which
     /// matches parser.previous (self.previous) Token.
-    /// 
+    ///
     /// Returns i32 because of -1 (No var name was found) conventional fallback.
-    /// 
+    ///
     /// O(n)
-    /// 
+    ///
     pub fn resolve_local(&mut self) -> i32 {
         for i in (0..self.scope.local_count).rev() {
             let local = &self.scope.locals[i];
@@ -363,13 +370,12 @@ impl<'a> Parser<'a> {
     }
 
     /// Decrease compiler scope_depth sanitizing (pop) values from stack
-    /// 
+    ///
     pub fn end_scope(&mut self) {
         self.scope.scope_depth -= 1;
 
-        while self.scope.local_count > 0 &&
-            self.scope.locals[self.scope.local_count - 1].depth >
-            self.scope.scope_depth 
+        while self.scope.local_count > 0
+            && self.scope.locals[self.scope.local_count - 1].depth > self.scope.scope_depth
         {
             self.emit_byte(OpCode::Pop);
             self.scope.local_count -= 1;
@@ -377,34 +383,33 @@ impl<'a> Parser<'a> {
     }
 
     /// Emit arbitrary Bytecode.
-    /// 
-    /// Emit: param code 
-    /// 
+    ///
+    /// Emit: param code
+    ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.chunk
-            .write(code, self.current.unwrap().line);
+        self.chunk.write(code, self.current.unwrap().line);
     }
 
     /// Write value to constant vec and set it's bytecode.
-    /// 
+    ///
     /// Emit: OpCode::Constant
-    /// 
+    ///
     pub fn emit_constant(&mut self, value: Value) {
-        let const_index = self
-            .chunk
-            .write_constant(value.to_owned().value);
+        let const_index = self.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
     }
 
     pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
-        if a.lexeme.len() != b.lexeme.len() { return false; }
+        if a.lexeme.len() != b.lexeme.len() {
+            return false;
+        }
 
         return a.code == b.code;
     }
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.
-    /// 
+    ///
     pub fn end_compiler(&mut self) -> Chunk {
         if !self.had_error {
             // STUB
@@ -416,7 +421,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Panic on errors with panic_mode handling.
-    /// 
+    ///
     pub fn error(&self, msg: &str) {
         if self.panic_mode {
             return;

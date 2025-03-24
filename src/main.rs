@@ -1,12 +1,12 @@
 mod chunk;
 mod compiler;
+mod errors;
+mod macros;
 mod parser;
 mod types;
 mod utils;
 mod value;
 mod vm;
-mod macros;
-mod errors;
 
 use std::io::{BufRead, Write};
 use std::{env, fs, io};

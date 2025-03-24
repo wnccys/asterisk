@@ -1,7 +1,7 @@
 use std::ops::{Add, Div, Mul};
 
 /// Asterisk types definition.
-/// 
+///
 #[derive(Debug, Clone)]
 pub struct Value {
     pub value: Primitive,
@@ -21,7 +21,7 @@ pub enum Primitive {
 pub enum Modifier {
     Unassigned,
     Const,
-    Mut
+    Mut,
 }
 
 pub enum RefType {
@@ -30,12 +30,6 @@ pub enum RefType {
     MutRef,
 }
 
-crate::macros::gen_primitives_operations!(
-    Float(f64),
-    Int(i32)
-);
+crate::macros::gen_primitives_operations!(Float(f64), Int(i32));
 
-crate::macros::gen_values_operations!(
-    Int(i32),
-    Float(f64)
-);
+crate::macros::gen_values_operations!(Int(i32), Float(f64));

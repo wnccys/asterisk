@@ -9,4 +9,3 @@ impl fmt::Display for xError {
         write!(f, "Error")
     }
 }
-

@@ -37,14 +37,14 @@ pub struct Chunk {
 
 impl Chunk {
     /// Push to code vec.
-    /// 
+    ///
     pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.lines.push(line);
     }
 
     /// Push to constants vec.
-    /// 
+    ///
     pub fn write_constant(&mut self, value: Primitive) -> usize {
         self.constants.push(value);
         self.constants.len() - 1

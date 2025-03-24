@@ -1,5 +1,5 @@
 /// Generate equal comparison code enabling Primitive(_) == Primitive(_), Primitive(_) > Primitive(_)
-/// 
+///
 macro_rules! gen_primitives_operations {
     ($($variant:ident($inner:ty)), *) => {
         use std::cmp::Ordering;
@@ -8,7 +8,7 @@ macro_rules! gen_primitives_operations {
             type Output = Primitive;
 
             fn add(self, other: Self) -> Primitive {
-                match (self, other) { 
+                match (self, other) {
                     $(
                         (
                             Primitive::$variant(value_a),
@@ -69,7 +69,7 @@ macro_rules! gen_primitives_operations {
                 }
             }
         }
-        
+
         impl PartialOrd for Primitive {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 match (self, other) {
@@ -88,14 +88,14 @@ macro_rules! gen_primitives_operations {
 
 /// Generate add, mul, and div for it's respective values.
 /// Strings can only be added; Other implementations are only allowed in numbers (Int and Float)
-/// 
+///
 macro_rules! gen_values_operations {
     ($($variant:ident($inner:ty)), *) => {
         impl Add for Value {
             type Output = Value;
 
             fn add(self, other: Self) -> Value {
-                match (self, other) { 
+                match (self, other) {
                     $(
                         (
                             Value { value: Primitive::$variant(value_a), modifier },

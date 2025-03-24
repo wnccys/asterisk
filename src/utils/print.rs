@@ -10,7 +10,9 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) {
     // Recursion base case
-    if offset >= chunk.code.len() { return }
+    if offset >= chunk.code.len() {
+        return;
+    }
 
     print!("{offset:0>4} ");
     verify_lines(offset, chunk);

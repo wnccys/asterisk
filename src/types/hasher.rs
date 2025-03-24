@@ -4,7 +4,7 @@ const OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 const FNV_PRIME: u64 = 0x100000001b3;
 
 pub struct FNV1aHasher {
-    hash: u64
+    hash: u64,
 }
 
 impl FNV1aHasher {

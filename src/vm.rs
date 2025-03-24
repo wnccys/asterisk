@@ -238,11 +238,12 @@ impl Vm {
                 /*
                     Set new value to local variable.
                 */
-                OpCode::SetLocal(var_index) => {
-                    let temp_index = var_index;
+                OpCode::SetLocal(var_index, modifier) => {
                     let value = self.chunk.stack.last().unwrap().clone();
 
-                    self.chunk.stack[temp_index] = value;
+                    if modifier != Modifier::Mut { panic!("Cannot assign to immutable variable.")}
+
+                    self.chunk.stack[var_index] = value;
 
                     InterpretResult::Ok
                 }

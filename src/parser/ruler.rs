@@ -170,9 +170,9 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
 
     let var_index = parser.resolve_local();
 
-    if var_index != -1 {
-        get_op = OpCode::GetLocal(var_index as usize);
-        set_op = OpCode::SetLocal(var_index as usize);
+    if var_index.is_some() {
+        get_op = OpCode::GetLocal(var_index.unwrap().0 as usize);
+        set_op = OpCode::SetLocal(var_index.unwrap().0 as usize, var_index.unwrap().1);
     } else {
         let var_index = parser.identifier_constant();
 

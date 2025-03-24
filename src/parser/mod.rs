@@ -30,14 +30,15 @@ pub struct Parser<'a> {
 #[derive(Debug)]
 pub struct Local<'a> {
     pub token: &'a Token,
+    pub modifier: Modifier,
     /// Scope depth of block where variable was defined.
     ///
     pub depth: u16,
 }
 
 impl<'a> Local<'a> {
-    fn new(token: &'a Token, depth: u16) -> Self {
-        Local { token, depth }
+    fn new(token: &'a Token, depth: u16, modifier: Modifier) -> Self {
+        Local { modifier, token, depth }
     }
 }
 
@@ -109,7 +110,7 @@ impl<'a> Parser<'a> {
     ///
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
-        let global = self.parse_variable("Expect variable name.");
+        let global = self.parse_variable("Expect variable name.", modifier);
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
@@ -148,7 +149,7 @@ impl<'a> Parser<'a> {
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     ///
-    pub fn parse_variable(&mut self, error_msg: &str) -> usize {
+    pub fn parse_variable(&mut self, error_msg: &str, modifier: Modifier) -> usize {
         self.consume(TokenCode::Identifier, error_msg);
 
         // Check if var is global
@@ -156,7 +157,7 @@ impl<'a> Parser<'a> {
             return self.identifier_constant();
         }
 
-        self.declare_variable();
+        self.declare_variable(modifier);
         return 0;
     }
 
@@ -169,19 +170,19 @@ impl<'a> Parser<'a> {
         self.chunk.write_constant(Primitive::String(value.clone()))
     }
 
-    pub fn declare_variable(&mut self) {
+    pub fn declare_variable(&mut self, modifier: Modifier) {
         if self.scope.scope_depth == 0 {
             return;
         }
 
-        self.add_local();
+        self.add_local(modifier);
     }
 
     // TODO Add variable shadowing support
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
-    fn add_local(&mut self) {
-        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth);
+    fn add_local(&mut self, modifier: Modifier) {
+        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier);
         local.depth = self.scope.scope_depth;
         self.scope.locals.push(local);
 
@@ -347,7 +348,7 @@ impl<'a> Parser<'a> {
     ///
     /// O(n)
     ///
-    pub fn resolve_local(&mut self) -> i32 {
+    pub fn resolve_local(&mut self) -> Option<(i32, Modifier)> {
         for i in (0..self.scope.local_count).rev() {
             let local = &self.scope.locals[i];
 
@@ -358,11 +359,11 @@ impl<'a> Parser<'a> {
             }
 
             if self.identify_constant(&local.token, &self.previous.unwrap()) {
-                return i as i32;
+                return Some((i as i32, local.modifier));
             }
         }
 
-        return -1;
+        None
     }
 
     pub fn begin_scope(&mut self) {

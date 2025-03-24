@@ -1,5 +1,7 @@
 pub mod chunk;
 pub mod compiler;
+pub mod errors;
+pub mod macros;
 pub mod parser;
 pub mod types;
 pub mod utils;

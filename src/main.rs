@@ -1,10 +1,13 @@
 mod chunk;
 mod compiler;
+mod errors;
+mod macros;
 mod parser;
 mod types;
 mod utils;
 mod value;
 mod vm;
+
 use std::io::{BufRead, Write};
 use std::{env, fs, io};
 use vm::{InterpretResult, Vm};
@@ -42,7 +45,7 @@ fn repl(vm: &mut Vm) {
         }
 
         let trimmed_buffer = buffer.trim().to_string();
-        let chars: Vec<char> = trimmed_buffer.to_owned().chars().collect();
+        let chars = trimmed_buffer.to_owned().chars().collect();
         vm.interpret(chars);
     }
 }
@@ -53,7 +56,7 @@ fn run_file(vm: &mut Vm, file_path: &str) {
         panic!("could not read bytes from file.")
     }
 
-    let source_chars: Vec<char> = source_code.unwrap().chars().collect();
+    let source_chars = source_code.unwrap().chars().collect();
     match vm.interpret(source_chars) {
         InterpretResult::Ok => (),
         InterpretResult::RuntimeError => std::process::exit(2),

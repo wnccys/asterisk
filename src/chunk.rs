@@ -1,4 +1,4 @@
-use crate::value::Value;
+use crate::value::{Modifier, Primitive, Value};
 
 #[derive(Debug, Clone)]
 pub enum OpCode {
@@ -19,33 +19,33 @@ pub enum OpCode {
     Print,
     GetLocal(usize),
     SetLocal(usize),
-    DefineGlobal(usize),
+    DefineGlobal(usize, Modifier),
     SetGlobal(usize),
     GetGlobal(usize),
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Chunk {
     /// The sequence of Bytecodes used to change the stack state.
     pub code: Vec<OpCode>,
     /// Where the Bytecodes' operations itself are executed.
     pub stack: Vec<Value>,
     /// Where values are saved before being used.
-    pub constants: Vec<Value>,
+    pub constants: Vec<Primitive>,
     pub lines: Vec<i32>,
 }
 
 impl Chunk {
-    /// Write to code vec.
-    /// 
+    /// Push to code vec.
+    ///
     pub fn write(&mut self, byte: OpCode, line: i32) {
         self.code.push(byte);
         self.lines.push(line);
     }
 
-    /// Write to constants vec.
-    /// 
-    pub fn write_constant(&mut self, value: Value) -> usize {
+    /// Push to constants vec.
+    ///
+    pub fn write_constant(&mut self, value: Primitive) -> usize {
         self.constants.push(value);
         self.constants.len() - 1
     }

@@ -1,0 +1,3 @@
+let a = "str &str";
+// let b = 32;
+print a;

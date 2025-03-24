@@ -1,10 +1,8 @@
 use crate::chunk::*;
 use crate::compiler::compile;
-use crate::types::Table;
-use crate::utils::print::{
-    print_stack, 
-    print_value};
-use crate::value::{values_equal, Value};
+use crate::types::hash_table::HashTable;
+use crate::utils::print::{print_stack, print_value};
+use crate::value::{Modifier, Primitive, Value};
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -15,23 +13,33 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Box<Chunk>,
-    globals: Table,
-    strings: Table,
+    globals: HashTable<String>,
+    strings: HashTable<String>,
 }
 
 impl Default for Vm {
     fn default() -> Self {
         Self {
             chunk: Box::default(),
-            globals: Table::default(),
-            strings: Table::default(),
+            globals: HashTable::default(),
+            strings: HashTable::default(),
         }
     }
 }
 
 impl Vm {
-    pub fn interpret(&mut self, source: Vec<char>) -> InterpretResult {
-        let (chunk, result) = compile(&mut self.strings, source);
+    /// Parse a Vec<char> into valid asterisk state.
+    ///
+    /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
+    ///
+    pub fn interpret(&mut self, source_code: String) -> InterpretResult {
+        let source_code = format!(
+            "{}
+        EOF",
+            source_code
+        );
+
+        let (chunk, result) = compile(&mut self.strings, source_code);
 
         if result != InterpretResult::Ok {
             panic!("{:?}", result);
@@ -41,24 +49,22 @@ impl Vm {
         self.run()
     }
 
+    /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
+    ///
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
 
-        // STUB
         #[cfg(feature = "debug")]
         println!("Constants Vec: {:?}", self.chunk.constants);
 
         for i in 0..self.chunk.code.len() {
-            let opcode = &self.chunk.as_ref().code[i];
-
-            // STUB
             #[cfg(feature = "debug")]
             {
                 println!("current code: {:?}", opcode);
                 print_stack(self.chunk.as_ref());
             }
 
-            op_status = match opcode {
+            op_status = match self.chunk.code[i] {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut();
@@ -66,19 +72,10 @@ impl Vm {
                             &chunk
                                 .stack
                                 .pop()
-                                .expect("Error on return: stack underflow."),
+                                .expect("Error on return: stack underflow.")
+                                .value,
                         );
                     }
-
-                    InterpretResult::Ok
-                }
-                // Bring value from constants vector to stack
-                OpCode::Constant(index) => {
-                    let temp_index = *index;
-
-                    let chunk = self.chunk.as_mut();
-                    let constant = chunk.constants[temp_index].clone();
-                    chunk.stack.push(constant);
 
                     InterpretResult::Ok
                 }
@@ -88,9 +85,27 @@ impl Vm {
                         let to_be_negated = chunk.stack.pop().unwrap();
 
                         match to_be_negated {
-                            Value::Int(value) => chunk.stack.push(Value::Int(-value)),
-                            Value::Float(value) => chunk.stack.push(Value::Float(-value)),
-                            Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
+                            Value {
+                                value: Primitive::Int(value),
+                                modifier,
+                            } => chunk.stack.push(Value {
+                                value: Primitive::Int(-value),
+                                modifier,
+                            }),
+                            Value {
+                                value: Primitive::Float(value),
+                                modifier,
+                            } => chunk.stack.push(Value {
+                                value: Primitive::Float(-value),
+                                modifier,
+                            }),
+                            Value {
+                                value: Primitive::Bool(value),
+                                modifier,
+                            } => chunk.stack.push(Value {
+                                value: Primitive::Bool(!value),
+                                modifier,
+                            }),
                             _ => panic!("Operation not allowed."),
                         }
                     }
@@ -102,7 +117,13 @@ impl Vm {
                     let to_be_negated = chunk.stack.pop().unwrap();
 
                     match to_be_negated {
-                        Value::Bool(value) => chunk.stack.push(Value::Bool(!value)),
+                        Value {
+                            value: Primitive::Bool(value),
+                            modifier,
+                        } => chunk.stack.push(Value {
+                            value: Primitive::Bool(!value),
+                            modifier,
+                        }),
                         _ => panic!("Value should be a boolean."),
                     }
 
@@ -125,13 +146,19 @@ impl Vm {
                 }
                 OpCode::True => {
                     let chunk = self.chunk.as_mut();
-                    chunk.stack.push(Value::Bool(true));
+                    chunk.stack.push(Value {
+                        value: Primitive::Bool(true),
+                        modifier: Modifier::Unassigned,
+                    });
 
                     InterpretResult::Ok
                 }
                 OpCode::False => {
                     let chunk = self.chunk.as_mut();
-                    chunk.stack.push(Value::Bool(false));
+                    chunk.stack.push(Value {
+                        value: Primitive::Bool(false),
+                        modifier: Modifier::Unassigned,
+                    });
 
                     InterpretResult::Ok
                 }
@@ -140,7 +167,10 @@ impl Vm {
                     let a = chunk.stack.pop().unwrap();
                     let b = chunk.stack.pop().unwrap();
 
-                    chunk.stack.push(values_equal(a, b));
+                    chunk.stack.push(Value {
+                        value: Primitive::Bool(a == b),
+                        modifier: Modifier::Unassigned,
+                    });
 
                     InterpretResult::Ok
                 }
@@ -162,7 +192,7 @@ impl Vm {
                         .pop()
                         .expect("Could not find value to print.");
 
-                    print_value(chunk);
+                    print_value(&chunk.value);
 
                     InterpretResult::Ok
                 }
@@ -175,79 +205,106 @@ impl Vm {
                 }
                 // TODO Add correct nil value handling (not permitted)
                 OpCode::Nil => {
-                    self.chunk.stack.push(Value::Void(()));
+                    self.chunk.stack.push(Value {
+                        value: Primitive::Void(()),
+                        modifier: Modifier::Unassigned,
+                    });
 
                     InterpretResult::Ok
-                },
-                // NOTE Check for duplicated variable
-                // Get value from value position and load it into the top of stack,
-                // this way other operations can interact with the value.
+                }
+                // Bring value from constants vector to stack
+                OpCode::Constant(var_index) => {
+                    let chunk = self.chunk.as_mut();
+                    let constant = chunk.constants[var_index].clone();
+                    chunk.stack.push(Value {
+                        value: constant,
+                        modifier: Modifier::Unassigned,
+                    });
+
+                    InterpretResult::Ok
+                }
+                /*
+                    // NOTE Check for duplicated variable
+                    Get value from value position and load it into the top of stack,
+                    this way other operations can interact with the value.
+                */
                 OpCode::GetLocal(var_index) => {
-                    let value = self.chunk.stack[*var_index].clone();
+                    let value = self.chunk.stack[var_index].clone();
 
                     self.chunk.stack.push(value);
 
                     InterpretResult::Ok
                 }
-                // Set new value to local variable.
+                /*
+                    Set new value to local variable.
+                */
                 OpCode::SetLocal(var_index) => {
-                    let temp_index = *var_index;
+                    let temp_index = var_index;
+                    let value = self.chunk.stack.last().unwrap().clone();
 
-                    self.chunk.stack[temp_index] = self.chunk.stack.last().unwrap().clone();
+                    self.chunk.stack[temp_index] = value;
 
                     InterpretResult::Ok
                 }
-                // Get variable name from constants and assign it to globals vec
-                OpCode::DefineGlobal(var_index) => {
-                    let temp_index = *var_index;
-
+                /*
+                    Get variable name from constants and assign it to globals vec
+                    Check for variable assignment
+                */
+                OpCode::DefineGlobal(var_index, modifier) => {
                     let chunk = self.chunk.as_mut();
-                    let var_name = chunk.constants[temp_index].clone();
+                    let var_name = chunk.constants[var_index].clone();
+                    let mut var_value = chunk.stack.pop().unwrap();
+                    var_value.modifier = modifier.clone();
 
                     match var_name {
-                        Value::String(name) => {
-                            self.globals.set(&name, chunk.stack.pop().unwrap());
+                        Primitive::String(name) => {
+                            self.globals.insert(&name, var_value);
                         }
                         _ => panic!("Invalid global variable name."),
                     }
 
                     InterpretResult::Ok
                 }
-                // TODO Implement better global var get
+                /*
+                    TODO Implement better global var get (No extra-const register)
+                */
                 OpCode::GetGlobal(var_index) => {
-                    let temp_index = *var_index;
+                    let temp_index = var_index;
                     let chunk = self.chunk.as_mut();
 
                     let name = match &chunk.constants[temp_index] {
-                        Value::String(name) => name,
+                        Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
 
                     let value = match self.globals.get(name) {
-                        Some(value) => value.value.clone(),
-                        _ => panic!(
-                            "Use of undeclared variable '{}'",
-                            name.into_iter().collect::<String>()
-                        ),
+                        Some(value) => value,
+                        None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
                     chunk.stack.push(value);
 
                     InterpretResult::Ok
                 }
-                // Re-assign to already set global variable.
+                /*
+                    Re-assign to already set global variable.
+                */
                 OpCode::SetGlobal(index) => {
-                    let temp_index = *index;
                     let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[temp_index] {
-                        Value::String(name) => name,
+                    let name = match &chunk.constants[index] {
+                        Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
 
+                    let is_mut = self.globals.get(name).unwrap().modifier == Modifier::Mut;
+                    if !is_mut {
+                        panic!("Cannot assign to a immutable variable.")
+                    }
+
                     if self
                         .globals
-                        .set(name, chunk.stack.iter().last().unwrap().to_owned())
+                        .insert(name, chunk.stack.iter().last().unwrap().to_owned())
                     {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");
@@ -262,26 +319,22 @@ impl Vm {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self
-            .chunk
-            .stack
-            .pop()
-            .expect("value b not loaded.");
+        let b = self.chunk.stack.pop().expect("value b not loaded.");
 
-        let a = self
-            .chunk
-            .stack
-            .pop()
-            .expect("value a not loaded.");
+        let a = self.chunk.stack.pop().expect("value a not loaded.");
 
         match op {
             "+" => self.chunk.stack.push(a + b),
             "*" => self.chunk.stack.push(a * b),
             "/" => self.chunk.stack.push(a / b),
-            // REVIEW check for >, < partialOrd inconvenient (apply the condition on other variants)
-            // in this case a same type as b is false;
-            ">" => self.chunk.stack.push(Value::Bool(a > b)),
-            "<" => self.chunk.stack.push(Value::Bool(a < b)),
+            ">" => self.chunk.stack.push(Value {
+                value: Primitive::Bool(a > b),
+                modifier: a.modifier,
+            }),
+            "<" => self.chunk.stack.push(Value {
+                value: Primitive::Bool(a < b),
+                modifier: a.modifier,
+            }),
             _ => panic!("invalid operation."),
         }
 

@@ -1,5 +1,5 @@
 use crate::chunk::{Chunk, OpCode};
-use crate::value::Value;
+use crate::value::{Primitive, Value};
 
 #[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
@@ -10,7 +10,9 @@ pub fn disassemble_chunk(chunk: &Chunk, name: String) {
 
 fn disassemble_instruction(chunk: &Chunk, offset: usize) {
     // Recursion base case
-    if offset >= chunk.code.len() { return }
+    if offset >= chunk.code.len() {
+        return;
+    }
 
     print!("{offset:0>4} ");
     verify_lines(offset, chunk);
@@ -33,13 +35,13 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::Print => simple_instruction("OP_PRINT", offset),
         OpCode::Pop => simple_instruction("OP_POP", offset),
         OpCode::Nil => simple_instruction("OP_NIL", offset),
-        OpCode::DefineGlobal(index) => {
+        OpCode::DefineGlobal(index, _) => {
             constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset)
         }
         OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetGlobal(index) => constant_instruction("OP_SET_GLOBAL", chunk, index, offset),
         OpCode::GetLocal(index) => byte_instruction("OP_GET_LOCAL", chunk, index, offset),
-        OpCode::SetLocal(index) => byte_instruction("OP_SET_LOCAL", chunk, index, offset)
+        OpCode::SetLocal(index) => byte_instruction("OP_SET_LOCAL", chunk, index, offset),
     };
 
     disassemble_instruction(chunk, offset);
@@ -66,16 +68,13 @@ fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> 
     return offset + 1;
 }
 
-pub fn print_value(value: &Value) {
+pub fn print_value(value: &Primitive) {
     match value {
-        Value::Float(f) => println!("{f:.1}"),
-        Value::Int(i) => println!("{i}"),
-        Value::Bool(b) => println!("{b}"),
-        Value::String(str) => {
-            let stringified: String = str.iter().collect();
-            println!("{stringified}")
-        },
-        Value::Void(t) => println!("{t:?}"),
+        Primitive::Float(f) => println!("{f:.1}"),
+        Primitive::Int(i) => println!("{i}"),
+        Primitive::Bool(b) => println!("{b}"),
+        Primitive::String(str) => println!("{str}"),
+        Primitive::Void(t) => println!("{t:?}"),
         _ => panic!("invalid value."),
     }
 }
@@ -84,7 +83,7 @@ pub fn print_stack(chunk: &Chunk) {
     println!("==stack-trace==");
     for value in chunk.stack.iter() {
         print!(">");
-        print_value(value);
+        print_value(&value.value);
     }
     println!("===end-trace===")
 }

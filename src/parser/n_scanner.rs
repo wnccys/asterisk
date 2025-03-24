@@ -5,6 +5,59 @@ use std::{collections::HashMap, iter::Peekable, slice::Iter, str::{Lines, Split}
 pub type TokenStream<'a> = Iter<'a, Token>;
 
 #[derive(Debug)]
+struct TokenIterator<'a> {
+    s: &'a str,
+    pos: usize,
+}
+
+impl<'a> TokenIterator<'a> {
+    fn new(s: &'a str) -> Self {
+        TokenIterator {
+            s,
+            pos: 0
+        }
+    }
+}
+
+impl<'a> Iterator for TokenIterator<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while self.pos < self.s.len() && self.s.as_bytes()[self.pos].is_ascii_whitespace() {
+            self.pos += 1;
+        }
+
+        if self.pos >= self.s.len() {
+            return None;
+        }
+        
+        let start = self.pos;
+
+        if self.s.as_bytes()[self.pos] == b'"' {
+            self.pos += 1;
+
+            while self.pos <= self.s.len() && self.s.as_bytes()[self.pos] != b'"' {
+                self.pos += 1;
+            }
+
+            if self.pos < self.s.len() {
+                self.pos += 1;
+            }
+        } else {
+            while self.pos < self.s.len()
+                && !self.s.as_bytes()[self.pos].is_ascii_whitespace() 
+                && self.s.as_bytes()[self.pos] != b'"'
+            {
+                self.pos += 1;
+            }
+        }
+
+        Some(&self.s[start..self.pos])
+    }
+}
+
+
+#[derive(Debug)]
 #[allow(unused)]
 /// Parse chars to Tokens.
 /// 
@@ -13,7 +66,7 @@ pub struct Scanner<'a> {
     pub token_stream: Vec<Token>,
     // pub source_code: &'a Vec<char>,
     lines: &'a mut Lines<'a>,
-    tokens: Option<Peekable<Split<'a, &'a str>>>,
+    tokens: Option<Peekable<TokenIterator<'a>>>,
     current_token: Option<String>,
     pub line: i32,
 }
@@ -53,7 +106,7 @@ impl<'a> Scanner<'a> {
 
         /* Get new line iterator over the line tokens on each scan_l() call  */
         // TODO set manual line handling
-        self.tokens = Some(make_line(line.unwrap()).peekable());
+        self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
         /* While tokens are available, iterates. */
         while self.tokens.as_mut().unwrap().peek().is_some() {
@@ -310,7 +363,3 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
 
     map
 });
-
-fn make_line<'a>(line: &'a str) -> Split<'a , &'a str> {
-    line.split(" ")
-}

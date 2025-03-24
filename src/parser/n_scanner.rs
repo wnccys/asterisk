@@ -43,8 +43,6 @@ impl<'a> Scanner<'a> {
         let line = self.lines.next();
         /* Recursion base case */
         if line.is_none() {
-            // self.current_token = Some(String::from("EOF"));
-            // self.make_token(*(KEYWORDS.get("EOF").unwrap_or_default())); 
             return;
         }
 
@@ -54,7 +52,8 @@ impl<'a> Scanner<'a> {
         let end_semi_c = line.unwrap().ends_with(";");
 
         /* Get new line iterator over the line tokens on each scan_l() call  */
-        self.tokens = Some(line.unwrap().split(" ").peekable());
+        // TODO set manual line handling
+        self.tokens = Some(make_line(line.unwrap()).peekable());
 
         /* While tokens are available, iterates. */
         while self.tokens.as_mut().unwrap().peek().is_some() {
@@ -311,3 +310,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
 
     map
 });
+
+fn make_line<'a>(line: &'a str) -> Split<'a , &'a str> {
+    line.split(" ")
+}

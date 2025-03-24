@@ -1,5 +1,3 @@
-use std::ops::Index;
-
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
@@ -37,6 +35,9 @@ impl Vm {
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     /// 
     pub fn interpret(&mut self, source_code: String) -> InterpretResult {
+        let source_code = format!("{}
+        EOF", source_code);
+
         let (chunk, result) = compile(&mut self.strings, source_code);
 
         if result != InterpretResult::Ok {

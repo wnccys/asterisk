@@ -5,6 +5,7 @@ use std::ops::{Add, Div, Mul};
 #[derive(Debug, Clone)]
 pub struct Value {
     pub value: Primitive,
+    pub ref_type: RefType,
     pub modifier: Modifier,
 }
 
@@ -24,6 +25,7 @@ pub enum Modifier {
     Mut,
 }
 
+#[derive(Debug, Clone)]
 pub enum RefType {
     Owned,
     Ref,

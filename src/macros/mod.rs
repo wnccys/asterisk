@@ -1,3 +1,6 @@
+/// Delegate partially Value and Primitive operations to Rust
+
+
 /// Generate equal comparison code enabling Primitive(_) == Primitive(_), Primitive(_) > Primitive(_)
 ///
 macro_rules! gen_primitives_operations {

@@ -245,11 +245,13 @@ impl Vm {
                     Set new value to local variable.
                 */
                 OpCode::SetLocal(var_index, modifier) => {
-                    let value = self.chunk.stack.last().unwrap().clone();
+                    let mut value = self.chunk.stack.last().unwrap().clone();
                     let variable = &mut self.chunk.stack[var_index];
 
                     if variable._type != value._type { panic!("Cannot assign {:?} to {:?}", value._type, variable._type) };
                     if modifier != Modifier::Mut { panic!("Cannot assign to immutable variable.") }
+
+                    value.modifier = variable.modifier;
 
                     *variable = value;
 
@@ -316,21 +318,23 @@ impl Vm {
                     };
 
                     let variable = self.globals.get(name).unwrap();
-
+                    dbg!(&variable);
                     if variable.modifier != Modifier::Mut {
                         panic!("Cannot assign to a immutable variable.")
                     }
 
-                    let to_be_inserted = &chunk.stack.last().unwrap();
+                    let mut to_be_inserted = chunk.stack.last().unwrap().to_owned();
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
                     if variable._type != to_be_inserted._type {
                         panic!("Error: Cannot assign {:?} to {:?} ", variable._type, to_be_inserted._type);
                     }
 
+                    to_be_inserted.modifier = variable.modifier;
+
                     if self
                         .globals
-                        .insert(name, chunk.stack.iter().last().unwrap().to_owned())
+                        .insert(name, to_be_inserted)
                     {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");

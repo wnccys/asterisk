@@ -1,4 +1,4 @@
-use crate::value::{Modifier, Primitive, Value};
+use crate::value::{Modifier, Primitive, Type, Value};
 
 #[derive(Debug, Clone)]
 pub enum OpCode {
@@ -19,7 +19,7 @@ pub enum OpCode {
     Print,
     GetLocal(usize),
     SetLocal(usize, Modifier),
-    DefineGlobal(usize, Modifier),
+    DefineGlobal(usize, Modifier, Type),
     SetGlobal(usize),
     GetGlobal(usize),
 }

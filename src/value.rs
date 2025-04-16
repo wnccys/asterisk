@@ -15,6 +15,7 @@ pub enum Primitive {
     Int(i32),
     Bool(bool),
     String(String),
+    Ref(Box<Primitive>),
     Void(()),
 }
 

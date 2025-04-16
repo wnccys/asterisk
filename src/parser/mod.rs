@@ -121,7 +121,7 @@ impl<'a> Parser<'a> {
 
             self.expression();
         } else {
-            return;
+            panic!("Uninitialized variables are not allowed.");
         }
 
         self.consume(

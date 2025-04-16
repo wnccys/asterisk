@@ -423,7 +423,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
-        if a.lexeme.len() != b.lexeme.len() {
+        if a.lexeme != b.lexeme {
             return false;
         }
 

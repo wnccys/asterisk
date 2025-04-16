@@ -9,6 +9,17 @@ pub struct Value {
     pub modifier: Modifier,
 }
 
+/* Primitives are variable assigned data, Type are the check for this data to be valid throught the runtime */
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Type {
+    Float,
+    Int,
+    Bool,
+    String,
+    Ref,
+    Void,
+}
+
 #[derive(Debug, Clone)]
 pub enum Primitive {
     Float(f64),

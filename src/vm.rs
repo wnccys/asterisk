@@ -1,6 +1,7 @@
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
+use crate::utils::parse_type;
 use crate::utils::print::{print_stack, print_value};
 use crate::value::{Modifier, Primitive, Type, Value};
 
@@ -367,16 +368,5 @@ impl Vm {
         }
 
         InterpretResult::Ok
-    }
-}
-
-/* Parses primitive to Type equivalent */
-pub fn parse_type(p: &Primitive) -> Type {
-    match p {
-        Primitive::Int(_) => Type::Int,
-        Primitive::Float(_) => Type::Float,
-        Primitive::String(_) => Type::String,
-        Primitive::Bool(_) => Type::Bool,
-        _ => Type::Void,
     }
 }

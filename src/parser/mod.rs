@@ -2,10 +2,7 @@ use scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
 
 use crate::{
-    chunk::{Chunk, OpCode},
-    errors::parser_errors::ParserResult,
-    types::hash_table::HashTable,
-    value::{Modifier, Primitive, Type, Value}, vm::parse_type,
+    chunk::{Chunk, OpCode}, errors::parser_errors::ParserResult, types::hash_table::HashTable, utils::parse_type, value::{Modifier, Primitive, Type, Value}
 };
 
 pub mod scanner;
@@ -122,7 +119,6 @@ impl<'a> Parser<'a> {
             var_type = self.parse_var_type();
             self.advance();
 
-            dbg!(&self.current.unwrap());
             self.expression();
         } else {
             self.emit_byte(OpCode::Nil);

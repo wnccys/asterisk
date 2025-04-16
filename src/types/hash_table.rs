@@ -1,5 +1,5 @@
 use super::hasher::FNV1aHasher;
-use crate::value::{Modifier, Primitive, Value};
+use crate::value::{Modifier, Primitive, Type, Value};
 use std::{
     fmt::{Display, Error},
     hash::{Hash, Hasher},
@@ -59,6 +59,7 @@ where
                     Value {
                         value: Primitive::Void(()),
                         modifier: Modifier::Unassigned,
+                        _type: Type::Void,
                     },
                 ));
 
@@ -141,6 +142,7 @@ mod tests {
             Value {
                 value: Primitive::Int(1),
                 modifier: Modifier::Unassigned,
+                _type: Type::Int,
             },
         );
         table.insert(
@@ -148,6 +150,7 @@ mod tests {
             Value {
                 value: Primitive::Int(2),
                 modifier: Modifier::Unassigned,
+                _type: Type::Int,
             },
         );
 
@@ -158,14 +161,16 @@ mod tests {
             a.unwrap(),
             Value {
                 value: Primitive::Int(1),
-                modifier: Modifier::Unassigned
+                modifier: Modifier::Unassigned,
+                _type: Type::Int,
             }
         );
         assert_eq!(
             b.unwrap(),
             Value {
                 value: Primitive::Int(2),
-                modifier: Modifier::Unassigned
+                modifier: Modifier::Unassigned,
+                _type: Type::Int,
             }
         );
     }

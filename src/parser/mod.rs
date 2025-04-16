@@ -5,7 +5,7 @@ use crate::{
     chunk::{Chunk, OpCode},
     errors::parser_errors::ParserResult,
     types::hash_table::HashTable,
-    value::{Modifier, Primitive, Type, Value},
+    value::{Modifier, Primitive, Type, Value}, vm::parse_type,
 };
 
 pub mod scanner;
@@ -116,6 +116,7 @@ impl<'a> Parser<'a> {
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
             self.expression();
+            var_type = parse_type(self.chunk.constants.last().clone().unwrap());
         // Check for typedef
         } else if self.match_token(TokenCode::Colon) {
             var_type = self.parse_var_type();

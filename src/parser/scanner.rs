@@ -1,10 +1,8 @@
 use std::{
-    collections::HashMap,
-    iter::Peekable,
-    slice::Iter,
-    str::Lines,
-    sync::LazyLock,
+    collections::HashMap, iter::Peekable, slice::Iter, str::Lines, sync::LazyLock
 };
+
+use crate::value::Type;
 
 /// Token Stream created from Scanning Asterisk code.
 ///
@@ -56,7 +54,7 @@ impl<'a> Iterator for TokenIterator<'a> {
             while self.pos < self.s.len() && !self.s.as_bytes()[self.pos].is_ascii_whitespace() {
                 /*
                     This makes the validation for tokens which ends with ';'.
-                    It prevents the current token to be increased when in pos,
+                    It prevents the current token to be increased when in [pos],
                     making the scanner correctly pass the ';' token to the next iteration.
                     this would cause, for example let a = 32; to pos be in whitespace in the final of loop,
                     invalidating the ';' semicolon token, this way, when a token has ; on final,
@@ -65,6 +63,11 @@ impl<'a> Iterator for TokenIterator<'a> {
                     are scanned, it would restart the while loop, causing a infinite loop.
                 */
                 if self.s.as_bytes()[self.pos] == b';' && start != self.pos {
+                    break;
+                }
+
+                /* Send : token to the next iteration */
+                if self.s.as_bytes()[self.pos] == b':' && start != self.pos {
                     break;
                 }
 
@@ -139,7 +142,7 @@ impl<'a> Scanner<'a> {
 
         self.line += 1;
 
-        /* Iterates over line recursivelly */
+        /* Iterates over lines recursivelly */
         self.scan_l()
     }
 
@@ -157,7 +160,11 @@ impl<'a> Scanner<'a> {
 
         match token {
             /* Handle keywords and generate identifier token if no was found between the keywords */
+            token if self.is_typedef(token) => {
+                self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid Type Token.")))
+            }
             token if self.is_alphabetic(token) => {
+                /*  Identifier is kinda a fallback for when no keyword is match */
                 self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier))
             }
             /* Numeric values handling (Int, Float) */
@@ -167,6 +174,10 @@ impl<'a> Scanner<'a> {
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),
+            // token if self.is_type_def(token) => {
+            //     self.make_token(*(KEYWORDS).get(token).unwrap_or_else(|| &TokenCode::Colon));
+            //     self.make_token(*(KEYWORDS).get("TYPEDEF").unwrap_or_else(|| &TokenCode::Error("")))
+            // },
             _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
         };
     }
@@ -204,6 +215,13 @@ impl<'a> Scanner<'a> {
         }
 
         return true;
+    }
+
+    fn is_typedef(&self, token: &str) -> bool {
+        match token {
+            "Int" | "Float" | "String" | "Bool" | "Void" => true,
+            _ => false
+        }
     }
 
     /// Craft string tokens iterating until find or not (emit error) " string terminator.
@@ -268,6 +286,7 @@ pub enum TokenCode {
     Dot,
     Minus,
     Plus,
+    Colon,
     SemiColon,
     Slash,
     Star,
@@ -295,6 +314,7 @@ pub enum TokenCode {
     If,
     Nil,
     Modifier,
+    TypeDef(Type),
     Or,
     Print,
     Return,
@@ -346,6 +366,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("{", TokenCode::LeftBrace);
     map.insert("}", TokenCode::RightBrace);
     map.insert(";", TokenCode::SemiColon);
+    map.insert(":", TokenCode::Colon);
     map.insert(",", TokenCode::Comma);
     map.insert(".", TokenCode::Dot);
     map.insert("+", TokenCode::Plus);
@@ -361,6 +382,13 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("<=", TokenCode::LessEqual);
     map.insert(">", TokenCode::Greater);
     map.insert(">=", TokenCode::GreaterEqual);
+
+    // Types
+    map.insert("Int", TokenCode::TypeDef(Type::Int));
+    map.insert("Float", TokenCode::TypeDef(Type::Float));
+    map.insert("String", TokenCode::TypeDef(Type::String));
+    map.insert("Bool", TokenCode::TypeDef(Type::Bool));
+    map.insert("Void", TokenCode::TypeDef(Type::Void));
 
     // General compiler track
     map.insert("EOF", TokenCode::Eof);

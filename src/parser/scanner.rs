@@ -49,6 +49,11 @@ impl<'a> Iterator for TokenIterator<'a> {
             if self.pos < self.s.len() {
                 self.pos += 1;
             }
+        } else if self.s.as_bytes()[self.pos] == b'/' {
+            /* Comment handling */
+            if self.s.as_bytes()[self.pos + 1] == b'/' {
+                self.pos = self.s.len();
+            };
         } else {
             /* Advance until a whitespace is found */
             while self.pos < self.s.len() && !self.s.as_bytes()[self.pos].is_ascii_whitespace() {
@@ -124,13 +129,6 @@ impl<'a> Scanner<'a> {
             return;
         }
 
-        /* Skip line parsing when comment are found */
-        if line.unwrap().starts_with("//") {
-            self.scan_l();
-            self.line += 1;
-            return;
-        }
-
         /* Get new line iterator over the line tokens on each scan_l() call */
         self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
@@ -154,7 +152,7 @@ impl<'a> Scanner<'a> {
         */
         let token = &self.current_token.clone().unwrap()[..];
 
-        if token.is_empty() {
+        if token.is_empty() || token.starts_with("//") {
             return;
         }
 

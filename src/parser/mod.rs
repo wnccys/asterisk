@@ -5,7 +5,7 @@ use crate::{
     chunk::{Chunk, OpCode},
     errors::parser_errors::ParserResult,
     types::hash_table::HashTable,
-    value::{Modifier, Primitive, Value},
+    value::{Modifier, Primitive, Type, Value},
 };
 
 pub mod scanner;
@@ -111,12 +111,19 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.", modifier);
+        let mut var_type = Type::Void;
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
             self.expression();
+        // Check for typedef
+        } else if self.match_token(TokenCode::Colon) {
+            var_type = self.parse_var_type();
+            self.advance();
+
+            dbg!(&self.current.unwrap());
+            self.expression();
         } else {
-            // TODO Set handling for null values (not allowed in asterisk)
             self.emit_byte(OpCode::Nil);
         }
 
@@ -125,7 +132,7 @@ impl<'a> Parser<'a> {
             "Expect ';' after variable declaration.",
         );
 
-        self.define_variable(global, modifier);
+        self.define_variable(global, modifier, var_type);
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -161,6 +168,20 @@ impl<'a> Parser<'a> {
         return 0;
     }
 
+    /// Try to extract current type from TypeDef.
+    /// 
+    /// Executed when explicit type definition is set, with :
+    /// 
+    pub fn parse_var_type(&mut self) -> Type {
+        match self.current.unwrap().code {
+            TokenCode::TypeDef(t) => {
+                self.advance();
+                t
+            },
+            _ => panic!("Invalid Var Type."),
+        }
+    }
+
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
     pub fn identifier_constant(&mut self) -> usize {
@@ -192,12 +213,12 @@ impl<'a> Parser<'a> {
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
     ///
-    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
+    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, var_type: Type) {
         if self.scope.scope_depth > 0 {
             return;
         }
 
-        self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+        self.emit_byte(OpCode::DefineGlobal(name_index, modifier, var_type));
     }
 
     /// Currently this function is only called inside self.declaration().
@@ -435,6 +456,6 @@ impl<'a> Parser<'a> {
             _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme),
         }
 
-        panic!("{}", msg);
+        println!("{}", msg);
     }
 }

@@ -117,9 +117,12 @@ impl<'a> Parser<'a> {
         // Check for typedef
         } else if self.match_token(TokenCode::Colon) {
             var_type = self.parse_var_type();
-            self.advance();
 
-            self.expression();
+            // Handle uninitialized but typed vars
+            if self.match_token(TokenCode::Equal) {
+                self.expression();
+            }
+        // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
         }

@@ -265,7 +265,7 @@ impl Vm {
                     let mut variable = chunk.stack.pop().unwrap();
                     variable.modifier = modifier;
 
-                    if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type)}
+                    if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type) }
                     variable._type = var_type;
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */

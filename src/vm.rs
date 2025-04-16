@@ -2,7 +2,7 @@ use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
 use crate::utils::print::{print_stack, print_value};
-use crate::value::{Modifier, Primitive, Value};
+use crate::value::{Modifier, Primitive, Type, Value};
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {
@@ -88,23 +88,29 @@ impl Vm {
                             Value {
                                 value: Primitive::Int(value),
                                 modifier,
+                                _type,
                             } => chunk.stack.push(Value {
                                 value: Primitive::Int(-value),
                                 modifier,
+                                _type,
                             }),
                             Value {
                                 value: Primitive::Float(value),
                                 modifier,
+                                _type,
                             } => chunk.stack.push(Value {
                                 value: Primitive::Float(-value),
                                 modifier,
+                                _type,
                             }),
                             Value {
                                 value: Primitive::Bool(value),
                                 modifier,
+                                _type,
                             } => chunk.stack.push(Value {
                                 value: Primitive::Bool(!value),
                                 modifier,
+                                _type,
                             }),
                             _ => panic!("Operation not allowed."),
                         }
@@ -120,9 +126,11 @@ impl Vm {
                         Value {
                             value: Primitive::Bool(value),
                             modifier,
+                            _type,
                         } => chunk.stack.push(Value {
                             value: Primitive::Bool(!value),
                             modifier,
+                            _type,
                         }),
                         _ => panic!("Value should be a boolean."),
                     }
@@ -149,6 +157,7 @@ impl Vm {
                     chunk.stack.push(Value {
                         value: Primitive::Bool(true),
                         modifier: Modifier::Unassigned,
+                        _type: Type::Bool,
                     });
 
                     InterpretResult::Ok
@@ -158,6 +167,7 @@ impl Vm {
                     chunk.stack.push(Value {
                         value: Primitive::Bool(false),
                         modifier: Modifier::Unassigned,
+                        _type: Type::Bool,
                     });
 
                     InterpretResult::Ok
@@ -170,6 +180,7 @@ impl Vm {
                     chunk.stack.push(Value {
                         value: Primitive::Bool(a == b),
                         modifier: Modifier::Unassigned,
+                        _type: Type::Bool,
                     });
 
                     InterpretResult::Ok
@@ -203,22 +214,19 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                // TODO Add correct nil value handling (not permitted)
                 OpCode::Nil => {
-                    self.chunk.stack.push(Value {
-                        value: Primitive::Void(()),
-                        modifier: Modifier::Unassigned,
-                    });
-
-                    InterpretResult::Ok
+                    panic!("Uninitliazed values are not allowed");
                 }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
                     let chunk = self.chunk.as_mut();
                     let constant = chunk.constants[var_index].clone();
+                    let _type = parse_type(&constant);
+
                     chunk.stack.push(Value {
                         value: constant,
                         modifier: Modifier::Unassigned,
+                        _type,
                     });
 
                     InterpretResult::Ok
@@ -251,15 +259,24 @@ impl Vm {
                     Get variable name from constants and assign it to globals vec
                     Check for variable assignment
                 */
-                OpCode::DefineGlobal(var_index, modifier) => {
+                OpCode::DefineGlobal(var_index, modifier, var_type) => {
                     let chunk = self.chunk.as_mut();
                     let var_name = chunk.constants[var_index].clone();
-                    let mut var_value = chunk.stack.pop().unwrap();
-                    var_value.modifier = modifier.clone();
+                    let mut variable = chunk.stack.pop().unwrap();
+                    variable.modifier = modifier;
 
+                    if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type)}
+                    variable._type = var_type;
+
+                    /* Check if type of dangling value are equal the to-be-assigned variable */
+                    // if var_name != var_value.value {
+                    //     panic!("Error: Cannot assign {} to {} ", var_name, var_value.value);
+                    // }
+
+                    /*  Only strings are allowed to be var names */
                     match var_name {
                         Primitive::String(name) => {
-                            self.globals.insert(&name, var_value);
+                            self.globals.insert(&name, variable);
                         }
                         _ => panic!("Invalid global variable name."),
                     }
@@ -290,17 +307,25 @@ impl Vm {
                 /*
                     Re-assign to already set global variable.
                 */
-                OpCode::SetGlobal(index) => {
+                OpCode::SetGlobal(name_index) => {
                     let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[index] {
+                    let name = match &chunk.constants[name_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
 
-                    let is_mut = self.globals.get(name).unwrap().modifier == Modifier::Mut;
-                    if !is_mut {
+                    let variable = self.globals.get(name).unwrap();
+
+                    if variable.modifier != Modifier::Mut {
                         panic!("Cannot assign to a immutable variable.")
+                    }
+
+                    let to_be_inserted = &chunk.stack.last().unwrap();
+
+                    /* Check if type of dangling value are equal the to-be-assigned variable */
+                    if variable._type != to_be_inserted._type {
+                        panic!("Error: Cannot assign {:?} to {:?} ", variable._type, to_be_inserted._type);
                     }
 
                     if self
@@ -331,14 +356,27 @@ impl Vm {
             ">" => self.chunk.stack.push(Value {
                 value: Primitive::Bool(a > b),
                 modifier: a.modifier,
+                _type: a._type,
             }),
             "<" => self.chunk.stack.push(Value {
                 value: Primitive::Bool(a < b),
                 modifier: a.modifier,
+                _type: a._type,
             }),
             _ => panic!("invalid operation."),
         }
 
         InterpretResult::Ok
+    }
+}
+
+/* Parses primitive to Type equivalent */
+fn parse_type(p: &Primitive) -> Type {
+    match p {
+        Primitive::Int(_) => Type::Int,
+        Primitive::Float(_) => Type::Float,
+        Primitive::String(_) => Type::String,
+        Primitive::Bool(_) => Type::Bool,
+        _ => Type::Void,
     }
 }

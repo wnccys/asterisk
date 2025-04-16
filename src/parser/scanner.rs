@@ -128,7 +128,7 @@ impl<'a> Scanner<'a> {
             return;
         }
 
-        /* Get new line iterator over the line tokens on each scan_l() call  */
+        /* Get new line iterator over the line tokens on each scan_l() call */
         self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
         /* While tokens are available, iterates. */

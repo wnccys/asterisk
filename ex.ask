@@ -1,12 +1,12 @@
 let a = 32;
-a = 40;
+// a = 40;
 print a;
 
 let b = 50;
 print b;
 
 {
-    let a = "x here!!!!";
+    let mut a = "x here!!!!";
     a = "x is NOT HERE ANYMORE!!";
     print x;
 }

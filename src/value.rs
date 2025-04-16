@@ -1,11 +1,12 @@
-use std::ops::{Add, Div, Mul};
+use core::fmt;
+use std::{fmt::Display, ops::{Add, Div, Mul}};
 
 /// Asterisk types definition.
 ///
 #[derive(Debug, Clone)]
 pub struct Value {
     pub value: Primitive,
-    pub ref_type: RefType,
+    pub _type: Type,
     pub modifier: Modifier,
 }
 
@@ -50,13 +51,5 @@ pub enum Modifier {
     Mut,
 }
 
-#[derive(Debug, Clone)]
-pub enum RefType {
-    Owned,
-    Ref,
-    MutRef,
-}
-
-crate::macros::gen_primitives_operations!(Float(f64), Int(i32));
-
-crate::macros::gen_values_operations!(Int(i32), Float(f64));
+crate::macros::gen_primitives_operations!(Float, Int);
+crate::macros::gen_values_operations!(Int, Float);

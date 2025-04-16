@@ -1,7 +1,7 @@
 use crate::chunk::OpCode;
 use crate::parser::scanner::TokenCode;
 use crate::parser::Parser;
-use crate::value::{Modifier, Primitive, Value};
+use crate::value::{Modifier, Primitive, Type, Value};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 /// Defines lower to higher operation precedence order.
@@ -70,6 +70,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 
         parser.emit_constant(Value {
             value: Primitive::Float(float_value),
+            _type: Type::Float,
             modifier: Modifier::Unassigned,
         });
     } else {
@@ -77,6 +78,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 
         parser.emit_constant(Value {
             value: Primitive::Int(int_value),
+            _type: Type::Int,
             modifier: Modifier::Unassigned,
         });
     }
@@ -232,6 +234,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: binary,
             precedence: Precedence::Term,
         },
+        TokenCode::Colon => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::SemiColon => ParseRule {
             prefix: none,
             infix: none,
@@ -363,6 +370,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Super => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::TypeDef(_) => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

@@ -260,7 +260,7 @@ impl Vm {
                 OpCode::DefineGlobal(var_index, modifier, var_type) => {
                     let chunk = self.chunk.as_mut();
                     let var_name = chunk.constants[var_index].clone();
-                    let mut variable = chunk.stack.pop().unwrap();
+                    let mut variable = chunk.stack.pop().unwrap_or(Value { value: Primitive::Void(()), _type: var_type, modifier });
                     variable.modifier = modifier;
 
                     if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type) }

@@ -108,7 +108,7 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.", modifier);
-        let mut var_type = Type::Void;
+        let var_type: Type;
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
@@ -121,7 +121,7 @@ impl<'a> Parser<'a> {
 
             self.expression();
         } else {
-            self.emit_byte(OpCode::Nil);
+            return;
         }
 
         self.consume(

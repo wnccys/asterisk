@@ -215,9 +215,6 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                OpCode::Nil => {
-                    panic!("Uninitiliazed values are not allowed");
-                }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
                     let chunk = self.chunk.as_mut();

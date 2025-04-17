@@ -268,6 +268,7 @@ impl<'a> Parser<'a> {
     pub fn end_scope(&mut self) {
         self.scope.scope_depth -= 1;
 
+        /* Remove scope Locals when it ends */
         while self.scope.local_count > 0
             && self.scope.locals[self.scope.local_count - 1].depth > self.scope.scope_depth
         {

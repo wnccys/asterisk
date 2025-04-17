@@ -233,7 +233,7 @@ impl<'a> Parser<'a> {
     ///
     /// Returns i32 because of -1 (No var name was found) conventional fallback.
     ///
-    /// O(n)
+    /// O(n) where n locals.len()
     ///
     pub fn resolve_local(&mut self) -> Option<(i32, Modifier)> {
         for i in (0..self.scope.local_count).rev() {

@@ -87,7 +87,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 /// Distinguish between negate (!) and minus (-) operations.
 ///
 fn unary(parser: &mut Parser, _can_assign: bool) {
-    let operator_type = parser.previous.unwrap().code;
+    let operator_type = &parser.previous.unwrap().code;
 
     parser.parse_precedence(Precedence::Unary);
 
@@ -101,7 +101,7 @@ fn unary(parser: &mut Parser, _can_assign: bool) {
 /// Parse math operators recursivelly until all operations are evaluated in correct order.
 ///
 fn binary(parser: &mut Parser, _can_assign: bool) {
-    let operator_type = parser.previous.unwrap().code;
+    let operator_type = &parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
     rule.precedence.increment();

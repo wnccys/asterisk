@@ -13,7 +13,7 @@ print b;
     // "Shadow" var a
     let mut a = "x here!!!!";
     // Local mutability test
-    a = "x is NOT HERE ANYMORE!!";
+    a = "x is NOT HERE ANYMORE!!"; // Inline Comment
     print a;
 
     // Global b is accessible from inner scope

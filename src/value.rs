@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fmt::Display, ops::{Add, Deref, Div, Mul}};
+use std::{fmt::Display, ops::{Add, Div, Mul}, sync::Arc};
 
 /// Asterisk types definition.
 ///
@@ -11,13 +11,13 @@ pub struct Value {
 }
 
 /* Primitives are variable assigned data, Type are the check for this data to be valid throught the runtime */
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Type {
     Float,
     Int,
     Bool,
     String,
-    Ref,
+    Ref(Arc<Type>),
     Void,
 }
 

@@ -254,6 +254,16 @@ impl<'a> Parser<'a> {
         None
     }
 
+    /// Check tokens lexeme and code
+    /// 
+    pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
+        if a.lexeme != b.lexeme {
+            return false;
+        }
+
+        return a.code == b.code;
+    }
+
     pub fn begin_scope(&mut self) {
         self.scope.scope_depth += 1;
     }
@@ -426,14 +436,6 @@ impl<'a> Parser<'a> {
         let const_index = self.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
-    }
-
-    pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
-        if a.lexeme != b.lexeme {
-            return false;
-        }
-
-        return a.code == b.code;
     }
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.

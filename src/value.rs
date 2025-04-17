@@ -40,6 +40,7 @@ impl<'a> Display for Primitive {
             Primitive::Bool(_) => write!(f, "Bool"),
             Primitive::String(_) => write!(f, "String"),
             Primitive::Ref(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
+            Primitive::RefMut(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
             _ => panic!("This type does not implement the format trait.")
         }
     }

@@ -62,7 +62,7 @@ impl<'a> Iterator for TokenIterator<'a> {
         */
         } else if self.s.as_bytes()[self.pos] == b'&' {
             /* While we don't found a supported type, iterates */
-            while !self.s.as_bytes()[self.pos].is_ascii_whitespace() && self.pos < self.s.len() {
+            while !self.s.as_bytes()[self.pos].is_ascii_whitespace() && self.pos < self.s.len() -1 {
                 self.pos += 1;
 
                 if TYPE_KEYS.contains(&&self.s[start + 1..self.pos]) {

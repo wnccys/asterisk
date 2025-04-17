@@ -159,16 +159,16 @@ impl<'a> Scanner<'a> {
         match token {
             /* Handle keywords and generate identifier token if no was found between the keywords */
             token if self.is_typedef(token) => {
-                self.make_token((KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid Type Token.")).clone())
+                self.make_token((KEYWORDS.get(token)).unwrap_or(&TokenCode::Error("Invalid Type Token.")).clone())
             }
             token if self.is_alphabetic(token) => {
                 /*  Identifier is kinda a fallback for when no keyword is match */
-                self.make_token((KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier).clone())
+                self.make_token((KEYWORDS.get(token)).unwrap_or(&TokenCode::Identifier).clone())
             }
             /* Numeric values handling (Int, Float) */
             token if self.is_numeric(token) => self.make_token(
                 (KEYWORDS.get("number"))
-                    .unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.")).clone(),
+                    .unwrap_or(&TokenCode::Error("Invalid numeric token.")).clone(),
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),

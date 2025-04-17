@@ -17,6 +17,7 @@ pub enum Type {
     Int,
     Bool,
     String,
+    /* Types need to be thread-safe, that's why Arc<..> is here */
     Ref(Arc<Type>),
     Void,
 }

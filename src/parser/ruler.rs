@@ -160,7 +160,7 @@ fn string(parser: &mut Parser, _can_assign: bool) {
 }
 
 fn variable(parser: &mut Parser, can_assign: bool) {
-    named_variable(parser, can_assign)
+    named_variable(parser, can_assign);
 }
 
 /// Distinguish between re-assign and get variable already set value as well as local and global variables.

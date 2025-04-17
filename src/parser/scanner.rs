@@ -316,6 +316,7 @@ pub enum TokenCode {
     SemiColon,
     Slash,
     Star,
+    Ampersand,
     // One or two char token
     Bang,
     BangEqual,
@@ -399,6 +400,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("-", TokenCode::Minus);
     map.insert("*", TokenCode::Star);
     map.insert("/", TokenCode::Slash);
+    map.insert("&", TokenCode::Ampersand);
     map.insert("//", TokenCode::Comment);
     map.insert("!", TokenCode::Bang);
     map.insert("!=", TokenCode::BangEqual);

@@ -430,7 +430,5 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     // General compiler track
     map.insert("EOF", TokenCode::Eof);
 
-    dbg!(&map);
-
     map
 });

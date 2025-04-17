@@ -65,7 +65,7 @@ impl Vm {
                 print_stack(self.chunk.as_ref());
             }
 
-            op_status = match self.chunk.code[i] {
+            op_status = match self.chunk.code[i].clone() {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut();
@@ -264,7 +264,7 @@ impl Vm {
                     let chunk = self.chunk.as_mut();
                     let var_name = chunk.constants[var_index].clone();
 
-                    let mut variable = chunk.stack.pop().unwrap_or(Value { value: Primitive::Void(()), _type: var_type, modifier });
+                    let mut variable = chunk.stack.pop().unwrap_or(Value { value: Primitive::Void(()), _type: var_type.clone(), modifier });
                     variable.modifier = modifier;
 
                     if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type) }

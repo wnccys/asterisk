@@ -217,7 +217,9 @@ impl<'a> Scanner<'a> {
 
     fn is_typedef(&self, token: &str) -> bool {
         match token {
-            "Int" | "Float" | "String" | "Bool" | "Void" => true,
+            "Int" | "Float" | "String" | "Bool" | "Void" | 
+            /* Ref Handling */
+            _ if token.starts_with("&") => true,
             _ => false
         }
     }

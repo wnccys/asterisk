@@ -1,5 +1,9 @@
 use core::fmt;
-use std::{fmt::Display, ops::{Add, Div, Mul}, sync::Arc};
+use std::{
+    fmt::Display,
+    ops::{Add, Div, Mul},
+    sync::Arc,
+};
 
 /// Asterisk types definition.
 ///
@@ -42,7 +46,7 @@ impl<'a> Display for Primitive {
             Primitive::String(_) => write!(f, "String"),
             Primitive::Ref(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
             Primitive::RefMut(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
-            _ => panic!("This type does not implement the format trait.")
+            _ => panic!("This type does not implement the format trait."),
         }
     }
 }

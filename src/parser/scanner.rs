@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, iter::Peekable, ops::DerefMut, slice::Iter, str::Lines, sync::LazyLock
+    collections::HashMap, iter::Peekable, ops::DerefMut, slice::Iter, str::Lines, sync::LazyLock,
 };
 
 use crate::value::Type;
@@ -56,8 +56,8 @@ impl<'a> Iterator for TokenIterator<'a> {
             if self.s.as_bytes()[self.pos + 1] == b'/' {
                 self.pos = self.s.len();
             };
-        /* 
-            If token starts with &, verify for TYPES, the differences between the result is that when the keyword is not present, 
+        /*
+            If token starts with &, verify for TYPES, the differences between the result is that when the keyword is not present,
             it means & is a reference to something, and not a type itself, so we emit a TokenCode::Ampersand to tell parser it is a reference value instead of a reference type.
         */
         } else if self.s.as_bytes()[self.pos] == b'&' {
@@ -68,7 +68,7 @@ impl<'a> Iterator for TokenIterator<'a> {
                 if TYPE_KEYS.contains(&&self.s[start + 1..self.pos]) {
                     return Some(&self.s[start..self.pos]);
                 }
-            };
+            }
 
             /* Isolate '&' and pass iteration to the next chars, Ex. &"name" => [TokenCode::Ampersand, TokenCode::String ] */
             self.pos = start + 1;
@@ -175,17 +175,24 @@ impl<'a> Scanner<'a> {
 
         match token {
             /* Handle keywords and generate identifier token if no was found between the keywords */
-            token if self.is_typedef(token) => {
-                self.make_token((KEYWORDS.get(token)).unwrap_or(&TokenCode::Error("Invalid Type Token.")).clone())
-            }
+            token if self.is_typedef(token) => self.make_token(
+                (KEYWORDS.get(token))
+                    .unwrap_or(&TokenCode::Error("Invalid Type Token."))
+                    .clone(),
+            ),
             token if self.is_alphabetic(token) => {
                 /*  Identifier is kinda a fallback for when no keyword is match */
-                self.make_token((KEYWORDS.get(token)).unwrap_or(&TokenCode::Identifier).clone())
+                self.make_token(
+                    (KEYWORDS.get(token))
+                        .unwrap_or(&TokenCode::Identifier)
+                        .clone(),
+                )
             }
             /* Numeric values handling (Int, Float) */
             token if self.is_numeric(token) => self.make_token(
                 (KEYWORDS.get("number"))
-                    .unwrap_or(&TokenCode::Error("Invalid numeric token.")).clone(),
+                    .unwrap_or(&TokenCode::Error("Invalid numeric token."))
+                    .clone(),
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),
@@ -229,7 +236,7 @@ impl<'a> Scanner<'a> {
     }
 
     /// Check for a type and it's ref equivalent
-    /// 
+    ///
     fn is_typedef(&self, token: &str) -> bool {
         if TYPE_KEYS.contains(&token) || (token.starts_with("&") && token.len() > 1) {
             return true;
@@ -399,7 +406,7 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert(">=", TokenCode::GreaterEqual);
 
     /// Generate Primitive and it's Ref Type
-    /// 
+    ///
     macro_rules! gen_types_n_refs {
         ($($variant:ident),* $(,)?) => {
             use std::sync::Arc;

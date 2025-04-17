@@ -1,16 +1,16 @@
-use scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
+use scanner::{Token, TokenCode, TokenStream};
 
 use crate::{
-    chunk::{Chunk, OpCode}, 
-    errors::parser_errors::ParserResult, 
-    types::hash_table::HashTable, 
+    chunk::{Chunk, OpCode},
+    errors::parser_errors::ParserResult,
+    types::hash_table::HashTable,
     utils::parse_type,
-    value::{Modifier, Primitive, Type, Value}
+    value::{Modifier, Primitive, Type, Value},
 };
 
-pub mod scanner;
 pub mod ruler;
+pub mod scanner;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -39,7 +39,11 @@ pub struct Local<'a> {
 
 impl<'a> Local<'a> {
     fn new(token: &'a Token, depth: u16, modifier: Modifier) -> Self {
-        Local { modifier, token, depth }
+        Local {
+            modifier,
+            token,
+            depth,
+        }
     }
 }
 
@@ -173,15 +177,15 @@ impl<'a> Parser<'a> {
     }
 
     /// Try to extract current type from TypeDef.
-    /// 
+    ///
     /// Executed when explicit type definition is set, with :
-    /// 
+    ///
     pub fn parse_var_type(&mut self) -> Type {
         match self.current.unwrap().code.clone() {
             TokenCode::TypeDef(t) => {
                 self.advance();
                 t
-            },
+            }
             _ => panic!("Invalid Var Type."),
         }
     }
@@ -225,7 +229,6 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier, var_type));
     }
 
-
     /// Check for current identifier token variable name, walking backward in locals array.
     ///
     /// This function iterates over the Compiler's locals reverselly searching for a Token which
@@ -254,7 +257,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Check tokens lexeme and code
-    /// 
+    ///
     pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
         if a.lexeme != b.lexeme {
             return false;

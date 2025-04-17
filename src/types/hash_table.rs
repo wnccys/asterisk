@@ -104,7 +104,7 @@ where
     }
 
     /// Custom resize implementation because all entries needs to be re-hashed after resize for proper late hash recover
-    /// 
+    ///
     fn resize(&mut self) {
         let new_num_buckets = self.entries.capacity() * 2;
         let mut new_entries: Vec<Option<(K, Value)>> = vec![None; new_num_buckets];

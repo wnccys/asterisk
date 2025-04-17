@@ -248,8 +248,12 @@ impl Vm {
                     let mut value = self.chunk.stack.last().unwrap().clone();
                     let variable = &mut self.chunk.stack[var_index];
 
-                    if variable._type != value._type { panic!("Cannot assign {:?} to {:?}", value._type, variable._type) };
-                    if modifier != Modifier::Mut { panic!("Cannot assign to immutable variable.") }
+                    if variable._type != value._type {
+                        panic!("Cannot assign {:?} to {:?}", value._type, variable._type)
+                    };
+                    if modifier != Modifier::Mut {
+                        panic!("Cannot assign to immutable variable.")
+                    }
 
                     value.modifier = variable.modifier;
 
@@ -264,10 +268,16 @@ impl Vm {
                     let chunk = self.chunk.as_mut();
                     let var_name = chunk.constants[var_index].clone();
 
-                    let mut variable = chunk.stack.pop().unwrap_or(Value { value: Primitive::Void(()), _type: var_type.clone(), modifier });
+                    let mut variable = chunk.stack.pop().unwrap_or(Value {
+                        value: Primitive::Void(()),
+                        _type: var_type.clone(),
+                        modifier,
+                    });
                     variable.modifier = modifier;
 
-                    if variable._type != var_type { panic!("Cannot assign {:?} to {:?}", var_type, variable._type) }
+                    if variable._type != var_type {
+                        panic!("Cannot assign {:?} to {:?}", var_type, variable._type)
+                    }
                     variable._type = var_type;
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
@@ -326,15 +336,15 @@ impl Vm {
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
                     if variable._type != to_be_inserted._type {
-                        panic!("Error: Cannot assign {:?} to {:?} ", variable._type, to_be_inserted._type);
+                        panic!(
+                            "Error: Cannot assign {:?} to {:?} ",
+                            variable._type, to_be_inserted._type
+                        );
                     }
 
                     to_be_inserted.modifier = variable.modifier;
 
-                    if self
-                        .globals
-                        .insert(name, to_be_inserted)
-                    {
+                    if self.globals.insert(name, to_be_inserted) {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");
                     }

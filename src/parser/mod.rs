@@ -27,6 +27,10 @@ pub struct Parser<'a> {
 #[derive(Debug)]
 pub struct Local<'a> {
     pub token: &'a Token,
+    /// Where local are located at;
+    /// Used to get Local without iterating over all one's
+    /// O(1) instead on O(n)
+    pub index: usize,
     pub modifier: Modifier,
     /// Scope depth of block where variable was defined.
     ///
@@ -34,8 +38,8 @@ pub struct Local<'a> {
 }
 
 impl<'a> Local<'a> {
-    fn new(token: &'a Token, depth: u16, modifier: Modifier) -> Self {
-        Local { modifier, token, depth }
+    fn new(token: &'a Token, depth: u16, modifier: Modifier, index: usize) -> Self {
+        Local { modifier, token, depth, index }
     }
 }
 
@@ -203,7 +207,8 @@ impl<'a> Parser<'a> {
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
     fn add_local(&mut self, modifier: Modifier) {
-        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier);
+        /* .len() is not removed -1 because it will be pushed so length is already correct */
+        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier, self.scope.locals.len());
         local.depth = self.scope.scope_depth;
         self.scope.locals.push(local);
 
@@ -219,6 +224,51 @@ impl<'a> Parser<'a> {
         }
 
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier, var_type));
+    }
+
+
+    /// Check for current identifier token variable name, walking backward in locals array.
+    ///
+    /// This function iterates over the Compiler's locals reverselly searching for a Token which
+    /// matches parser.previous (self.previous) Token.
+    ///
+    /// Returns i32 because of -1 (No var name was found) conventional fallback.
+    ///
+    /// O(n)
+    ///
+    pub fn resolve_local(&mut self) -> Option<(i32, Modifier)> {
+        for i in (0..self.scope.local_count).rev() {
+            let local = &self.scope.locals[i];
+
+            #[cfg(feature = "debug")]
+            {
+                dbg!(&local.name);
+                dbg!(&self.previous.unwrap());
+            }
+
+            if self.identify_constant(&local.token, &self.previous.unwrap()) {
+                return Some((i as i32, local.modifier));
+            }
+        }
+
+        None
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.scope.scope_depth += 1;
+    }
+
+    /// Decrease compiler scope_depth sanitizing (pop) values from stack
+    ///
+    pub fn end_scope(&mut self) {
+        self.scope.scope_depth -= 1;
+
+        while self.scope.local_count > 0
+            && self.scope.locals[self.scope.local_count - 1].depth > self.scope.scope_depth
+        {
+            self.emit_byte(OpCode::Pop);
+            self.scope.local_count -= 1;
+        }
     }
 
     /// Currently this function is only called inside self.declaration().
@@ -357,50 +407,6 @@ impl<'a> Parser<'a> {
             self.advance();
         } else {
             self.error(msg);
-        }
-    }
-
-    /// Check for current identifier token variable name, walking backward in locals array.
-    ///
-    /// This function iterates over the Compiler's locals reverselly searching for a Token which
-    /// matches parser.previous (self.previous) Token.
-    ///
-    /// Returns i32 because of -1 (No var name was found) conventional fallback.
-    ///
-    /// O(n)
-    ///
-    pub fn resolve_local(&mut self) -> Option<(i32, Modifier)> {
-        for i in (0..self.scope.local_count).rev() {
-            let local = &self.scope.locals[i];
-
-            #[cfg(feature = "debug")]
-            {
-                dbg!(&local.name);
-                dbg!(&self.previous.unwrap());
-            }
-
-            if self.identify_constant(&local.token, &self.previous.unwrap()) {
-                return Some((i as i32, local.modifier));
-            }
-        }
-
-        None
-    }
-
-    pub fn begin_scope(&mut self) {
-        self.scope.scope_depth += 1;
-    }
-
-    /// Decrease compiler scope_depth sanitizing (pop) values from stack
-    ///
-    pub fn end_scope(&mut self) {
-        self.scope.scope_depth -= 1;
-
-        while self.scope.local_count > 0
-            && self.scope.locals[self.scope.local_count - 1].depth > self.scope.scope_depth
-        {
-            self.emit_byte(OpCode::Pop);
-            self.scope.local_count -= 1;
         }
     }
 

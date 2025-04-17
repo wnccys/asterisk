@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, iter::Peekable, slice::Iter, str::Lines, sync::LazyLock
+    collections::HashMap, iter::Peekable, ops::DerefMut, slice::Iter, str::Lines, sync::LazyLock
 };
 
 use crate::value::Type;
@@ -105,7 +105,6 @@ impl<'a> Iterator for TokenIterator<'a> {
 }
 
 #[derive(Debug)]
-#[allow(unused)]
 /// Parse chars to Tokens.
 ///
 pub struct Scanner<'a> {
@@ -294,7 +293,6 @@ pub struct Token {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-#[allow(unused)]
 pub enum TokenCode {
     // Single char tokens
     LeftParen,

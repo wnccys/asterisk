@@ -189,10 +189,6 @@ impl<'a> Scanner<'a> {
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),
-            // token if self.is_type_def(token) => {
-            //     self.make_token(*(KEYWORDS).get(token).unwrap_or_else(|| &TokenCode::Colon));
-            //     self.make_token(*(KEYWORDS).get("TYPEDEF").unwrap_or_else(|| &TokenCode::Error("")))
-            // },
             _ => self.make_token((KEYWORDS.get(token)).unwrap_or_default().clone()),
         };
     }

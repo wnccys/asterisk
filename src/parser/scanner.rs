@@ -8,6 +8,8 @@ use crate::value::Type;
 ///
 pub type TokenStream<'a> = Iter<'a, Token>;
 
+pub static TYPE_KEYS: [&str; 5] = ["Int", "Float", "String", "Bool", "Void"];
+
 #[derive(Debug)]
 struct TokenIterator<'a> {
     s: &'a str,

@@ -50,7 +50,7 @@ impl<'a> Iterator for TokenIterator<'a> {
                 self.pos += 1;
             }
         } else if self.s.as_bytes()[self.pos] == b'/' {
-            /* Comment handling */
+            /* Skip entire rest of line when // is found */
             if self.s.as_bytes()[self.pos + 1] == b'/' {
                 self.pos = self.s.len();
             };
@@ -159,16 +159,16 @@ impl<'a> Scanner<'a> {
         match token {
             /* Handle keywords and generate identifier token if no was found between the keywords */
             token if self.is_typedef(token) => {
-                self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid Type Token.")))
+                self.make_token((KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Error("Invalid Type Token.")).clone())
             }
             token if self.is_alphabetic(token) => {
                 /*  Identifier is kinda a fallback for when no keyword is match */
-                self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier))
+                self.make_token((KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier).clone())
             }
             /* Numeric values handling (Int, Float) */
             token if self.is_numeric(token) => self.make_token(
-                *(KEYWORDS.get("number"))
-                    .unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.")),
+                (KEYWORDS.get("number"))
+                    .unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.")).clone(),
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),
@@ -176,7 +176,7 @@ impl<'a> Scanner<'a> {
             //     self.make_token(*(KEYWORDS).get(token).unwrap_or_else(|| &TokenCode::Colon));
             //     self.make_token(*(KEYWORDS).get("TYPEDEF").unwrap_or_else(|| &TokenCode::Error("")))
             // },
-            _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
+            _ => self.make_token((KEYWORDS.get(token)).unwrap_or_default().clone()),
         };
     }
 
@@ -272,7 +272,7 @@ pub struct Token {
     pub line: i32,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 #[allow(unused)]
 pub enum TokenCode {
     // Single char tokens

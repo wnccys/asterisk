@@ -61,24 +61,17 @@ impl<'a> Iterator for TokenIterator<'a> {
             it means & is a reference to something, and not a type itself, so we emit a TokenCode::Ampersand to tell parser it is a reference value instead of a reference type.
         */
         } else if self.s.as_bytes()[self.pos] == b'&' {
-            /* Set dummy result */
-            let mut result: Option<&str> = None;
-
             /* While we don't found a supported type, iterates */
             while !self.s.as_bytes()[self.pos].is_ascii_whitespace() && self.pos < self.s.len() {
                 self.pos += 1;
 
                 if TYPE_KEYS.contains(&&self.s[start + 1..self.pos]) {
-                    result = Some(&self.s[start..self.pos]);
+                    return Some(&self.s[start..self.pos]);
                 }
             };
 
-            /* If a type was found, return it */
-            if result.is_some() { return result };
-
             /* Isolate '&' and pass iteration to the next chars, Ex. &"name" => [TokenCode::Ampersand, TokenCode::String ] */
             self.pos = start + 1;
-            return Some(&self.s[start..self.pos]);
         } else {
             /* Advance until a whitespace is found */
             while self.pos < self.s.len() && !self.s.as_bytes()[self.pos].is_ascii_whitespace() {

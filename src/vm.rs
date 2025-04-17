@@ -258,12 +258,12 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 /*
-                    Get variable name from constants and assign it to globals vec
-                    Check for variable assignment
+                    Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
                 OpCode::DefineGlobal(var_index, modifier, var_type) => {
                     let chunk = self.chunk.as_mut();
                     let var_name = chunk.constants[var_index].clone();
+
                     let mut variable = chunk.stack.pop().unwrap_or(Value { value: Primitive::Void(()), _type: var_type, modifier });
                     variable.modifier = modifier;
 
@@ -318,7 +318,6 @@ impl Vm {
                     };
 
                     let variable = self.globals.get(name).unwrap();
-                    dbg!(&variable);
                     if variable.modifier != Modifier::Mut {
                         panic!("Cannot assign to a immutable variable.")
                     }

@@ -27,10 +27,6 @@ pub struct Parser<'a> {
 #[derive(Debug)]
 pub struct Local<'a> {
     pub token: &'a Token,
-    /// Where local are located at;
-    /// Used to get Local without iterating over all one's
-    /// O(1) instead on O(n)
-    pub index: usize,
     pub modifier: Modifier,
     /// Scope depth of block where variable was defined.
     ///
@@ -38,8 +34,8 @@ pub struct Local<'a> {
 }
 
 impl<'a> Local<'a> {
-    fn new(token: &'a Token, depth: u16, modifier: Modifier, index: usize) -> Self {
-        Local { modifier, token, depth, index }
+    fn new(token: &'a Token, depth: u16, modifier: Modifier) -> Self {
+        Local { modifier, token, depth }
     }
 }
 
@@ -208,8 +204,7 @@ impl<'a> Parser<'a> {
     ///
     fn add_local(&mut self, modifier: Modifier) {
         /* .len() is not removed -1 because it will be pushed so length is already correct */
-        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier, self.scope.locals.len());
-        local.depth = self.scope.scope_depth;
+        let local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier);
         self.scope.locals.push(local);
 
         self.scope.local_count += 1;

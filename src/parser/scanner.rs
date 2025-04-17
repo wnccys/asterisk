@@ -411,19 +411,20 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert(">", TokenCode::Greater);
     map.insert(">=", TokenCode::GreaterEqual);
 
+    /// Generate Primitive and it's Ref Type
+    /// 
     macro_rules! gen_types_n_refs {
         ($($variant:ident),* $(,)?) => {
+            use std::sync::Arc;
             {
-                use std::sync::Arc;
                 $(
-                    map.insert((stringify!($variant)), TokenCode::TypeDef(Type::$variant));
-                    map.insert(concat!("&",stringify!($variant)), TokenCode::TypeDef(Type::Ref(Arc::new(Type::$variant))));
+                    map.insert(stringify!($variant), TokenCode::TypeDef(Type::$variant));
+                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(Arc::new(Type::$variant))));
                 )*
             }
         }
     }
 
-    // Types
     gen_types_n_refs!(Int, Float, String, Bool, Void);
 
     // General compiler track

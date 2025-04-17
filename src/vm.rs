@@ -235,9 +235,9 @@ impl Vm {
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    let value = self.chunk.stack[var_index].clone();
+                    let variable = self.chunk.stack[var_index].clone();
 
-                    self.chunk.stack.push(value);
+                    self.chunk.stack.push(variable);
 
                     InterpretResult::Ok
                 }

@@ -240,13 +240,14 @@ impl<'a> Scanner<'a> {
         return true;
     }
 
+    /// Check for a type and it's ref equivalent
+    /// 
     fn is_typedef(&self, token: &str) -> bool {
-        match token {
-            "Int" | "Float" | "String" | "Bool" | "Void" | 
-            /* Ref Handling */
-            _ if token.starts_with("&") => true,
-            _ => false
+        if TYPE_KEYS.contains(&token) || (token.starts_with("&") && token.len() > 1) {
+            return true;
         }
+
+        false
     }
 
     /// Craft string tokens iterating until find or not (emit error) " string terminator.

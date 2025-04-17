@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, iter::Peekable, ops::DerefMut, slice::Iter, str::Lines, sync::LazyLock,
+    collections::HashMap, iter::Peekable, slice::Iter, str::Lines, sync::LazyLock,
 };
 
 use crate::value::Type;

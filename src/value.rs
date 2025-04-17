@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{fmt::Display, ops::{Add, Div, Mul}};
+use std::{fmt::Display, ops::{Add, Deref, Div, Mul}};
 
 /// Asterisk types definition.
 ///
@@ -27,18 +27,19 @@ pub enum Primitive {
     Int(i32),
     Bool(bool),
     String(String),
-    Ref(Box<Primitive>),
+    Ref(*const Primitive),
+    RefMut(*mut Primitive),
     Void(()),
 }
 
-impl Display for Primitive {
+impl<'a> Display for Primitive {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Primitive::Int(_) => write!(f, "Int"),
             Primitive::Float(_) => write!(f, "Float"),
             Primitive::Bool(_) => write!(f, "Bool"),
             Primitive::String(_) => write!(f, "String"),
-            Primitive::Ref(primitive) => write!(f, "&({})", primitive),
+            Primitive::Ref(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
             _ => panic!("This type does not implement the format trait.")
         }
     }

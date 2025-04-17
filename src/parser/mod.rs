@@ -2,7 +2,11 @@ use scanner::{Token, TokenCode, TokenStream};
 use ruler::{get_rule, Precedence};
 
 use crate::{
-    chunk::{Chunk, OpCode}, errors::parser_errors::ParserResult, types::hash_table::HashTable, utils::parse_type, value::{Modifier, Primitive, Type, Value}
+    chunk::{Chunk, OpCode}, 
+    errors::parser_errors::ParserResult, 
+    types::hash_table::HashTable, 
+    utils::parse_type,
+    value::{Modifier, Primitive, Type, Value}
 };
 
 pub mod scanner;
@@ -173,7 +177,7 @@ impl<'a> Parser<'a> {
     /// Executed when explicit type definition is set, with :
     /// 
     pub fn parse_var_type(&mut self) -> Type {
-        match self.current.unwrap().code {
+        match self.current.unwrap().code.clone() {
             TokenCode::TypeDef(t) => {
                 self.advance();
                 t

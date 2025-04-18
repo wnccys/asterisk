@@ -8,7 +8,7 @@ print a;
 let b = 50;
 print b;
 
-// Basic mut handling 
+// Basic mut handling / Scope handling
 {
     // "Shadow" var a
     let mut a = "x here!!!!";

@@ -29,5 +29,5 @@ print b;
 // First var "a" is still valid (local doesn't colide with it)
 print a;
 
-// Error
+// Type Error
 a = "32";

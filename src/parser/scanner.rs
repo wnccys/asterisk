@@ -357,7 +357,7 @@ impl Default for &TokenCode {
     }
 }
 
-static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
+pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     let mut map: HashMap<&'static str, TokenCode> = HashMap::new();
 
     // Keywords
@@ -409,11 +409,10 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     ///
     macro_rules! gen_types_n_refs {
         ($($variant:ident),* $(,)?) => {
-            use std::sync::Arc;
             {
                 $(
                     map.insert(stringify!($variant), TokenCode::TypeDef(Type::$variant));
-                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(Arc::new(Type::$variant))));
+                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(&Type::$variant)));
                 )*
             }
         }

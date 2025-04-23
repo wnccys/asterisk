@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
@@ -282,13 +284,6 @@ impl Vm {
                     };
                     variable.modifier = modifier;
 
-                    dbg!(&variable);
-
-                    // if variable._type != var_type {
-                    //     panic!("Cannot assign {:?} to {:?}", var_type, variable._type)
-                    // }
-                    // variable._type = var_type;
-
                     /*  Only strings are allowed to be var names */
                     match var_name {
                         Primitive::String(name) => {
@@ -315,7 +310,7 @@ impl Vm {
                         None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
-                    chunk.stack.push(value.borrow());
+                    chunk.stack.push(value.borrow().clone());
 
                     InterpretResult::Ok
                 }
@@ -331,22 +326,21 @@ impl Vm {
                     };
 
                     let variable = self.globals.get(name).unwrap();
-                    if variable.modifier != Modifier::Mut {
+                    if variable.borrow().modifier != Modifier::Mut {
                         panic!("Cannot assign to a immutable variable.")
                     }
 
                     let mut to_be_inserted = chunk.stack.last().unwrap().to_owned();
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
-                    if variable._type != to_be_inserted._type {
-                        dbg!(&to_be_inserted._type);
+                    if variable.borrow()._type != to_be_inserted._type {
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
-                            to_be_inserted._type, variable._type
+                            to_be_inserted._type, variable.borrow()._type
                         );
                     }
 
-                    to_be_inserted.modifier = variable.modifier;
+                    to_be_inserted.modifier = variable.borrow().modifier;
 
                     if self.globals.insert(name, to_be_inserted) {
                         let _ = self.globals.delete(name);
@@ -372,10 +366,11 @@ impl Vm {
 
                     /* Get value to be referenced */
                     let referenced_value = self.globals.get(&referenced_name).unwrap_or_else(|| panic!("Invalid referenced value."));
+                    let referenced_type = referenced_value.borrow()._type.clone();
 
                     let _ref = Value {
                         value: Primitive::Ref(referenced_value),
-                        _type: Type::Ref(&referenced_value._type),
+                        _type: Type::Ref(Rc::new(referenced_type)),
                         modifier: Modifier::Const
                     };
 

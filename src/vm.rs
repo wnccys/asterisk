@@ -315,7 +315,7 @@ impl Vm {
                         None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
-                    chunk.stack.push(value.clone());
+                    chunk.stack.push(value.borrow());
 
                     InterpretResult::Ok
                 }

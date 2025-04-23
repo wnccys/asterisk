@@ -159,6 +159,23 @@ fn string(parser: &mut Parser, _can_assign: bool) {
     parser.emit_byte(OpCode::Constant(index));
 }
 
+/// & -> Reference
+/// -> Get current token (Value to-be-parsed)
+/// -> Emit bytecode which set referenced named variable to the stack
+/// -> Ref must reference the value in the stack itself
+/// 
+/// 
+fn reference(parser: &mut Parser, _can_assign: bool) {
+    parser.advance();
+
+    /* Let variable name be available on top of stack */
+    let var_index = parser.identifier_constant();
+    // parser.emit_byte(OpCode::Constant(var_index));
+    // parser.chunk.write_constant()
+
+    parser.emit_byte(OpCode::SetRef(var_index));
+}
+
 fn variable(parser: &mut Parser, can_assign: bool) {
     named_variable(parser, can_assign);
 }
@@ -250,7 +267,7 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::Factor,
         },
         TokenCode::Ampersand => ParseRule {
-            prefix: none,
+            prefix: reference,
             infix: none,
             precedence: Precedence::None,
         },

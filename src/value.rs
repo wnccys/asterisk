@@ -1,7 +1,6 @@
 use core::fmt;
 use std::{
-    fmt::Display,
-    ops::{Add, Div, Mul},
+    cell::RefCell, fmt::Display, ops::{Add, Div, Mul}, rc::Rc
 };
 
 /// All Asterisk Values definition.
@@ -31,7 +30,7 @@ pub enum Type {
     Bool,
     String,
     /* Types need to be thread-safe, that's why Arc<..> is here */
-    Ref(*const Type),
+    Ref(Rc<Type>),
     Void,
 }
 
@@ -41,7 +40,7 @@ pub enum Primitive {
     Int(i32),
     Bool(bool),
     String(String),
-    Ref(*const Value),
+    Ref(Rc<RefCell<Value>>),
     RefMut(*mut Value),
     Void(()),
 }

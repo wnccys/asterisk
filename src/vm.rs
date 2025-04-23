@@ -61,8 +61,8 @@ impl Vm {
         for i in 0..self.chunk.code.len() {
             #[cfg(feature = "debug")]
             {
-                println!("current code: {:?}", opcode);
-                print_stack(self.chunk.as_ref());
+                print_stack(&self.chunk);
+                println!("current code: {:?}", self.chunk.code[i]);
             }
 
             op_status = match self.chunk.code[i].clone() {
@@ -264,31 +264,35 @@ impl Vm {
                 /*
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
-                OpCode::DefineGlobal(var_index, modifier, var_type) => {
+                OpCode::DefineGlobal(var_name_index, modifier) => {
                     let chunk = self.chunk.as_mut();
-                    let var_name = chunk.constants[var_index].clone();
+                    let var_name = &chunk.constants[var_name_index];
 
-                    let mut variable = chunk.stack.pop().unwrap_or(Value {
-                        value: Primitive::Void(()),
-                        _type: var_type.clone(),
-                        modifier,
-                    });
+                    let mut variable = match chunk.stack.pop().unwrap() {
+                        /* This match only a dummy type specifier */
+                        Value { value: Primitive::Void(..), _type, .. } => {
+                            let value = chunk.stack.pop().unwrap();
+
+                            if value._type != _type { panic!("Cannot assign {:?} to {:?}", value._type, _type) }
+
+                            value
+                        },
+                        /* Inferred Type, so no match is needed */
+                        v => v,
+                    };
                     variable.modifier = modifier;
 
-                    if variable._type != var_type {
-                        panic!("Cannot assign {:?} to {:?}", var_type, variable._type)
-                    }
-                    variable._type = var_type;
+                    dbg!(&variable);
 
-                    /* Check if type of dangling value are equal the to-be-assigned variable */
-                    // if var_name != var_value.value {
-                    //     panic!("Error: Cannot assign {} to {} ", var_name, var_value.value);
+                    // if variable._type != var_type {
+                    //     panic!("Cannot assign {:?} to {:?}", var_type, variable._type)
                     // }
+                    // variable._type = var_type;
 
                     /*  Only strings are allowed to be var names */
                     match var_name {
                         Primitive::String(name) => {
-                            self.globals.insert(&name, variable);
+                            self.globals.insert(name, variable);
                         }
                         _ => panic!("Invalid global variable name."),
                     }
@@ -299,10 +303,9 @@ impl Vm {
                     TODO Implement better global var get (No extra-const register)
                 */
                 OpCode::GetGlobal(var_index) => {
-                    let temp_index = var_index;
                     let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[temp_index] {
+                    let name = match &chunk.constants[var_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
@@ -312,7 +315,7 @@ impl Vm {
                         None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
-                    chunk.stack.push(value);
+                    chunk.stack.push(value.clone());
 
                     InterpretResult::Ok
                 }
@@ -336,9 +339,10 @@ impl Vm {
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
                     if variable._type != to_be_inserted._type {
+                        dbg!(&to_be_inserted._type);
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
-                            variable._type, to_be_inserted._type
+                            to_be_inserted._type, variable._type
                         );
                     }
 
@@ -348,6 +352,48 @@ impl Vm {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");
                     }
+
+                    InterpretResult::Ok
+                }
+                /* Let var type information available on stack, this is used in explicit variable declaration */
+                OpCode::SetType(t) => {
+                    let dummy_value = Value { _type: t, ..Default::default() };
+                    self.chunk.stack.push(dummy_value);
+
+                    InterpretResult::Ok
+                }
+                /* Get var name from constants and craft a ref value based on globals' referenced Value */
+                OpCode::SetRef(var_index) => {
+                    // let referenced_value = self.chunk.stack.pop().unwrap().value;
+                    let referenced_name = match self.chunk.constants[var_index].clone() {
+                        Primitive::String(str) => str,
+                        _ => panic!("Invalid var name reference."),
+                    };
+
+                    /* Get value to be referenced */
+                    let referenced_value = self.globals.get(&referenced_name).unwrap_or_else(|| panic!("Invalid referenced value."));
+
+                    let _ref = Value {
+                        value: Primitive::Ref(referenced_value),
+                        _type: Type::Ref(&referenced_value._type),
+                        modifier: Modifier::Const
+                    };
+
+                    match self.chunk.stack.pop() {
+                        Some(value) => {
+                            match value {
+                                Value { _type, .. } => { 
+                                    if _type != _ref._type {
+                                        dbg!(&_type, &_ref._type);
+                                        panic!("Cannot assign {:?} to {:?}", _ref._type, _type)
+                                    };
+                                },
+                            }
+                        },
+                        None => (),
+                    }
+
+                    self.chunk.stack.push(_ref);
 
                     InterpretResult::Ok
                 }

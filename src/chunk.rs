@@ -18,9 +18,11 @@ pub enum OpCode {
     Print,
     GetLocal(usize),
     SetLocal(usize, Modifier),
-    DefineGlobal(usize, Modifier, Type),
+    DefineGlobal(usize, Modifier),
     SetGlobal(usize),
     GetGlobal(usize),
+    SetType(Type),
+    SetRef(usize),
 }
 
 #[derive(Debug, Default, Clone)]

@@ -1,3 +1,4 @@
-let a = "str &str";
-// let b = 32;
-print a;
+let mut a = 32;
+let b = &a;
+a = a * 2;
+print b;

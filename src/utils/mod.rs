@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::value::{Primitive, Type};
 
 pub mod print;
@@ -11,7 +13,7 @@ pub fn parse_type(p: &Primitive) -> Type {
         Primitive::Float(_) => Type::Float,
         Primitive::String(_) => Type::String,
         Primitive::Bool(_) => Type::Bool,
-        Primitive::Ref(t) => Type::Ref(unsafe { &t.read()._type }),
+        Primitive::Ref(t) => Type::Ref(Rc::new(t.borrow()._type.clone())),
         _ => panic!("Error parsing type."),
     }
 }

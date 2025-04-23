@@ -409,10 +409,11 @@ pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|
     ///
     macro_rules! gen_types_n_refs {
         ($($variant:ident),* $(,)?) => {
+            use std::rc::Rc;
             {
                 $(
                     map.insert(stringify!($variant), TokenCode::TypeDef(Type::$variant));
-                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(&Type::$variant)));
+                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(Rc::new(Type::$variant))));
                 )*
             }
         }

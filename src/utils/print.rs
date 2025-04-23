@@ -77,7 +77,7 @@ pub fn print_value(value: &Primitive) {
         Primitive::String(str) => println!("{str}"),
         Primitive::Void(t) => println!("{t:?}"),
         Primitive::Ref(value_ptr) => {
-            let ref_value = unsafe { value_ptr.read().value };
+            let ref_value = &value_ptr.borrow().value;
             print!("&");
             print_value(&ref_value);
         },

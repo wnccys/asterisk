@@ -1,7 +1,7 @@
 use super::hasher::FNV1aHasher;
-use crate::value::{Modifier, Primitive, Type, Value};
+use crate::value::{ Modifier, Primitive, Type, Value };
 use std::{
-    fmt::{Display, Error},
+    fmt::{Display },
     hash::{Hash, Hasher},
 };
 
@@ -30,64 +30,76 @@ where
     pub fn insert(&mut self, key: &K, value: Value) -> bool {
         self.check_cap();
 
-        match self.find_entry(&key) {
-            // If key already exists, return false (no entry was added)
-            // and assign new value to bucket
-            (Some(_), index) => {
-                self.entries[index] = Some((key.clone(), value));
-                return false;
-            }
-            (None, index) => {
-                self.entries[index] = Some((key.clone(), value));
-                return true;
-            }
-        }
+        let entry= self.find_mut(&key);
+        let is_new = entry.is_none();
+
+        /* Being new or not, the key is always inserted in the right bucket */
+        *entry = Some((key.clone(), value));
+
+        /* If key already exists, return false (no entry was added) and assign new value to bucket */
+        return is_new
     }
 
     /// Get value given a key
     ///
-    pub fn get(&self, key: &K) -> Option<Value> {
-        self.find_entry(key).0
+    pub fn get(&self, key: &K) -> Option<&Value> {
+        self.find(key)
     }
 
-    pub fn delete(&mut self, key: &K) -> Result<(), Error> {
-        match self.find_entry(&key) {
-            (Some(_), index) => {
-                // Set tombstone (soft delete) if key is found
-                self.entries[index] = Some((
-                    key.clone(),
-                    Value {
-                        value: Primitive::Void(()),
-                        modifier: Modifier::Unassigned,
-                        _type: Type::Void,
-                    },
-                ));
+    pub fn delete(&mut self, key: &K) -> bool {
+        let entry = self.find_mut(key);
 
-                Ok(())
+        if entry.is_none() { return false }
+
+        /* Take already set key and a tombstone value */
+        *entry = Some((entry.take().unwrap().0, Value::default()));
+
+        true
+    }
+
+    /// Checks with tombstone compatibility if value is present using cap arithmetic
+    ///
+    fn find(&self, key: &K) -> Option<&Value> {
+        let current_cap = self.entries.capacity();
+        let mut index = hash_key(key, self.entries.capacity());
+
+        loop {
+            if self.entries[index].is_none() {
+                return None;
             }
-            (None, _) => panic!("Error: HashTable key not found"),
+
+            /* Compare found entry key with given key */
+            if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key {
+                let (_, val_ref) = self.entries[index].as_ref().unwrap();
+                return Some(val_ref);
+            }
+
+            /* TODO Add tombstone handling */
+
+            index = (index + 1) % current_cap;
         }
     }
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find_entry(&self, key: &K) -> (Option<Value>, usize) {
+    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Value)> {
+        let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
         loop {
-            let entry = &self.entries[index];
-
-            if entry.is_none() {
-                return (None, index);
+            if self.entries[index].is_none() {
+                return &mut self.entries[index];
             }
 
-            if entry.as_ref().unwrap().0 == *key {
-                return (Some(entry.as_ref().unwrap().1.clone()), index);
+            /* Compare found entry key with given key */
+            if self.entries[index].as_ref().unwrap().0 == *key {
+                // let (_, ref mut val_ref) = self.entries[index].as_mut().unwrap();
+                return &mut self.entries[index];
             }
 
             /* TODO Add tombstone handling */
 
-            index = (index + 1) % self.entries.capacity();
+            index = (index + 1) % current_cap;
         }
     }
 
@@ -158,7 +170,7 @@ mod tests {
         let b = table.get(&String::from("b"));
 
         assert_eq!(
-            a.unwrap(),
+            *a.unwrap(),
             Value {
                 value: Primitive::Int(1),
                 modifier: Modifier::Unassigned,
@@ -166,7 +178,7 @@ mod tests {
             }
         );
         assert_eq!(
-            b.unwrap(),
+            *b.unwrap(),
             Value {
                 value: Primitive::Int(2),
                 modifier: Modifier::Unassigned,

@@ -1,13 +1,12 @@
 use super::hasher::FNV1aHasher;
 use crate::value::{ Modifier, Primitive, Type, Value };
 use std::{
-    fmt::{Display },
-    hash::{Hash, Hasher},
+    cell::RefCell, fmt::Display, hash::{Hash, Hasher}, rc::Rc
 };
 
 #[derive(Debug)]
 pub struct HashTable<K> {
-    entries: Vec<Option<(K, Value)>>,
+    entries: Vec<Option<(K, Rc<RefCell<Value>>)>>,
 }
 
 impl<K: Clone> Default for HashTable<K> {
@@ -30,11 +29,21 @@ where
     pub fn insert(&mut self, key: &K, value: Value) -> bool {
         self.check_cap();
 
-        let entry= self.find_mut(&key);
+        let entry = self.find_mut(&key);
         let is_new = entry.is_none();
 
+
+        /* 
+            Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
+        */
+        if is_new {
+            *entry = Some((key.clone(), Rc::new(RefCell::new(value))));
+        } else {
+            *entry.as_ref().unwrap().1.borrow_mut() = value; 
+        }
+
         /* Being new or not, the key is always inserted in the right bucket */
-        *entry = Some((key.clone(), value));
+        // *entry = Some((key.clone(), value));
 
         /* If key already exists, return false (no entry was added) and assign new value to bucket */
         return is_new
@@ -42,7 +51,7 @@ where
 
     /// Get value given a key
     ///
-    pub fn get(&self, key: &K) -> Option<&Value> {
+    pub fn get(&self, key: &K) -> Option<Rc<RefCell<Value>>> {
         self.find(key)
     }
 
@@ -52,14 +61,14 @@ where
         if entry.is_none() { return false }
 
         /* Take already set key and a tombstone value */
-        *entry = Some((entry.take().unwrap().0, Value::default()));
+        *entry.as_ref().unwrap().1.borrow_mut() = Value::default();
 
         true
     }
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find(&self, key: &K) -> Option<&Value> {
+    fn find(&self, key: &K) -> Option<Rc<RefCell<Value>>> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
@@ -71,7 +80,7 @@ where
             /* Compare found entry key with given key */
             if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key {
                 let (_, val_ref) = self.entries[index].as_ref().unwrap();
-                return Some(val_ref);
+                return Some(Rc::clone(val_ref));
             }
 
             /* TODO Add tombstone handling */
@@ -82,7 +91,7 @@ where
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Value)> {
+    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Rc<RefCell<Value>>)> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
@@ -119,7 +128,7 @@ where
     ///
     fn resize(&mut self) {
         let new_num_buckets = self.entries.capacity() * 2;
-        let mut new_entries: Vec<Option<(K, Value)>> = vec![None; new_num_buckets];
+        let mut new_entries: Vec<Option<(K, Rc<RefCell<Value>>)>> = vec![None; new_num_buckets];
 
         for bucket in self.entries.drain(..) {
             if let Some((k, v)) = bucket {
@@ -170,7 +179,7 @@ mod tests {
         let b = table.get(&String::from("b"));
 
         assert_eq!(
-            *a.unwrap(),
+            *a.unwrap().borrow(),
             Value {
                 value: Primitive::Int(1),
                 modifier: Modifier::Unassigned,
@@ -178,7 +187,7 @@ mod tests {
             }
         );
         assert_eq!(
-            *b.unwrap(),
+            *b.unwrap().borrow(),
             Value {
                 value: Primitive::Int(2),
                 modifier: Modifier::Unassigned,

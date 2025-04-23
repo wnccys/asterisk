@@ -5,7 +5,7 @@ use crate::{
     chunk::{Chunk, OpCode},
     errors::parser_errors::ParserResult,
     types::hash_table::HashTable,
-    utils::parse_type,
+    utils::{parse_type, print::disassemble_chunk},
     value::{Modifier, Primitive, Type, Value},
 };
 
@@ -116,15 +116,16 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.", modifier);
-        let var_type: Type;
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
             self.expression();
-            var_type = parse_type(self.chunk.constants.last().clone().unwrap());
+
+            /* Get last emitted constant and parse it's type */
+            // var_type = parse_type(self.chunk.constants.last().clone().unwrap());
         // Check for typedef
         } else if self.match_token(TokenCode::Colon) {
-            var_type = self.parse_var_type();
+            self.parse_var_type();
 
             // Handle uninitialized but typed vars
             if self.match_token(TokenCode::Equal) {
@@ -140,7 +141,7 @@ impl<'a> Parser<'a> {
             "Expect ';' after variable declaration.",
         );
 
-        self.define_variable(global, modifier, var_type);
+        self.define_variable(global, modifier);
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -180,11 +181,11 @@ impl<'a> Parser<'a> {
     ///
     /// Executed when explicit type definition is set, with :
     ///
-    pub fn parse_var_type(&mut self) -> Type {
+    pub fn parse_var_type(&mut self) {
         match self.current.unwrap().code.clone() {
             TokenCode::TypeDef(t) => {
                 self.advance();
-                t
+                self.emit_byte(OpCode::SetType(t));
             }
             _ => panic!("Invalid Var Type."),
         }
@@ -221,12 +222,12 @@ impl<'a> Parser<'a> {
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
     ///
-    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, var_type: Type) {
+    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
         if self.scope.scope_depth > 0 {
             return;
         }
 
-        self.emit_byte(OpCode::DefineGlobal(name_index, modifier, var_type));
+        self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
     }
 
     /// Check for current identifier token variable name, walking backward in locals array.
@@ -244,7 +245,7 @@ impl<'a> Parser<'a> {
 
             #[cfg(feature = "debug")]
             {
-                dbg!(&local.name);
+                dbg!(&local.token.lexeme);
                 dbg!(&self.previous.unwrap());
             }
 
@@ -447,7 +448,7 @@ impl<'a> Parser<'a> {
         if !self.had_error {
             // STUB
             #[cfg(feature = "debug")]
-            disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
+            disassemble_chunk(&self.chunk, "code".to_string());
         }
 
         self.chunk.clone()

@@ -1,3 +1,4 @@
+use std::any::Any;
 use std::rc::Rc;
 
 use crate::chunk::*;
@@ -16,8 +17,8 @@ pub enum InterpretResult {
 
 pub struct Vm {
     chunk: Box<Chunk>,
-    globals: HashTable<String>,
-    strings: HashTable<String>,
+    globals: HashTable<String, Value>,
+    strings: HashTable<String, String>,
 }
 
 impl Default for Vm {
@@ -232,18 +233,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 /*
-                    // NOTE Check for duplicated variable
-                    Get value from value position and load it into the top of stack,
-                    this way other operations can interact with the value.
-                */
-                OpCode::GetLocal(var_index) => {
-                    let variable = self.chunk.stack[var_index].clone();
-
-                    self.chunk.stack.push(variable);
-
-                    InterpretResult::Ok
-                }
-                /*
                     Set new value to local variable.
                 */
                 OpCode::SetLocal(var_index, modifier) => {
@@ -260,6 +249,18 @@ impl Vm {
                     value.modifier = variable.modifier;
 
                     *variable = value;
+
+                    InterpretResult::Ok
+                }
+                /*
+                    // NOTE Check for duplicated variable
+                    Get value from value position and load it into the top of stack,
+                    this way other operations can interact with the value.
+                */
+                OpCode::GetLocal(var_index) => {
+                    let variable = self.chunk.stack[var_index].clone();
+
+                    self.chunk.stack.push(variable);
 
                     InterpretResult::Ok
                 }

@@ -5,11 +5,11 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct HashTable<K> {
-    entries: Vec<Option<(K, Rc<RefCell<Value>>)>>,
+pub struct HashTable<K, V> {
+    entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
 }
 
-impl<K: Clone> Default for HashTable<K> {
+impl<K: Clone, V> Default for HashTable<K, V> {
     fn default() -> Self {
         Self {
             entries: vec![None; 4],
@@ -17,7 +17,7 @@ impl<K: Clone> Default for HashTable<K> {
     }
 }
 
-impl<K> HashTable<K>
+impl<K, V: Default> HashTable<K, V>
 where
     K: Hash + Clone + PartialEq + Display,
 {
@@ -26,7 +26,7 @@ where
     /// Set new entry to table.
     /// Return true if key was not present.
     ///
-    pub fn insert(&mut self, key: &K, value: Value) -> bool {
+    pub fn insert(&mut self, key: &K, value: V) -> bool {
         self.check_cap();
 
         let entry = self.find_mut(&key);
@@ -51,7 +51,7 @@ where
 
     /// Get value given a key
     ///
-    pub fn get(&self, key: &K) -> Option<Rc<RefCell<Value>>> {
+    pub fn get(&self, key: &K) -> Option<Rc<RefCell<V>>> {
         self.find(key)
     }
 
@@ -61,14 +61,14 @@ where
         if entry.is_none() { return false }
 
         /* Take already set key and a tombstone value */
-        *entry.as_ref().unwrap().1.borrow_mut() = Value::default();
+        *entry.as_ref().unwrap().1.borrow_mut() = V::default();
 
         true
     }
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find(&self, key: &K) -> Option<Rc<RefCell<Value>>> {
+    fn find(&self, key: &K) -> Option<Rc<RefCell<V>>> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
@@ -91,7 +91,7 @@ where
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Rc<RefCell<Value>>)> {
+    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Rc<RefCell<V>>)> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
@@ -102,7 +102,6 @@ where
 
             /* Compare found entry key with given key */
             if self.entries[index].as_ref().unwrap().0 == *key {
-                // let (_, ref mut val_ref) = self.entries[index].as_mut().unwrap();
                 return &mut self.entries[index];
             }
 
@@ -128,7 +127,7 @@ where
     ///
     fn resize(&mut self) {
         let new_num_buckets = self.entries.capacity() * 2;
-        let mut new_entries: Vec<Option<(K, Rc<RefCell<Value>>)>> = vec![None; new_num_buckets];
+        let mut new_entries: Vec<Option<(K, Rc<RefCell<V>>)>> = vec![None; new_num_buckets];
 
         for bucket in self.entries.drain(..) {
             if let Some((k, v)) = bucket {
@@ -156,7 +155,7 @@ mod tests {
 
     #[test]
     fn same_key_same_value_test() {
-        let mut table: HashTable<String> = HashTable::default();
+        let mut table: HashTable<String, Value> = HashTable::default();
 
         table.insert(
             &String::from("a"),

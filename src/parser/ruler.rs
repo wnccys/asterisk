@@ -187,11 +187,23 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);
 
-    let var_index = parser.resolve_local();
+    let scopes = 
+        parser
+        .scopes
+        .last();
 
-    if var_index.is_some() {
-        get_op = OpCode::GetLocal(var_index.unwrap().0 as usize);
-        set_op = OpCode::SetLocal(var_index.unwrap().0 as usize, var_index.unwrap().1);
+    if scopes.is_some() {
+        let local = 
+            scopes 
+            .unwrap()
+            .get_local_index(
+                format!(
+                    "{}{}", parser.previous.unwrap().lexeme, parser.scopes.len()
+                )
+            ).unwrap();
+
+        get_op = OpCode::GetLocal(local.0);
+        set_op = OpCode::SetLocal(local.0, local.1)
     } else {
         let var_index = parser.identifier_constant();
 

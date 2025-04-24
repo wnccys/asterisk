@@ -66,5 +66,11 @@ pub enum Modifier {
     Mut,
 }
 
+impl Default for Modifier {
+    fn default() -> Self {
+        Modifier::Unassigned
+    } 
+}
+
 crate::macros::gen_primitives_operations!(Float, Int);
 crate::macros::gen_values_operations!(Int, Float);

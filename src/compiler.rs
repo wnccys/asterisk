@@ -4,7 +4,7 @@ use crate::parser::Parser;
 use crate::types::hash_table::HashTable;
 use crate::vm::InterpretResult;
 
-pub fn compile(strings: &mut HashTable<String>, source_code: String) -> (Chunk, InterpretResult) {
+pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> (Chunk, InterpretResult) {
     let mut source_lines = source_code.lines();
     let mut scanner = Scanner::new(&mut source_lines);
 

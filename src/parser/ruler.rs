@@ -170,21 +170,22 @@ fn reference(parser: &mut Parser, _can_assign: bool) {
 
     match parser.scopes.len() {
         0 => {
+                let var_index = parser.identifier_constant();
+                parser.emit_byte(OpCode::SetRefLocal(var_index));
+        },
+        _ => {
+            dbg!(&parser.scopes);
+            dbg!(&parser.current);
             let var_index = parser
                 .scopes
                 .last()
                 .unwrap()
-                .get_local(parser.current.unwrap().lexeme.clone())
+                .get_local(parser.previous.unwrap().lexeme.clone())
                 .unwrap_or_else(
                     || panic!("Invalid variable name: {}", parser.previous.unwrap().lexeme)
                 );
 
-            parser.emit_byte(OpCode::GetLocal(var_index.borrow().0));
-            parser.emit_byte(OpCode::SetRefGlobal(var_index.borrow().0));
-        },
-        _ => {
-            let var_index = parser.identifier_constant();
-            parser.emit_byte(OpCode::SetRefLocal(var_index))
+            parser.emit_byte(OpCode::SetRefLocal(var_index.borrow().0));
         },
     }
 }

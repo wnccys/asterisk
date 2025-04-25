@@ -61,14 +61,7 @@ macro_rules! gen_primitives_operations {
 
         impl PartialEq for Primitive {
             fn eq(&self, other: &Self) -> bool {
-                match (self, other) {
-                    $(
-                        (Primitive::$variant(value_a), Primitive::$variant(value_b)) => {
-                            value_a == value_b
-                        }
-                    ),*
-                    _ => panic!("Cannot compare different primitives")
-                }
+                matches!(self, other)
             }
         }
 

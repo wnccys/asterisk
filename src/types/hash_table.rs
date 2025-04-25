@@ -42,9 +42,6 @@ where
             *entry.as_ref().unwrap().1.borrow_mut() = value; 
         }
 
-        /* Being new or not, the key is always inserted in the right bucket */
-        // *entry = Some((key.clone(), value));
-
         /* If key already exists, return false (no entry was added) and assign new value to bucket */
         return is_new
     }
@@ -197,13 +194,13 @@ mod tests {
 
     // #[test]
     // fn swap_values_on_insert_test() {
-    //     let mut table: HashTable<String> =  HashTable::default();
+    //     let mut table: HashTable<String, Primitive> =  HashTable::default();
 
-    //     table.insert(&String::from("a"), Value::String(String::from("some")));
-    //     table.insert(&String::from("a"), Value::String(String::from("another")));
+    //     table.insert(&String::from("a"), Primitive::String(String::from("some")));
+    //     table.insert(&String::from("a"), Primitive::String(String::from("another")));
 
     //     let a = table.get(&String::from("a"));
 
-    //     assert_eq!(a.unwrap(), Value::String(String::from("another")));
+    //     assert_eq!(a.unwrap(), Primitive::String(String::from("another")));
     // }
 }

@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::value::{Modifier, Primitive, Type, Value};
 
 #[derive(Debug, Clone)]
@@ -18,11 +20,12 @@ pub enum OpCode {
     Print,
     GetLocal(usize),
     SetLocal(usize, Modifier),
+    SetRefLocal(usize),
     DefineGlobal(usize, Modifier),
     SetGlobal(usize),
     GetGlobal(usize),
     SetType(Type),
-    SetRef(usize),
+    SetRefGlobal(usize),
 }
 
 #[derive(Debug, Default, Clone)]
@@ -30,7 +33,7 @@ pub struct Chunk {
     /// The sequence of Bytecodes used to change the stack state.
     pub code: Vec<OpCode>,
     /// Where the Bytecodes' operations itself are executed.
-    pub stack: Vec<Value>,
+    pub stack: Vec<Rc<RefCell<Value>>>,
     /// Where values are saved before being used.
     pub constants: Vec<Primitive>,
     pub lines: Vec<i32>,

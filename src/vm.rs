@@ -284,24 +284,21 @@ impl Vm {
                 OpCode::SetRefLocal(var_value_index) => {
                     let chunk = self.chunk.as_mut();
 
-                    let referenced_value = &chunk.stack[var_value_index];
+                    let referenced_value = Rc::clone(&chunk.stack[var_value_index]);
 
-                    let r = self.chunk.stack.last_mut().unwrap().borrow_mut().clone();
+                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if let Type::Ref(r) = &chunk.stack.last().unwrap().borrow()._type  {
+                            if **r != referenced_value.borrow()._type {
+                                panic!("Cannot assign {:?} to {:?}", chunk.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
+                            };
+                        };
 
-                    let referenced_type = match r {
-                        Value { value: Primitive::Void(()), _type, ..  } => {
-                            if referenced_value.borrow()._type != _type { panic!("Cannot assign {:?} to {:?}", referenced_value.borrow()._type, _type)}
-
-                            chunk.stack.pop().unwrap().take()._type
-                        },
-                        _ => referenced_value.borrow()._type,
-                    };
-
-                    // let referenced_value = &chunk.stack[var_value_index];
+                        chunk.stack.pop();
+                    }
 
                     let _ref = Value {
-                        value: Primitive::Ref(Rc::clone(referenced_value)),
-                        _type: Type::Ref(Rc::new((**referenced_value).borrow()._type.clone())),
+                        value: Primitive::Ref(Rc::clone(&referenced_value)),
+                        _type: Type::Ref(Rc::new((referenced_value).borrow()._type.clone())),
                         modifier: Modifier::Const,
                     };
 

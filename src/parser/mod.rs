@@ -1,4 +1,4 @@
-use std::fmt::Write;
+use std::{cell::RefCell, fmt::Write, rc::Rc};
 
 use ruler::{get_rule, Precedence};
 use scanner::{Token, TokenCode, TokenStream};
@@ -34,68 +34,31 @@ pub struct Parser<'a> {
 pub struct Scope {
     /// Represents all local variables, resolved dynamically at runtime, without a Constant Bytecode.
     ///
-    pub locals: Vec<Option<(usize, Modifier)>>,
-    pub local_count: i32,
+    /// (Var position on locals [consequently on Stack], Modifier))
+    pub locals: HashTable<String, (usize, Modifier)>,
+    pub local_count: usize,
 }
 
 /// Represent a block scope
 /// 
 impl Scope {
-    const MAX_LOAD_FACTOR: f64 = 0.75;
-
     /// Add new Local by hashing and inserting it
     /// 
     fn add_local(&mut self, lexeme: String, modifier: Modifier) {
-        self.check_cap();
-
-        let local_index = hash_key(&lexeme, self.locals.len());
-
-        self.locals[local_index] = Some((local_index, modifier));
-
-        self.local_count += 1;
+        self.locals.insert(&lexeme, (self.local_count, modifier));
     }
 
     /// Return Local index to be used by stack if it exists
     /// 
-    fn get_local_index(&self, lexeme: String) -> Option<(usize, Modifier)> {
-        let local_index = hash_key(&lexeme, self.locals.capacity());
-
-        self.locals[local_index]
-    }
-
-    fn check_cap(&mut self) {
-        /* Check if num_elements > num_buckets
-         *
-         * + 1 because it checks for future entry (assume it is a new one)
-         */
-        if (self.locals.len() + 1) as f64
-            > (self.locals.capacity() as f64 * Self::MAX_LOAD_FACTOR)
-        {
-            self.resize();
-        }
-    }
-
-    /// Custom resize implementation because all entries needs to be re-hashed after resize for proper late hash recover
-    ///
-    fn resize(&mut self) {
-        let new_num_buckets = self.locals.capacity() * 2;
-        let mut new_entries: Vec<Option<(usize, Modifier)>> = vec![None; new_num_buckets];
-
-        for bucket in self.locals.drain(..) {
-            if let Some((k, v)) = bucket {
-                let index = hash_key(&k, new_num_buckets);
-                new_entries[index] = Some((k, v));
-            }
-        }
-
-        self.locals = new_entries;
+    fn get_local(&self, lexeme: String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        self.locals.get(&lexeme)
     }
 }
 
 impl<'a> Default for Scope {
     fn default() -> Self {
         Scope {
-            locals: vec![None; 4],
+            locals: HashTable::default(),
             local_count: 0,
             // scope_depth: 0,
         }
@@ -237,13 +200,7 @@ impl<'a> Parser<'a> {
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
     fn add_local(&mut self, modifier: Modifier) {
-        let local_name = format!(
-            "{}{}", 
-            self.previous.unwrap().lexeme.clone(), 
-            self.scopes.len(),
-        );
-
-        self.scopes.last_mut().unwrap().add_local(local_name, modifier);
+        self.scopes.last_mut().unwrap().add_local(self.previous.unwrap().lexeme.clone(), modifier);
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
@@ -264,7 +221,6 @@ impl<'a> Parser<'a> {
     /// Decrease compiler scope_depth sanitizing (pop) values from stack
     ///
     pub fn end_scope(&mut self) {
-        dbg!(&self.scopes);
         /* Remove scope Locals when it ends */
         while self.scopes.last().unwrap().local_count > 0
         {

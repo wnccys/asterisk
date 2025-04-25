@@ -168,12 +168,25 @@ fn string(parser: &mut Parser, _can_assign: bool) {
 fn reference(parser: &mut Parser, _can_assign: bool) {
     parser.advance();
 
-    /* Let variable name be available on top of stack */
-    let var_index = parser.identifier_constant();
-    // parser.emit_byte(OpCode::Constant(var_index));
-    // parser.chunk.write_constant()
+    match parser.scopes.len() {
+        0 => {
+            let var_index = parser
+                .scopes
+                .last()
+                .unwrap()
+                .get_local(parser.current.unwrap().lexeme.clone())
+                .unwrap_or_else(
+                    || panic!("Invalid variable name: {}", parser.previous.unwrap().lexeme)
+                );
 
-    parser.emit_byte(OpCode::SetRef(var_index));
+            parser.emit_byte(OpCode::GetLocal(var_index.borrow().0));
+            parser.emit_byte(OpCode::SetRefGlobal(var_index.borrow().0));
+        },
+        _ => {
+            let var_index = parser.identifier_constant();
+            parser.emit_byte(OpCode::SetRefLocal(var_index))
+        },
+    }
 }
 
 fn variable(parser: &mut Parser, can_assign: bool) {
@@ -196,14 +209,12 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
         let local = 
             scopes 
             .unwrap()
-            .get_local_index(
-                format!(
-                    "{}{}", parser.previous.unwrap().lexeme, parser.scopes.len()
-                )
+            .get_local(
+                parser.previous.unwrap().lexeme.clone()
             ).unwrap();
 
-        get_op = OpCode::GetLocal(local.0);
-        set_op = OpCode::SetLocal(local.0, local.1)
+        get_op = OpCode::GetLocal(local.borrow().0);
+        set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
     } else {
         let var_index = parser.identifier_constant();
 

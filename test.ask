@@ -1,4 +1,8 @@
-let mut a = 63;
-let b = &a;
-a = 64;
-print b;
+{
+    let mut a: Int = 32;
+    a = 64;
+    print a;
+
+    let b: &Int = &a;
+    print b;
+}

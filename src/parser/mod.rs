@@ -46,6 +46,7 @@ impl Scope {
     /// 
     fn add_local(&mut self, lexeme: String, modifier: Modifier) {
         self.locals.insert(&lexeme, (self.local_count, modifier));
+        self.local_count += 1;
     }
 
     /// Return Local index to be used by stack if it exists

@@ -62,15 +62,14 @@ impl Vm {
         #[cfg(feature = "debug")]
         println!("Constants Vec: {:?}", self.chunk.constants);
 
-        for i in 0..self.chunk.code.len() {
+        for mut bytecode_index in 0..self.chunk.code.len() {
             #[cfg(feature = "debug")]
             {
                 print!("\n");
                 print_stack(&self.chunk);
                 println!("current code: {:?}", self.chunk.code[i]);
             }
-
-            op_status = match self.chunk.code[i].clone() {
+            op_status = match self.chunk.code[bytecode_index].clone() {
                 OpCode::Return => {
                     {
                         let chunk = self.chunk.as_mut();
@@ -449,6 +448,25 @@ impl Vm {
                     self.chunk.stack.push(Rc::new(RefCell::new(_ref)));
 
                     InterpretResult::Ok
+                }
+                OpCode::JumpIfFalse(offset) => {
+                    /* Check for false conditional on top of stack */
+                   match self.chunk.stack.last().unwrap().borrow().value {
+                        Primitive::Bool(v) => {
+                            if v == true {
+                                /* Set current opcode index to current + offset */
+                                bytecode_index += offset;
+                            }
+                        }
+                        _ => ()
+                    }
+
+                    continue;
+                }
+                OpCode::Jump(offset) => {
+                    bytecode_index += offset;
+
+                    continue;
                 }
             };
         }

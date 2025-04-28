@@ -18,6 +18,7 @@ pub enum OpCode {
     Divide,
     Negate,
     Print,
+    DefineLocal(usize, Modifier),
     GetLocal(usize),
     SetLocal(usize, Modifier),
     SetRefLocal(usize),

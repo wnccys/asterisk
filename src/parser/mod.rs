@@ -107,6 +107,9 @@ impl<'a> Parser<'a> {
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let global = self.parse_variable("Expect variable name.", modifier);
+        let mut local_name: Option<String> = None;
+
+        if global == 0 { local_name = Some(self.previous.unwrap().lexeme.clone()); };
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
@@ -123,15 +126,19 @@ impl<'a> Parser<'a> {
             }
 
             self.emit_byte(OpCode::SetType(t));
+
+            if local_name.is_some() { self.mark_initialized(local_name.unwrap()); }
         // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
         }
 
+
         self.consume(
             TokenCode::SemiColon,
             "Expect ';' after variable declaration.",
         );
+
 
         self.define_variable(global, modifier);
     }
@@ -169,9 +176,9 @@ impl<'a> Parser<'a> {
         return 0;
     }
 
-    /// Try to extract current type from TypeDef.
+    /// Try to extract current type from TypeDef Token.
     ///
-    /// Executed when explicit type definition is set, with :
+    /// Executed when explicit type definition is set with :
     ///
     pub fn parse_var_type(&mut self) -> Type {
         match self.current.unwrap().code.clone() {
@@ -204,6 +211,21 @@ impl<'a> Parser<'a> {
     ///
     fn add_local(&mut self, modifier: Modifier) {
         self.scopes.last_mut().unwrap().add_local(self.previous.unwrap().lexeme.clone(), modifier);
+    }
+
+    /// Initialize Local Var by emitting DefineLocal
+    /// 
+    fn mark_initialized(&mut self, local_name: String) {
+        if self.scopes.len() == 0 { return; }
+
+        let local_index = self
+            .scopes
+            .last_mut()
+            .unwrap()
+            .get_local(local_name)
+            .unwrap();
+
+        self.emit_byte(OpCode::DefineLocal(local_index.borrow().0, local_index.borrow().1));
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
@@ -292,7 +314,7 @@ impl<'a> Parser<'a> {
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
-        self.emit_byte(OpCode::Pop);
+        if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.

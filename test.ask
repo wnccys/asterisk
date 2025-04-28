@@ -1,8 +1,10 @@
-{
-    let mut a: Int = 32;
-    a = 64;
-    print a;
+let a: Int = 32;
+let b: &Int = &a;
 
-    let b: &Int = &a;
+print b;
+
+{
+    let a = 40;
+    let b: &Int = "adas";
     print b;
 }

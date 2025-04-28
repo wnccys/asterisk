@@ -61,7 +61,6 @@ impl<'a> Default for Scope {
         Scope {
             locals: HashTable::default(),
             local_count: 0,
-            // scope_depth: 0,
         }
     }
 }
@@ -115,12 +114,15 @@ impl<'a> Parser<'a> {
 
         // Check for typedef
         } else if self.match_token(TokenCode::Colon) {
-            self.parse_var_type();
+            // Lazy-evaluated var type
+            let t = self.parse_var_type();
 
             // Handle uninitialized but typed vars
             if self.match_token(TokenCode::Equal) {
                 self.expression();
             }
+
+            self.emit_byte(OpCode::SetType(t));
         // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
@@ -171,11 +173,11 @@ impl<'a> Parser<'a> {
     ///
     /// Executed when explicit type definition is set, with :
     ///
-    pub fn parse_var_type(&mut self) {
+    pub fn parse_var_type(&mut self) -> Type {
         match self.current.unwrap().code.clone() {
             TokenCode::TypeDef(t) => {
                 self.advance();
-                self.emit_byte(OpCode::SetType(t));
+                t
             }
             _ => panic!("Invalid Var Type."),
         }

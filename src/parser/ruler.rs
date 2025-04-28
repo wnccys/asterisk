@@ -171,11 +171,9 @@ fn reference(parser: &mut Parser, _can_assign: bool) {
     match parser.scopes.len() {
         0 => {
                 let var_index = parser.identifier_constant();
-                parser.emit_byte(OpCode::SetRefLocal(var_index));
+                parser.emit_byte(OpCode::SetRefGlobal(var_index));
         },
         _ => {
-            dbg!(&parser.scopes);
-            dbg!(&parser.current);
             let var_index = parser
                 .scopes
                 .last()

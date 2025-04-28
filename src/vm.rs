@@ -66,7 +66,7 @@ impl Vm {
             #[cfg(feature = "debug")]
             {
                 print_stack(&self.chunk);
-                println!("current code: {:?}", self.chunk.code[i]);
+                println!("current code: {:?}\n", self.chunk.code[i]);
             }
 
             op_status = match self.chunk.code[i].clone() {
@@ -285,7 +285,6 @@ impl Vm {
                     let chunk = self.chunk.as_mut();
 
                     let referenced_value = Rc::clone(&chunk.stack[var_value_index]);
-                    dbg!(&chunk.stack);
 
                     if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
                         if let Type::Ref(r) = &chunk.stack.last().unwrap().borrow()._type {

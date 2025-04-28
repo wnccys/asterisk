@@ -19,14 +19,14 @@ pub enum OpCode {
     Negate,
     Print,
     DefineLocal(usize, Modifier),
-    GetLocal(usize),
     SetLocal(usize, Modifier),
+    GetLocal(usize),
     SetRefLocal(usize),
     DefineGlobal(usize, Modifier),
     SetGlobal(usize),
     GetGlobal(usize),
-    SetType(Type),
     SetRefGlobal(usize),
+    SetType(Type),
 }
 
 #[derive(Debug, Default, Clone)]

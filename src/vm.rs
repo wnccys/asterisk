@@ -65,8 +65,9 @@ impl Vm {
         for i in 0..self.chunk.code.len() {
             #[cfg(feature = "debug")]
             {
+                print!("\n");
                 print_stack(&self.chunk);
-                println!("current code: {:?}\n", self.chunk.code[i]);
+                println!("current code: {:?}", self.chunk.code[i]);
             }
 
             op_status = match self.chunk.code[i].clone() {
@@ -229,37 +230,49 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                /* Check Local Type */
+                OpCode::DefineLocal(var_index, modifier) => {
+                    let chunk = self.chunk.as_mut();
+
+                    let variable = Rc::clone(&chunk.stack[var_index]);
+
+                    /* Type Check */
+                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if chunk.stack.last().unwrap().borrow()._type != variable.borrow()._type {
+                            panic!("Cannot assign {:?} to {:?}",  variable.borrow()._type, chunk.stack.last().unwrap().borrow()._type)
+                        }
+
+                        chunk.stack.pop();
+                    }
+
+                    variable.borrow_mut().modifier = modifier;
+
+                    InterpretResult::Ok
+                }
                 /*
                     Set new value to local variable.
                 */
                 OpCode::SetLocal(var_index, modifier) => {
-                    let mut var_index = var_index;
                     let chunk = self.chunk.as_mut();
 
-                    let value = match chunk.stack.pop().unwrap().take() {
-                        /* This match only a dummy type specifier */
-                        Value { value: Primitive::Void(..), _type, .. } => {
-                            let value = chunk.stack.pop().unwrap().take();
-                            var_index -= 1;
+                    let variable = Rc::clone(&chunk.stack[var_index]);
 
-                            if value._type != _type { panic!("Cannot assign {:?} to {:?}", value._type, _type) }
+                    /* Type Check */
+                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if chunk.stack.last().unwrap().borrow()._type != variable.borrow()._type {
+                            panic!("Cannot assign {:?} to {:?}", chunk.stack.last().unwrap().borrow()._type, variable.borrow()._type)
+                        }
 
-                            value
-                        },
-                        /* Inferred Type, so no match is needed */
-                        v => v,
-                    };
+                        chunk.stack.pop();
+                    }
 
-                    let mut variable = chunk.stack[var_index].borrow_mut();
-
-                    if variable._type != value._type {
-                        panic!("Cannot assign {:?} to {:?}", value._type, variable._type)
-                    };
                     if modifier != Modifier::Mut {
                         panic!("Cannot assign to immutable variable.")
                     }
 
-                    variable.value = value.value;
+                    let value = chunk.stack.pop().unwrap().take();
+
+                    variable.borrow_mut().value = value.value;
 
                     InterpretResult::Ok
                 }

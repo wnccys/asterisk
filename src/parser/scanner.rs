@@ -76,15 +76,26 @@ impl<'a> Iterator for TokenIterator<'a> {
             /* Advance until a whitespace is found */
             while self.pos < self.s.len() && !self.s.as_bytes()[self.pos].is_ascii_whitespace() {
                 /*
-                    This makes the validation for tokens which ends with ';'.
+                    This makes the validation for tokens which ends with ';' or other single characters.
                     It prevents the current token to be increased when in [pos],
-                    making the scanner correctly pass the ';' token to the next iteration.
+                    making the scanner correctly pass the ';' token, for example, to the next iteration.
                     this would cause, for example let a = 32; to pos be in whitespace in the final of loop,
                     invalidating the ';' semicolon token, this way, when a token has ; on final,
                     as the Some(..) return on function's final are not inclusive, it return the correct stripped token,
                     the condition start != self.pos validate that ';' correct match, without this, when pure ';' token
                     are scanned, it would restart the while loop, causing a infinite loop.
                 */
+
+                /* (CONDITION) handling */
+                if self.s.as_bytes()[self.pos] == b'(' {
+                    self.pos += 1;
+                    break;
+                }
+
+                if self.s.as_bytes()[self.pos] == b')' && start != self.pos {
+                    break;
+                }
+
                 if self.s.as_bytes()[self.pos] == b';' && start != self.pos {
                     break;
                 }

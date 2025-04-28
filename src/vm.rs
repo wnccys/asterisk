@@ -66,7 +66,7 @@ impl Vm {
             #[cfg(feature = "debug")]
             {
                 print_stack(&self.chunk);
-                println!("current code: {:?}", self.chunk.code[i]);
+                println!("current code: {:?}\n", self.chunk.code[i]);
             }
 
             op_status = match self.chunk.code[i].clone() {

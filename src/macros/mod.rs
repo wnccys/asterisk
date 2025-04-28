@@ -59,12 +59,6 @@ macro_rules! gen_primitives_operations {
             }
         }
 
-        impl PartialEq for Primitive {
-            fn eq(&self, other: &Self) -> bool {
-                matches!(self, other)
-            }
-        }
-
         impl PartialOrd for Primitive {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 match (self, other) {

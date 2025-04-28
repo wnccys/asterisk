@@ -34,7 +34,7 @@ pub enum Type {
     Void,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Primitive {
     Float(f64),
     Int(i32),

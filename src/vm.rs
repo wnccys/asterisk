@@ -285,11 +285,12 @@ impl Vm {
                     let chunk = self.chunk.as_mut();
 
                     let referenced_value = Rc::clone(&chunk.stack[var_value_index]);
+                    dbg!(&chunk.stack);
 
                     if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if let Type::Ref(r) = &chunk.stack.last().unwrap().borrow()._type  {
+                        if let Type::Ref(r) = &chunk.stack.last().unwrap().borrow()._type {
                             if **r != referenced_value.borrow()._type {
-                                panic!("Cannot assign {:?} to {:?}", chunk.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
+                                panic!("Cannot assign {:?} to Ref({:?})", chunk.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
                             };
                         };
 

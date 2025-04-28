@@ -43,7 +43,8 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::DefineLocal(index, _) => constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
         OpCode::SetRefLocal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetType(_) => simple_instruction("OP_SET_TYPE", offset),
-        _ => offset,
+        OpCode::JumpIfFalse(op_offset) => jump_instruction("OP_JUMP_IF_FALSE", op_offset, offset),
+        OpCode::Jump(op_offset) => jump_instruction("OP_JUMP", op_offset, offset),
     };
 
     disassemble_instruction(chunk, offset);
@@ -68,6 +69,11 @@ fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> 
 
     println!("{name}      {slot:?}");
     return offset + 1;
+}
+fn jump_instruction(name: &str, op_offset: &usize, offset: usize) -> usize {
+    println!("{name}      {op_offset}");
+
+    offset + 1
 }
 
 pub fn print_value(value: &Primitive) {

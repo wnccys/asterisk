@@ -67,7 +67,7 @@ impl Vm {
             {
                 print!("\n");
                 print_stack(&self.chunk);
-                println!("current code: {:?}", self.chunk.code[i]);
+                println!("current code: {:?}", self.chunk.code[bytecode_index]);
             }
             op_status = match self.chunk.code[bytecode_index].clone() {
                 OpCode::Return => {

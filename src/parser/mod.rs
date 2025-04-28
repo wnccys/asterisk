@@ -256,7 +256,7 @@ impl<'a> Parser<'a> {
         self.scopes.pop();
     }
 
-    /// Currently this function is only called inside self.declaration().
+    /// Statement manager function
     ///
     /// Statement Flow Order
     /// → exprStmt
@@ -270,6 +270,8 @@ impl<'a> Parser<'a> {
     pub fn statement(&mut self) {
         if self.match_token(TokenCode::Print) {
             self.print_statement();
+        } else if self.match_token(TokenCode::If) {
+            self.if_statement();
         } else {
             self.expression_statement();
         }
@@ -301,10 +303,40 @@ impl<'a> Parser<'a> {
     ///
     /// Emit: OpCode::Print
     ///
-    pub fn print_statement(&mut self) {
+    fn print_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
+    }
+
+    fn if_statement(&mut self) {
+        self.consume(TokenCode::LeftParen, "Expect '(' after 'if'");
+        self.expression();
+        self.consume(TokenCode::RightParen, "Expect ')' after condition");
+
+        /* 
+            Keep track of where then jump is located by checking chunk.code.len() 
+            This argument ByteCode is a placeholder, which will be lazy-populated by
+            patch_jump function.
+        */
+        let then_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+        /* Remove bool expression value used for verification from stack */
+        self.emit_byte(OpCode::Pop);
+        /* Execute code in then branch */ 
+        self.statement();
+
+        /* Get jump to else */
+        let else_jump = self.emit_jump(OpCode::Jump(0));
+
+        /* 
+            Set correct calculated offset to earlier set then_jump.
+            This is needed because jump doesn't know primarily how many instructions to jump
+        */
+        self.patch_jump(then_jump);
+        self.emit_byte(OpCode::Pop);
+
+        if self.match_token(TokenCode::Else) { self.statement(); }
+        self.patch_jump(else_jump);
     }
 
     /// Evaluate expression and consume ';' token.
@@ -411,6 +443,22 @@ impl<'a> Parser<'a> {
         let const_index = self.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
+    }
+
+    fn emit_jump(&mut self, instruction: OpCode) -> u16 {
+        /* Instruction */
+        self.emit_byte(instruction);
+
+        /* Return instruction count */
+        return (self.chunk.code.len() -1) as u16;
+    }
+
+    fn patch_jump(&mut self, offset: u16) {
+        let jump = (self.chunk.code.len() as u16) - 1 - offset;
+
+        if jump > u16::MAX { self.error("Max jump bytes reached.") }
+
+        self.chunk.code[offset as usize] = OpCode::JumpIfFalse(jump as usize);
     }
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.

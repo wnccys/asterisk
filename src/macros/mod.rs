@@ -1,7 +1,9 @@
+/// Delegate partially Value and Primitive operations to Rust
+
 /// Generate equal comparison code enabling Primitive(_) == Primitive(_), Primitive(_) > Primitive(_)
 ///
 macro_rules! gen_primitives_operations {
-    ($($variant:ident($inner:ty)), *) => {
+    ($($variant:ident), *) => {
         use std::cmp::Ordering;
 
         impl Add for Primitive {
@@ -57,19 +59,6 @@ macro_rules! gen_primitives_operations {
             }
         }
 
-        impl PartialEq for Primitive {
-            fn eq(&self, other: &Self) -> bool {
-                match (self, other) {
-                    $(
-                        (Primitive::$variant(value_a), Primitive::$variant(value_b)) => {
-                            value_a == value_b
-                        }
-                    ),*
-                    _ => panic!("Cannot compare different primitives")
-                }
-            }
-        }
-
         impl PartialOrd for Primitive {
             fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
                 match (self, other) {
@@ -90,7 +79,7 @@ macro_rules! gen_primitives_operations {
 /// Strings can only be added; Other implementations are only allowed in numbers (Int and Float)
 ///
 macro_rules! gen_values_operations {
-    ($($variant:ident($inner:ty)), *) => {
+    ($($variant:ident), *) => {
         impl Add for Value {
             type Output = Value;
 
@@ -98,15 +87,15 @@ macro_rules! gen_values_operations {
                 match (self, other) {
                     $(
                         (
-                            Value { value: Primitive::$variant(value_a), modifier },
-                            Value { value: Primitive::$variant(value_b), modifier: _},
-                        ) => { Value { value: Primitive::$variant(value_a + value_b), modifier} }
+                            Value { value: Primitive::$variant(value_a), modifier, _type},
+                            Value { value: Primitive::$variant(value_b), .. },
+                        ) => { Value { value: Primitive::$variant(value_a + value_b), modifier, _type} }
                     ), *
                     (
-                        Value { value: Primitive::String(str1) , modifier },
-                        Value { value: Primitive::String(str2), modifier: _ },
+                        Value { value: Primitive::String(str1), modifier, _type },
+                        Value { value: Primitive::String(str2), .. },
                     ) => {
-                        Value { value: Primitive::String(str1.add(&str2[..])), modifier }
+                        Value { value: Primitive::String(str1.add(&str2[..])), modifier, _type }
                     },
                     _ => panic!("Add not allowed.")
                 }
@@ -120,9 +109,9 @@ macro_rules! gen_values_operations {
                 match (self, other) {
                     $(
                         (
-                            Value { value: Primitive::$variant(value_a), modifier },
-                            Value { value: Primitive::$variant(value_b), modifier: _},
-                        ) => { Value { value: Primitive::$variant(value_a * value_b), modifier  } }
+                            Value { value: Primitive::$variant(value_a), modifier, _type },
+                            Value { value: Primitive::$variant(value_b), .. },
+                        ) => { Value { value: Primitive::$variant(value_a * value_b), modifier, _type  } }
                     ), *
                     _ => panic!("Operation mul not allowed")
                 }
@@ -136,9 +125,9 @@ macro_rules! gen_values_operations {
                 match (self, other) {
                     $(
                         (
-                            Value { value: Primitive::$variant(value_a), modifier },
-                            Value { value: Primitive::$variant(value_b), modifier: _},
-                        ) => { Value { value: Primitive::$variant(value_a / value_b), modifier } }
+                            Value { value: Primitive::$variant(value_a), modifier, _type },
+                            Value { value: Primitive::$variant(value_b), .. },
+                        ) => { Value { value: Primitive::$variant(value_a / value_b), modifier, _type } }
                     ), *
                     _ => panic!("Operation div not allowed")
                 }

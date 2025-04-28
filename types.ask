@@ -1,6 +1,7 @@
 let mut a: &Int = 40;
 let b: &String = "20";
-let c: String = &b;
+let c: &&String = &b;
+let mut d: Int = 10;
 
 print a;
 print b;

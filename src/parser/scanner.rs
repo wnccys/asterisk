@@ -1,14 +1,14 @@
 use std::{
-    collections::HashMap,
-    iter::Peekable,
-    slice::Iter,
-    str::Lines,
-    sync::LazyLock,
+    collections::HashMap, iter::Peekable, slice::Iter, str::Lines, sync::LazyLock,
 };
+
+use crate::value::Type;
 
 /// Token Stream created from Scanning Asterisk code.
 ///
 pub type TokenStream<'a> = Iter<'a, Token>;
+
+pub static TYPE_KEYS: [&str; 5] = ["Int", "Float", "String", "Bool", "Void"];
 
 #[derive(Debug)]
 struct TokenIterator<'a> {
@@ -51,12 +51,33 @@ impl<'a> Iterator for TokenIterator<'a> {
             if self.pos < self.s.len() {
                 self.pos += 1;
             }
+        } else if self.s.as_bytes()[self.pos] == b'/' {
+            /* Skip entire rest of line when // is found */
+            if self.s.as_bytes()[self.pos + 1] == b'/' {
+                self.pos = self.s.len();
+            };
+        /*
+            If token starts with &, verify for TYPES, the differences between the result is that when the keyword is not present,
+            it means & is a reference to something, and not a type itself, so we emit a TokenCode::Ampersand to tell parser it is a reference value instead of a reference type.
+        */
+        } else if self.s.as_bytes()[self.pos] == b'&' {
+            /* While we don't found a supported type, iterates */
+            while !self.s.as_bytes()[self.pos].is_ascii_whitespace() && self.pos < self.s.len() -1 {
+                self.pos += 1;
+
+                if TYPE_KEYS.contains(&&self.s[start + 1..self.pos]) {
+                    return Some(&self.s[start..self.pos]);
+                }
+            }
+
+            /* Isolate '&' and pass iteration to the next chars, Ex. &"name" => [TokenCode::Ampersand, TokenCode::String ] */
+            self.pos = start + 1;
         } else {
             /* Advance until a whitespace is found */
             while self.pos < self.s.len() && !self.s.as_bytes()[self.pos].is_ascii_whitespace() {
                 /*
                     This makes the validation for tokens which ends with ';'.
-                    It prevents the current token to be increased when in pos,
+                    It prevents the current token to be increased when in [pos],
                     making the scanner correctly pass the ';' token to the next iteration.
                     this would cause, for example let a = 32; to pos be in whitespace in the final of loop,
                     invalidating the ';' semicolon token, this way, when a token has ; on final,
@@ -65,6 +86,11 @@ impl<'a> Iterator for TokenIterator<'a> {
                     are scanned, it would restart the while loop, causing a infinite loop.
                 */
                 if self.s.as_bytes()[self.pos] == b';' && start != self.pos {
+                    break;
+                }
+
+                /* Send : token to the next iteration */
+                if self.s.as_bytes()[self.pos] == b':' && start != self.pos {
                     break;
                 }
 
@@ -79,7 +105,6 @@ impl<'a> Iterator for TokenIterator<'a> {
 }
 
 #[derive(Debug)]
-#[allow(unused)]
 /// Parse chars to Tokens.
 ///
 pub struct Scanner<'a> {
@@ -121,14 +146,7 @@ impl<'a> Scanner<'a> {
             return;
         }
 
-        /* Skip line parsing when comment are found */
-        if line.unwrap().starts_with("//") {
-            self.scan_l();
-            self.line += 1;
-            return;
-        }
-
-        /* Get new line iterator over the line tokens on each scan_l() call  */
+        /* Get new line iterator over the line tokens on each scan_l() call */
         self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
         /* While tokens are available, iterates. */
@@ -139,7 +157,7 @@ impl<'a> Scanner<'a> {
 
         self.line += 1;
 
-        /* Iterates over line recursivelly */
+        /* Iterates over lines recursivelly */
         self.scan_l()
     }
 
@@ -151,23 +169,34 @@ impl<'a> Scanner<'a> {
         */
         let token = &self.current_token.clone().unwrap()[..];
 
-        if token.is_empty() {
+        if token.is_empty() || token.starts_with("//") {
             return;
         }
 
         match token {
             /* Handle keywords and generate identifier token if no was found between the keywords */
+            token if self.is_typedef(token) => self.make_token(
+                (KEYWORDS.get(token))
+                    .unwrap_or(&TokenCode::Error("Invalid Type Token."))
+                    .clone(),
+            ),
             token if self.is_alphabetic(token) => {
-                self.make_token(*(KEYWORDS.get(token)).unwrap_or_else(|| &TokenCode::Identifier))
+                /*  Identifier is kinda a fallback for when no keyword is match */
+                self.make_token(
+                    (KEYWORDS.get(token))
+                        .unwrap_or(&TokenCode::Identifier)
+                        .clone(),
+                )
             }
             /* Numeric values handling (Int, Float) */
             token if self.is_numeric(token) => self.make_token(
-                *(KEYWORDS.get("number"))
-                    .unwrap_or_else(|| &TokenCode::Error("Invalid numeric token.")),
+                (KEYWORDS.get("number"))
+                    .unwrap_or(&TokenCode::Error("Invalid numeric token."))
+                    .clone(),
             ),
             /* String handling */
             token if token.starts_with("\"") => self.string(token),
-            _ => self.make_token(*(KEYWORDS.get(token)).unwrap_or_default()),
+            _ => self.make_token((KEYWORDS.get(token)).unwrap_or_default().clone()),
         };
     }
 
@@ -204,6 +233,16 @@ impl<'a> Scanner<'a> {
         }
 
         return true;
+    }
+
+    /// Check for a type and it's ref equivalent
+    ///
+    fn is_typedef(&self, token: &str) -> bool {
+        if TYPE_KEYS.contains(&token) || (token.starts_with("&") && token.len() > 1) {
+            return true;
+        }
+
+        false
     }
 
     /// Craft string tokens iterating until find or not (emit error) " string terminator.
@@ -256,8 +295,7 @@ pub struct Token {
     pub line: i32,
 }
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-#[allow(unused)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenCode {
     // Single char tokens
     LeftParen,
@@ -268,9 +306,11 @@ pub enum TokenCode {
     Dot,
     Minus,
     Plus,
+    Colon,
     SemiColon,
     Slash,
     Star,
+    Ampersand,
     // One or two char token
     Bang,
     BangEqual,
@@ -295,6 +335,7 @@ pub enum TokenCode {
     If,
     Nil,
     Modifier,
+    TypeDef(Type),
     Or,
     Print,
     Return,
@@ -316,7 +357,7 @@ impl Default for &TokenCode {
     }
 }
 
-static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
+pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     let mut map: HashMap<&'static str, TokenCode> = HashMap::new();
 
     // Keywords
@@ -346,12 +387,14 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("{", TokenCode::LeftBrace);
     map.insert("}", TokenCode::RightBrace);
     map.insert(";", TokenCode::SemiColon);
+    map.insert(":", TokenCode::Colon);
     map.insert(",", TokenCode::Comma);
     map.insert(".", TokenCode::Dot);
     map.insert("+", TokenCode::Plus);
     map.insert("-", TokenCode::Minus);
     map.insert("*", TokenCode::Star);
     map.insert("/", TokenCode::Slash);
+    map.insert("&", TokenCode::Ampersand);
     map.insert("//", TokenCode::Comment);
     map.insert("!", TokenCode::Bang);
     map.insert("!=", TokenCode::BangEqual);
@@ -361,6 +404,22 @@ static KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {
     map.insert("<=", TokenCode::LessEqual);
     map.insert(">", TokenCode::Greater);
     map.insert(">=", TokenCode::GreaterEqual);
+
+    /// Generate Primitive and it's Ref Type
+    ///
+    macro_rules! gen_types_n_refs {
+        ($($variant:ident),* $(,)?) => {
+            use std::rc::Rc;
+            {
+                $(
+                    map.insert(stringify!($variant), TokenCode::TypeDef(Type::$variant));
+                    map.insert(concat!("&", stringify!($variant)), TokenCode::TypeDef(Type::Ref(Rc::new(Type::$variant))));
+                )*
+            }
+        }
+    }
+
+    gen_types_n_refs!(Int, Float, String, Bool, Void);
 
     // General compiler track
     map.insert("EOF", TokenCode::Eof);

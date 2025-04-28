@@ -1,12 +1,33 @@
-let a = 32;
+// Comment Test
+
+// Global mutability test
+let mut a = 32;
 a = 40;
 print a;
 
 let b = 50;
 print b;
 
+// Basic mut handling / Scope handling
 {
-    let a = "x here!!!!";
-    a = "x is NOT HERE ANYMORE!!";
-    print x;
+    // "Shadow" var a
+    let mut a = "x here!!!!";
+    // Local mutability test
+    a = "x is NOT HERE ANYMORE!!"; // Inline Comment
+    print a;
+
+    // Global b is accessible from inner scope
+    print b;
+
+    {
+        // Even inner scope test
+        let a = "inner scoped!!";
+        print a;
+    }
 }
+
+// First var "a" is still valid (local doesn't colide with it)
+print a;
+
+// Type Error
+a = "32";

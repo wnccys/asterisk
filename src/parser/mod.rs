@@ -1,15 +1,18 @@
-use scanner::{Token, TokenCode, TokenStream};
+use std::{cell::RefCell, fmt::Write, rc::Rc};
+
 use ruler::{get_rule, Precedence};
+use scanner::{Token, TokenCode, TokenStream};
 
 use crate::{
     chunk::{Chunk, OpCode},
     errors::parser_errors::ParserResult,
-    types::hash_table::HashTable,
-    value::{Modifier, Primitive, Value},
+    types::hash_table::{hash_key, HashTable},
+    utils::{parse_type, print::disassemble_chunk},
+    value::{Modifier, Primitive, Type, Value},
 };
 
-pub mod scanner;
 pub mod ruler;
+pub mod scanner;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
@@ -19,58 +22,52 @@ pub struct Parser<'a> {
     pub previous: Option<&'a Token>,
     pub had_error: bool,
     pub panic_mode: bool,
-    pub scope: Scope<'a>,
+    pub scopes: Vec<Scope>,
     /// String interning model
     ///
-    pub _strings: &'a mut HashTable<String>,
-}
-
-/// Represents a block-scope.
-///
-#[derive(Debug)]
-pub struct Local<'a> {
-    pub token: &'a Token,
-    pub modifier: Modifier,
-    /// Scope depth of block where variable was defined.
-    ///
-    pub depth: u16,
-}
-
-impl<'a> Local<'a> {
-    fn new(token: &'a Token, depth: u16, modifier: Modifier) -> Self {
-        Local { modifier, token, depth }
-    }
+    pub _strings: &'a mut HashTable<String, String>,
 }
 
 /// General scope handler.
 ///
 #[derive(Debug)]
-pub struct Scope<'a> {
+pub struct Scope {
     /// Represents all local variables, resolved dynamically at runtime, without a Constant Bytecode.
     ///
-    pub locals: Vec<Local<'a>>,
-    /// Represents how many locals are in the scope
-    ///
+    /// (Var position on locals [consequently on Stack], Modifier))
+    pub locals: HashTable<String, (usize, Modifier)>,
     pub local_count: usize,
-    /// Represents the number of blocks surrounding the chunk of code whose are being compiled.
-    ///
-    /// Note:. (0) = global scope.
-    ///
-    pub scope_depth: u16,
 }
 
-impl<'a> Default for Scope<'a> {
+/// Represent a block scope
+/// 
+impl Scope {
+    /// Add new Local by hashing and inserting it
+    /// 
+    fn add_local(&mut self, lexeme: String, modifier: Modifier) {
+        self.locals.insert(&lexeme, (self.local_count, modifier));
+        self.local_count += 1;
+    }
+
+    /// Return Local index to be used by stack if it exists
+    /// 
+    fn get_local(&self, lexeme: String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        self.locals.get(&lexeme)
+    }
+}
+
+impl<'a> Default for Scope {
     fn default() -> Self {
         Scope {
-            locals: vec![],
+            locals: HashTable::default(),
             local_count: 0,
-            scope_depth: 0,
+            // scope_depth: 0,
         }
     }
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(_strings: &'a mut HashTable<String>, token_stream: TokenStream<'a>) -> Self {
+    pub fn new(_strings: &'a mut HashTable<String, String>, token_stream: TokenStream<'a>) -> Self {
         Parser {
             chunk: Chunk::default(),
             token_stream,
@@ -79,7 +76,7 @@ impl<'a> Parser<'a> {
             had_error: false,
             panic_mode: false,
             _strings,
-            scope: Scope::default(),
+            scopes: vec![],
         }
     }
 
@@ -87,7 +84,7 @@ impl<'a> Parser<'a> {
     /// → classDecl
     ///    | funDecl
     ///    | varDecl
-    ///    | statement ;
+    ///    | statement
     ///
     pub fn declaration(&mut self) {
         if self.match_token(TokenCode::Var) {
@@ -115,9 +112,18 @@ impl<'a> Parser<'a> {
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(TokenCode::Equal) {
             self.expression();
+
+        // Check for typedef
+        } else if self.match_token(TokenCode::Colon) {
+            self.parse_var_type();
+
+            // Handle uninitialized but typed vars
+            if self.match_token(TokenCode::Equal) {
+                self.expression();
+            }
+        // Uninitialized and untyped variables handling
         } else {
-            // TODO Set handling for null values (not allowed in asterisk)
-            self.emit_byte(OpCode::Nil);
+            panic!("Uninitialized variables are not allowed.");
         }
 
         self.consume(
@@ -153,12 +159,26 @@ impl<'a> Parser<'a> {
         self.consume(TokenCode::Identifier, error_msg);
 
         // Check if var is global
-        if self.scope.scope_depth == 0 {
+        if self.scopes.len() == 0 {
             return self.identifier_constant();
         }
 
         self.declare_variable(modifier);
         return 0;
+    }
+
+    /// Try to extract current type from TypeDef.
+    ///
+    /// Executed when explicit type definition is set, with :
+    ///
+    pub fn parse_var_type(&mut self) {
+        match self.current.unwrap().code.clone() {
+            TokenCode::TypeDef(t) => {
+                self.advance();
+                self.emit_byte(OpCode::SetType(t));
+            }
+            _ => panic!("Invalid Var Type."),
+        }
     }
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
@@ -171,33 +191,45 @@ impl<'a> Parser<'a> {
     }
 
     pub fn declare_variable(&mut self, modifier: Modifier) {
-        if self.scope.scope_depth == 0 {
+        if self.scopes.len() == 0 {
             return;
         }
 
         self.add_local(modifier);
     }
 
-    // TODO Add variable shadowing support
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
     fn add_local(&mut self, modifier: Modifier) {
-        let mut local = Local::new(self.previous.unwrap(), self.scope.scope_depth, modifier);
-        local.depth = self.scope.scope_depth;
-        self.scope.locals.push(local);
-
-        self.scope.local_count += 1;
+        self.scopes.last_mut().unwrap().add_local(self.previous.unwrap().lexeme.clone(), modifier);
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
     ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        if self.scope.scope_depth > 0 {
+        if self.scopes.len() > 0 {
             return;
         }
 
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+    }
+
+    pub fn begin_scope(&mut self) {
+        self.scopes.push(Scope::default());
+    }
+
+    /// Decrease compiler scope_depth sanitizing (pop) values from stack
+    ///
+    pub fn end_scope(&mut self) {
+        /* Remove scope Locals when it ends */
+        while self.scopes.last().unwrap().local_count > 0
+        {
+            self.emit_byte(OpCode::Pop);
+            self.scopes.last_mut().unwrap().local_count -= 1;
+        }
+
+        self.scopes.pop();
     }
 
     /// Currently this function is only called inside self.declaration().
@@ -339,50 +371,6 @@ impl<'a> Parser<'a> {
         }
     }
 
-    /// Check for current identifier token variable name, walking backward in locals array.
-    ///
-    /// This function iterates over the Compiler's locals reverselly searching for a Token which
-    /// matches parser.previous (self.previous) Token.
-    ///
-    /// Returns i32 because of -1 (No var name was found) conventional fallback.
-    ///
-    /// O(n)
-    ///
-    pub fn resolve_local(&mut self) -> Option<(i32, Modifier)> {
-        for i in (0..self.scope.local_count).rev() {
-            let local = &self.scope.locals[i];
-
-            #[cfg(feature = "debug")]
-            {
-                dbg!(&local.name);
-                dbg!(&self.previous.unwrap());
-            }
-
-            if self.identify_constant(&local.token, &self.previous.unwrap()) {
-                return Some((i as i32, local.modifier));
-            }
-        }
-
-        None
-    }
-
-    pub fn begin_scope(&mut self) {
-        self.scope.scope_depth += 1;
-    }
-
-    /// Decrease compiler scope_depth sanitizing (pop) values from stack
-    ///
-    pub fn end_scope(&mut self) {
-        self.scope.scope_depth -= 1;
-
-        while self.scope.local_count > 0
-            && self.scope.locals[self.scope.local_count - 1].depth > self.scope.scope_depth
-        {
-            self.emit_byte(OpCode::Pop);
-            self.scope.local_count -= 1;
-        }
-    }
-
     /// Emit arbitrary Bytecode.
     ///
     /// Emit: param code
@@ -401,21 +389,13 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Constant(const_index));
     }
 
-    pub fn identify_constant(&self, a: &Token, b: &Token) -> bool {
-        if a.lexeme.len() != b.lexeme.len() {
-            return false;
-        }
-
-        return a.code == b.code;
-    }
-
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
     pub fn end_compiler(&mut self) -> Chunk {
         if !self.had_error {
             // STUB
             #[cfg(feature = "debug")]
-            disassemble_chunk(self.chunk.as_ref().unwrap(), "code".to_string());
+            disassemble_chunk(&self.chunk, "code".to_string());
         }
 
         self.chunk.clone()
@@ -435,6 +415,6 @@ impl<'a> Parser<'a> {
             _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme),
         }
 
-        panic!("{}", msg);
+        println!("{}", msg);
     }
 }

@@ -1,7 +1,7 @@
 use crate::chunk::OpCode;
 use crate::parser::scanner::TokenCode;
 use crate::parser::Parser;
-use crate::value::{Modifier, Primitive, Value};
+use crate::value::{Modifier, Primitive, Type, Value};
 
 #[derive(Debug, PartialEq, PartialOrd)]
 /// Defines lower to higher operation precedence order.
@@ -70,6 +70,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 
         parser.emit_constant(Value {
             value: Primitive::Float(float_value),
+            _type: Type::Float,
             modifier: Modifier::Unassigned,
         });
     } else {
@@ -77,6 +78,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 
         parser.emit_constant(Value {
             value: Primitive::Int(int_value),
+            _type: Type::Int,
             modifier: Modifier::Unassigned,
         });
     }
@@ -85,7 +87,7 @@ fn number(parser: &mut Parser, _can_assign: bool) {
 /// Distinguish between negate (!) and minus (-) operations.
 ///
 fn unary(parser: &mut Parser, _can_assign: bool) {
-    let operator_type = parser.previous.unwrap().code;
+    let operator_type = &parser.previous.unwrap().code;
 
     parser.parse_precedence(Precedence::Unary);
 
@@ -99,7 +101,7 @@ fn unary(parser: &mut Parser, _can_assign: bool) {
 /// Parse math operators recursivelly until all operations are evaluated in correct order.
 ///
 fn binary(parser: &mut Parser, _can_assign: bool) {
-    let operator_type = parser.previous.unwrap().code;
+    let operator_type = &parser.previous.unwrap().code;
 
     let mut rule = get_rule(&operator_type);
     rule.precedence.increment();
@@ -157,8 +159,39 @@ fn string(parser: &mut Parser, _can_assign: bool) {
     parser.emit_byte(OpCode::Constant(index));
 }
 
+/// & -> Reference
+/// -> Get current token (Value to-be-parsed)
+/// -> Emit bytecode which set referenced named variable to the stack
+/// -> Ref must reference the value in the stack itself
+/// 
+/// 
+fn reference(parser: &mut Parser, _can_assign: bool) {
+    parser.advance();
+
+    match parser.scopes.len() {
+        0 => {
+                let var_index = parser.identifier_constant();
+                parser.emit_byte(OpCode::SetRefLocal(var_index));
+        },
+        _ => {
+            dbg!(&parser.scopes);
+            dbg!(&parser.current);
+            let var_index = parser
+                .scopes
+                .last()
+                .unwrap()
+                .get_local(parser.previous.unwrap().lexeme.clone())
+                .unwrap_or_else(
+                    || panic!("Invalid variable name: {}", parser.previous.unwrap().lexeme)
+                );
+
+            parser.emit_byte(OpCode::SetRefLocal(var_index.borrow().0));
+        },
+    }
+}
+
 fn variable(parser: &mut Parser, can_assign: bool) {
-    named_variable(parser, can_assign)
+    named_variable(parser, can_assign);
 }
 
 /// Distinguish between re-assign and get variable already set value as well as local and global variables.
@@ -168,11 +201,21 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);
 
-    let var_index = parser.resolve_local();
+    let scopes = 
+        parser
+        .scopes
+        .last();
 
-    if var_index.is_some() {
-        get_op = OpCode::GetLocal(var_index.unwrap().0 as usize);
-        set_op = OpCode::SetLocal(var_index.unwrap().0 as usize, var_index.unwrap().1);
+    if scopes.is_some() {
+        let local = 
+            scopes 
+            .unwrap()
+            .get_local(
+                parser.previous.unwrap().lexeme.clone()
+            ).unwrap();
+
+        get_op = OpCode::GetLocal(local.borrow().0);
+        set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
     } else {
         let var_index = parser.identifier_constant();
 
@@ -232,6 +275,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: binary,
             precedence: Precedence::Term,
         },
+        TokenCode::Colon => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::SemiColon => ParseRule {
             prefix: none,
             infix: none,
@@ -241,6 +289,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             prefix: none,
             infix: binary,
             precedence: Precedence::Factor,
+        },
+        TokenCode::Ampersand => ParseRule {
+            prefix: reference,
+            infix: none,
+            precedence: Precedence::None,
         },
         TokenCode::Star => ParseRule {
             prefix: none,
@@ -363,6 +416,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             precedence: Precedence::None,
         },
         TokenCode::Super => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
+        TokenCode::TypeDef(_) => ParseRule {
             prefix: none,
             infix: none,
             precedence: Precedence::None,

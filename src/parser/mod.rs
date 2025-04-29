@@ -453,24 +453,24 @@ impl<'a> Parser<'a> {
 
     /// Emit jump instruction and return it's index on chunk.code
     /// 
-    fn emit_jump(&mut self, instruction: OpCode) -> u16 {
+    fn emit_jump(&mut self, instruction: OpCode) -> usize {
         /* Instruction */
         self.emit_byte(instruction);
 
         /* Return instruction count */
-        return (self.chunk.code.len() -1) as u16;
+        return self.chunk.code.len() -1;
     }
 
     /// Calculate jump after evaluate conditional branch and set it so jump instruction.
     /// 
-    fn patch_jump(&mut self, offset: u16, instruction: OpCode) {
-        let jump = (self.chunk.code.len() as u16) - offset;
+    fn patch_jump(&mut self, offset: usize, instruction: OpCode) {
+        let jump = self.chunk.code.len() - offset;
 
-        if jump > u16::MAX { self.error("Max jump bytes reached.") }
+        if jump > usize::MAX { self.error("Max jump bytes reached.") }
 
         match instruction {
-            OpCode::JumpIfFalse(_) =>   self.chunk.code[offset as usize] = OpCode::JumpIfFalse(jump as usize),
-            OpCode::Jump(_) =>          self.chunk.code[offset as usize] = OpCode::Jump(jump as usize),
+            OpCode::JumpIfFalse(_) =>   self.chunk.code[offset] = OpCode::JumpIfFalse(jump),
+            OpCode::Jump(_) =>          self.chunk.code[offset] = OpCode::Jump(jump),
             _ => panic!("Invalid jump intruction."),
         }
     }

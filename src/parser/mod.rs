@@ -1,4 +1,4 @@
-use std::{cell::RefCell, fmt::Write, rc::Rc};
+use std::{cell::RefCell, fmt::Write, rc::Rc, thread::{self, current}, time::Duration};
 
 use ruler::{get_rule, Precedence};
 use scanner::{Token, TokenCode, TokenStream};
@@ -305,7 +305,7 @@ impl<'a> Parser<'a> {
     ///
     fn print_statement(&mut self) {
         self.expression();
-        dbg!(&self.chunk);
+        // dbg!(&self.chunk);
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
     }
@@ -326,7 +326,7 @@ impl<'a> Parser<'a> {
         /* Execute code in then branch so we know how many jumps we need */ 
         self.statement();
 
-        dbg!(&self.chunk.code);
+        // dbg!(&self.chunk.code);
 
         /* 
             Set jump to else branch.
@@ -464,7 +464,7 @@ impl<'a> Parser<'a> {
     /// Calculate jump after evaluate conditional branch and set it so jump instruction.
     /// 
     fn patch_jump(&mut self, offset: u16, instruction: OpCode) {
-        let jump = (self.chunk.code.len() as u16) - 1 - offset;
+        let jump = (self.chunk.code.len() as u16) - offset;
 
         if jump > u16::MAX { self.error("Max jump bytes reached.") }
 

@@ -1,4 +1,3 @@
 let a: Int = 32;
 
-if (a == 2) {
-}
+if (a == 2) print a; else print "ELSE VALUE";

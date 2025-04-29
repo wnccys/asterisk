@@ -305,6 +305,7 @@ impl<'a> Parser<'a> {
     ///
     fn print_statement(&mut self) {
         self.expression();
+        dbg!(&self.chunk);
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
     }
@@ -322,21 +323,26 @@ impl<'a> Parser<'a> {
         let then_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         /* Remove bool expression value used for verification from stack */
         self.emit_byte(OpCode::Pop);
-        /* Execute code in then branch */ 
+        /* Execute code in then branch so we know how many jumps we need */ 
         self.statement();
 
-        /* Get jump to else */
+        dbg!(&self.chunk.code);
+
+        /* 
+            Set jump to else branch.
+            Even if else is not set explicitly it is compiled, executing nothing.
+        */
         let else_jump = self.emit_jump(OpCode::Jump(0));
 
         /* 
             Set correct calculated offset to earlier set then_jump.
             This is needed because jump doesn't know primarily how many instructions to jump
         */
-        self.patch_jump(then_jump);
+        self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
 
         if self.match_token(TokenCode::Else) { self.statement(); }
-        self.patch_jump(else_jump);
+        self.patch_jump(else_jump, OpCode::Jump(0));
     }
 
     /// Evaluate expression and consume ';' token.
@@ -445,6 +451,8 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Constant(const_index));
     }
 
+    /// Emit jump instruction and return it's index on chunk.code
+    /// 
     fn emit_jump(&mut self, instruction: OpCode) -> u16 {
         /* Instruction */
         self.emit_byte(instruction);
@@ -453,12 +461,18 @@ impl<'a> Parser<'a> {
         return (self.chunk.code.len() -1) as u16;
     }
 
-    fn patch_jump(&mut self, offset: u16) {
+    /// Calculate jump after evaluate conditional branch and set it so jump instruction.
+    /// 
+    fn patch_jump(&mut self, offset: u16, instruction: OpCode) {
         let jump = (self.chunk.code.len() as u16) - 1 - offset;
 
         if jump > u16::MAX { self.error("Max jump bytes reached.") }
 
-        self.chunk.code[offset as usize] = OpCode::JumpIfFalse(jump as usize);
+        match instruction {
+            OpCode::JumpIfFalse(_) =>   self.chunk.code[offset as usize] = OpCode::JumpIfFalse(jump as usize),
+            OpCode::Jump(_) =>          self.chunk.code[offset as usize] = OpCode::Jump(jump as usize),
+            _ => panic!("Invalid jump intruction."),
+        }
     }
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.

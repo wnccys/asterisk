@@ -459,9 +459,8 @@ impl Vm {
                             if v == false {
                                 /* Set current opcode index to current + offset */
                                 bytecode_index += offset;
-                                println!("JUMPED ON FALSE TO {:?}", self.chunk.code[bytecode_index]);
 
-                                continue
+                                continue;
                             }
                         }
                         _ => ()
@@ -472,7 +471,7 @@ impl Vm {
                 OpCode::Jump(offset) => {
                     bytecode_index += offset;
 
-                    InterpretResult::Ok
+                    continue;
                 }
                 OpCode::Loop(offset) => {
                     bytecode_index -= offset;

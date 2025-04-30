@@ -407,6 +407,8 @@ impl<'a> Parser<'a> {
         self.parse_precedence(Precedence::Assignment);
     }
 
+    /// This is the Ruler core itself, it orchestrate the expressions' values.
+    /// 
     pub fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
@@ -453,7 +455,7 @@ impl<'a> Parser<'a> {
 
     /// Emit jump instruction and return it's index on chunk.code
     /// 
-    fn emit_jump(&mut self, instruction: OpCode) -> usize {
+    pub fn emit_jump(&mut self, instruction: OpCode) -> usize {
         /* Instruction */
         self.emit_byte(instruction);
 

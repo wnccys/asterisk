@@ -272,6 +272,8 @@ impl<'a> Parser<'a> {
             self.print_statement();
         } else if self.match_token(TokenCode::If) {
             self.if_statement();
+        } else if self.match_token(TokenCode::While) {
+            self.if_statement();
         } else {
             self.expression_statement();
         }
@@ -305,7 +307,6 @@ impl<'a> Parser<'a> {
     ///
     fn print_statement(&mut self) {
         self.expression();
-        // dbg!(&self.chunk);
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
     }

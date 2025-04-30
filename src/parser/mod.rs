@@ -463,7 +463,7 @@ impl<'a> Parser<'a> {
         return self.chunk.code.len() -1;
     }
 
-    /// Calculate jump after evaluate conditional branch and set it so jump instruction.
+    /// Calculate jump after evaluate conditional branch and set it to jump instruction.
     /// 
     fn patch_jump(&mut self, offset: usize, instruction: OpCode) {
         let jump = self.chunk.code.len() - offset;

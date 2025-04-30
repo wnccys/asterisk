@@ -327,8 +327,6 @@ impl<'a> Parser<'a> {
         /* Execute code in then branch so we know how many jumps we need */ 
         self.statement();
 
-        // dbg!(&self.chunk.code);
-
         /* 
             Set jump to else branch.
             Even if else is not set explicitly it is compiled, executing nothing.

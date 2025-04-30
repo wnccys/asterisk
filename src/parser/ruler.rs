@@ -242,6 +242,14 @@ fn and_(parser: &mut Parser, _can_assign: bool) {
 }
 
 fn or_(parser: &mut Parser, _can_assign: bool) {
+    let else_jump = parser.emit_jump(OpCode::JumpIfFalse(0));
+    let end_jump = parser.emit_jump(OpCode::Jump(0));
+
+    parser.patch_jump(else_jump, OpCode::JumpIfFalse(0));
+    parser.emit_byte(OpCode::Pop);
+
+    parser.parse_precedence(Precedence::Or);
+    parser.patch_jump(end_jump, OpCode::Jump(0));
 }
 
 /// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.
@@ -415,8 +423,8 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
         },
         TokenCode::Or => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: or_,
+            precedence: Precedence::Or,
         },
         TokenCode::Print => ParseRule {
             prefix: none,

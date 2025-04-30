@@ -369,7 +369,7 @@ impl Vm {
                         None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
-                    chunk.stack.push(value);
+                    chunk.stack.push(Rc::clone(&value));
 
                     InterpretResult::Ok
                 }
@@ -464,12 +464,12 @@ impl Vm {
                         _ => ()
                     }
 
-                    continue;
+                    InterpretResult::Ok
                 }
                 OpCode::Jump(offset) => {
                     bytecode_index += offset;
 
-                    continue;
+                    InterpretResult::Ok
                 }
             };
 
@@ -480,21 +480,21 @@ impl Vm {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = self.chunk.stack.pop().expect("value b not loaded.").take();
-        let a = self.chunk.stack.pop().expect("value a not loaded").take();
+        let b = Rc::clone(&self.chunk.stack.pop().expect("Value b not loaded."));
+        let a = Rc::clone(&self.chunk.stack.pop().expect("Value a not loaded"));
 
         let mut c = Value::default();
 
-        c.modifier = a.modifier;
-        c._type = a._type;
+        c.modifier = a.borrow().modifier;
+        c._type = a.borrow()._type.clone();
 
         match op {
-            "+" => c.value = a.value + b.value,
-            "*" => c.value = a.value * b.value,
-            "/" => c.value = a.value / b.value,
-            ">" => { c.value = Primitive::Bool(a.value > b.value); c._type = Type::Bool },
-            "<" => { c.value = Primitive::Bool(a.value < b.value); c._type = Type::Bool },
-            _ => panic!("invalid operation."),
+            "+" => c.value = a.borrow().value.clone() + b.borrow().value.clone(),
+            "*" => c.value = a.borrow().value.clone() * b.borrow().value.clone(),
+            "/" => c.value = a.borrow().value.clone() / b.borrow().value.clone(),
+            ">" => { c.value = Primitive::Bool(a.borrow().value > b.borrow().value); c._type = Type::Bool },
+            "<" => { c.value = Primitive::Bool(a.borrow().value < b.borrow().value); c._type = Type::Bool },
+            _ => panic!("Invalid binary operation."),
         }
         
         self.chunk.stack.push(Rc::new(RefCell::new(c)));

@@ -273,7 +273,7 @@ impl<'a> Parser<'a> {
         } else if self.match_token(TokenCode::If) {
             self.if_statement();
         } else if self.match_token(TokenCode::While) {
-            self.if_statement();
+            self.while_statement();
         } else {
             self.expression_statement();
         }
@@ -344,6 +344,24 @@ impl<'a> Parser<'a> {
         self.patch_jump(else_jump, OpCode::Jump(0));
     }
 
+    fn while_statement(&mut self) {
+        /* The Bytecode index jump needs to go backward to restart loop */
+        let loop_start = self.chunk.code.len() - 1;
+
+        self.consume(TokenCode::LeftParen, "Expect '(' after 'while'");
+        self.expression();
+        self.consume(TokenCode::RightParen, "Expect ')' after condition");
+
+
+        let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+        self.emit_byte(OpCode::Pop);
+        self.statement();
+
+        self.emit_loop(loop_start);
+        self.patch_jump(exit_jump, OpCode::JumpIfFalse(0));
+        self.emit_byte(OpCode::Pop);
+    }
+
     /// Evaluate expression and consume ';' token.
     ///
     /// Emit: OpCode::Pop
@@ -351,7 +369,7 @@ impl<'a> Parser<'a> {
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
-        if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
+        // if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
@@ -460,6 +478,10 @@ impl<'a> Parser<'a> {
 
         /* Return instruction count */
         return self.chunk.code.len() -1;
+    }
+
+    fn emit_loop(&mut self, loop_start: usize) {
+        self.emit_byte(OpCode::Loop(self.chunk.code.len() - loop_start));
     }
 
     /// Calculate jump after evaluate conditional branch and set it to jump instruction.

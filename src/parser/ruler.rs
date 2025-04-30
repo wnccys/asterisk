@@ -229,6 +229,21 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
     }
 }
 
+
+///
+/// 
+fn and_(parser: &mut Parser, _can_assign: bool) {
+    let end_jump = parser.emit_jump(OpCode::JumpIfFalse(0));
+    
+    parser.emit_byte(OpCode::Pop);
+    parser.parse_precedence(Precedence::And);
+
+    parser.patch_jump(end_jump, OpCode::JumpIfFalse(0));
+}
+
+fn or_(parser: &mut Parser, _can_assign: bool) {
+}
+
 /// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.
 ///
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
@@ -355,8 +370,8 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
         },
         TokenCode::And => ParseRule {
             prefix: none,
-            infix: none,
-            precedence: Precedence::None,
+            infix: and_,
+            precedence: Precedence::And,
         },
         TokenCode::Class => ParseRule {
             prefix: none,

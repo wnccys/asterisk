@@ -1,3 +1,7 @@
-let a: Int = 32;
+let mut a: Int = 32;
 
-if (a == 2) print a; else print "ELSE VALUE";
+if (a == 2 or a > 10) print a; else print "ELSE VALUE";
+
+while (a > 30) a = a - 1;
+
+print a;

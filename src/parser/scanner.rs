@@ -61,8 +61,18 @@ impl<'a> Iterator for TokenIterator<'a> {
             it means & is a reference to something, and not a type itself, so we emit a TokenCode::Ampersand to tell parser it is a reference value instead of a reference type.
         */
         } else if self.s.as_bytes()[self.pos] == b'&' {
+            /* && handling */
+            if self.s.as_bytes()[self.pos + 1] == b'&' {
+                self.pos += 1;
+
+                return Some(&self.s[start..=self.pos]);
+            }
+
             /* While we don't found a supported type, iterates */
-            while !self.s.as_bytes()[self.pos].is_ascii_whitespace() && self.pos < self.s.len() -1 {
+            while 
+                !self.s.as_bytes()[self.pos].is_ascii_whitespace() 
+                && self.pos < self.s.len() -1 
+            {
                 self.pos += 1;
 
                 if TYPE_KEYS.contains(&&self.s[start + 1..self.pos]) {
@@ -373,6 +383,7 @@ pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|
 
     // Keywords
     map.insert("and", TokenCode::And);
+    map.insert("&&", TokenCode::And);
     map.insert("const", TokenCode::Const);
     map.insert("class", TokenCode::Class);
     map.insert("else", TokenCode::Else);
@@ -384,6 +395,7 @@ pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|
     map.insert("number", TokenCode::Number);
     map.insert("nil", TokenCode::Nil);
     map.insert("or", TokenCode::Or);
+    map.insert("||", TokenCode::Or);
     map.insert("print", TokenCode::Print);
     map.insert("return", TokenCode::Return);
     map.insert("super", TokenCode::Super);

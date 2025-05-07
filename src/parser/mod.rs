@@ -270,6 +270,8 @@ impl<'a> Parser<'a> {
     pub fn statement(&mut self) {
         if self.match_token(TokenCode::Print) {
             self.print_statement();
+        } else if self.match_token(TokenCode::For) {
+            self.for_statement();
         } else if self.match_token(TokenCode::If) {
             self.if_statement();
         } else if self.match_token(TokenCode::While) {
@@ -309,6 +311,59 @@ impl<'a> Parser<'a> {
         self.expression();
         self.consume(TokenCode::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
+    }
+
+    fn for_statement(&mut self) {
+        self.begin_scope();
+
+        self.consume(TokenCode::LeftParen, "Expect '(' after 'for'.");
+        if self.match_token(TokenCode::SemiColon) {
+            // No initializer
+        } else if self.match_token(TokenCode::Var) {
+            self.var_declaration();
+        } else {
+            self.expression_statement();
+        }
+
+        self.consume(TokenCode::SemiColon, "Expect ';'.");
+
+        let mut loop_start = self.chunk.code.len() - 1;
+        let mut exit_jump: i32 = -1;
+        /* 
+            Verify if expression is present (x; HERE; y;)
+        */
+        if !self.match_token(TokenCode::SemiColon) {
+            self.expression();
+            self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
+
+            /* Jump out of the loop if condition is false */
+            exit_jump = self.emit_jump(OpCode::JumpIfFalse(0)) as i32;
+            /* Condition */
+            // self.emit_byte(OpCode::Pop);
+        }
+
+        self.consume(TokenCode::SemiColon, "Expect ';'.");
+        if !self.match_token(TokenCode::RightParen) {
+            let body_jump = self.emit_jump(OpCode::Jump(0));
+            let increment_start = self.chunk.code.len() -1;
+            self.expression();
+            self.emit_byte(OpCode::Pop);
+            self.consume(TokenCode::RightParen, "Expect ')' after for clauses.");
+
+            self.emit_loop(loop_start);
+            loop_start = increment_start;
+            self.patch_jump(body_jump, OpCode::Jump(0));
+        }
+
+        self.statement();
+        self.emit_loop(loop_start);
+
+        if exit_jump != -1 {
+            self.patch_jump(exit_jump as usize, OpCode::JumpIfFalse(0));
+            self.emit_byte(OpCode::Pop);
+        }
+
+        self.end_scope();
     }
 
     fn if_statement(&mut self) {

@@ -210,10 +210,20 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
             .unwrap()
             .get_local(
                 parser.previous.unwrap().lexeme.clone()
-            ).unwrap();
+            );
 
-        get_op = OpCode::GetLocal(local.borrow().0);
-        set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
+        /* Global variables inside scope handling */
+        if local.is_none() {
+            let var_index = parser.identifier_constant();
+
+            get_op = OpCode::GetGlobal(var_index);
+            set_op = OpCode::SetGlobal(var_index);
+        } else {
+            let local = local.unwrap();
+
+            get_op = OpCode::GetLocal(local.borrow().0);
+            set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
+        }
     } else {
         let var_index = parser.identifier_constant();
 
@@ -241,6 +251,8 @@ fn and_(parser: &mut Parser, _can_assign: bool) {
     parser.patch_jump(end_jump, OpCode::JumpIfFalse(0));
 }
 
+///
+/// 
 fn or_(parser: &mut Parser, _can_assign: bool) {
     let else_jump = parser.emit_jump(OpCode::JumpIfFalse(0));
     let end_jump = parser.emit_jump(OpCode::Jump(0));

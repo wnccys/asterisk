@@ -240,7 +240,7 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
 }
 
 
-///
+/// Jump if first condition of expression is false, verifying the second for a possible jump.
 /// 
 fn and_(parser: &mut Parser, _can_assign: bool) {
     let end_jump = parser.emit_jump(OpCode::JumpIfFalse(0));
@@ -251,7 +251,7 @@ fn and_(parser: &mut Parser, _can_assign: bool) {
     parser.patch_jump(end_jump, OpCode::JumpIfFalse(0));
 }
 
-///
+/// Verify for dangling expression on stack, jumpiong to the second evaluation and jumping over the entire instructions if false.
 /// 
 fn or_(parser: &mut Parser, _can_assign: bool) {
     let else_jump = parser.emit_jump(OpCode::JumpIfFalse(0));

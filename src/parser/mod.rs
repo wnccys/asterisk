@@ -313,9 +313,17 @@ impl<'a> Parser<'a> {
         self.emit_byte(OpCode::Print);
     }
 
+    /// The for loop statement handling
+    /// 
+    /// On every clause, we check if ; is present, what means the clause is omitted.
+    /// First, it checks for the first clause, which is a var declaration or a expression which will be executed on every start of loop.
+    /// After we state a loop jump, which is the jump made if the condition on (X; HERE; Z) is false, it must evaluate to a bool, or a compiler error on stack will be throw
+    /// Last we 
+    /// 
     fn for_statement(&mut self) {
         self.begin_scope();
 
+        /* Match (HERE; Y; Z) */
         self.consume(TokenCode::LeftParen, "Expect '(' after 'for'.");
         if self.match_token(TokenCode::SemiColon) {
             // No initializer
@@ -325,26 +333,34 @@ impl<'a> Parser<'a> {
             self.expression_statement();
         }
 
-        self.consume(TokenCode::SemiColon, "Expect ';'.");
-
-        let mut loop_start = self.chunk.code.len() - 1;
-        let mut exit_jump: i32 = -1;
         /* 
-            Verify if expression is present (x; HERE; y;)
+            This is the condition evaluation itself, this is where the loop begins, intructionally speaking xD
         */
+        let mut loop_start = self.chunk.code.len() - 1;
+        /* 
+            -1 is a fallback value, meaning the loop must not be patched, or better saying, the loop will not break.
+        */
+        let mut exit_jump: i32 = -1;
+        /*  Verify if expression is present (x; HERE; y;) */
         if !self.match_token(TokenCode::SemiColon) {
             self.expression();
             self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
 
             /* Jump out of the loop if condition is false */
             exit_jump = self.emit_jump(OpCode::JumpIfFalse(0)) as i32;
-            /* Condition */
-            // self.emit_byte(OpCode::Pop);
         }
 
-        self.consume(TokenCode::SemiColon, "Expect ';'.");
+        /* 
+            As asterisk uses a single-pass compiler model, to run the increment clause we first execute the body, 
+            jumping to the increment instruction right after.
+
+            Here body_jump set a jump flag bytecode, we next take the index of the current instruction (body jump)
+        */
         if !self.match_token(TokenCode::RightParen) {
+            /* This jump is set on code, so the flow continues, the body jump is executed */
+            /* Set body anchor */
             let body_jump = self.emit_jump(OpCode::Jump(0));
+            /* Execute increment */
             let increment_start = self.chunk.code.len() -1;
             self.expression();
             self.emit_byte(OpCode::Pop);
@@ -352,6 +368,7 @@ impl<'a> Parser<'a> {
 
             self.emit_loop(loop_start);
             loop_start = increment_start;
+            /* Map body anchor, to be executed before the increment */
             self.patch_jump(body_jump, OpCode::Jump(0));
         }
 

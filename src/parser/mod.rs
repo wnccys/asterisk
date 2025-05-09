@@ -362,7 +362,7 @@ impl<'a> Parser<'a> {
         */
         if !self.match_token(TokenCode::RightParen) {
             /* This jump is set on code, so the flow continues, the body jump is executed */
-            /* Set body anchor */
+            /* Set jump over body */
             let body_jump = self.emit_jump(OpCode::Jump(0));
             /* Execute increment - this is executed after body */
             let increment_start = self.chunk.code.len() -1;
@@ -371,9 +371,13 @@ impl<'a> Parser<'a> {
 
             self.consume(TokenCode::RightParen, "Expect ')' after for clauses.");
 
+            /* This loop is the one which */
             self.emit_loop(loop_start);
             loop_start = increment_start;
-            /* Map body anchor, to be executed before the increment */
+            /* 
+                Jump to the body.
+                After this jump, the self.emit_loop(loop_start) come back to evaluate the increment instruction.
+            */
             self.patch_jump(body_jump, OpCode::Jump(0));
         }
 

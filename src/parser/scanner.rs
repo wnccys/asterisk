@@ -14,11 +14,12 @@ pub static TYPE_KEYS: [&str; 5] = ["Int", "Float", "String", "Bool", "Void"];
 struct TokenIterator<'a> {
     s: &'a str,
     pos: usize,
+    pub comment_mode: bool,
 }
 
 impl<'a> TokenIterator<'a> {
     fn new(s: &'a str) -> Self {
-        TokenIterator { s, pos: 0 }
+        TokenIterator { s, pos: 0, comment_mode: false }
     }
 }
 
@@ -51,11 +52,6 @@ impl<'a> Iterator for TokenIterator<'a> {
             if self.pos < self.s.len() {
                 self.pos += 1;
             }
-        } else if self.s.as_bytes()[self.pos] == b'/' {
-            /* Skip entire rest of line when // is found */
-            if self.s.as_bytes()[self.pos + 1] == b'/' {
-                self.pos = self.s.len();
-            };
         /*
             If token starts with &, verify for TYPES, the differences between the result is that when the keyword is not present,
             it means & is a reference to something, and not a type itself, so we emit a TokenCode::Ampersand to tell parser it is a reference value instead of a reference type.
@@ -106,6 +102,43 @@ impl<'a> Iterator for TokenIterator<'a> {
                     break;
                 }
 
+                /* '/' or '/ *' handling */
+                if self.s.as_bytes()[self.pos] == b'/' {
+                    /* Isolate / to the next iteration */
+                    if start != self.pos {
+                        return Some(&self.s[start..self.pos]);
+                    /* Skip entire rest of line when // is found */
+                    } else if self.pos + 1 < self.s.len() && self.s.as_bytes()[self.pos + 1] == b'/' {
+                        self.pos = self.s.len();
+                        break;
+                    /* Isolated / handling */
+                    } else {
+                        self.pos += 1;
+                        if self.s.as_bytes()[self.pos] == b'*' { self.pos += 1 }
+
+                        return Some(&self.s[start..self.pos]);
+                    }
+                }
+
+                /* '* /' and '*' handling, casting it to the next iteration */
+                if self.s.as_bytes()[self.pos] == b'*' && start != self.pos {
+                    if self.s.as_bytes()[self.pos] == b'/' {
+                        self.pos += 1;
+                    }
+
+                    break
+                }
+
+                if self.s.as_bytes()[self.pos] == b'*' {
+                    self.pos += 1;
+
+                    if self.s.as_bytes()[self.pos] == b'/' {
+                        self.pos += 1;
+                    }
+
+                    break
+                }
+
                 if self.s.as_bytes()[self.pos] == b';' && start != self.pos {
                     break;
                 }
@@ -143,6 +176,7 @@ pub struct Scanner<'a> {
     pub line: i32,
     tokens: Option<Peekable<TokenIterator<'a>>>,
     current_token: Option<String>,
+    comment_mode: bool,
 }
 
 impl<'a> Scanner<'a> {
@@ -152,6 +186,7 @@ impl<'a> Scanner<'a> {
             lines,
             tokens: None,
             current_token: None,
+            comment_mode: false,
             line: 1,
         }
     }
@@ -173,13 +208,14 @@ impl<'a> Scanner<'a> {
             return;
         }
 
-        /* Get new line iterator over the line tokens on each scan_l() call */
+        /* Get new line iterator over the line's tokens on each scan_l() call */
         self.tokens = Some(TokenIterator::new(line.unwrap()).peekable());
 
-        /* While tokens are available, iterates. */
+        /* While tokens are available on source code line TokenIterator, iterates. */
         while self.tokens.as_mut().unwrap().peek().is_some() {
             self.advance_token();
-            self.parse_tokens();
+            /* Do not parse on comment mode */
+            if !self.comment_mode && self.current_token.as_ref().unwrap() != "*/" { self.parse_tokens(); }
         }
 
         self.line += 1;
@@ -227,7 +263,7 @@ impl<'a> Scanner<'a> {
         };
     }
 
-    /// Advance token by advancing tokens Iter pointer.
+    /// Advance token by advancing tokens Iter pointer (calls next()).
     /// This keeps tokens and current sync.
     ///
     fn advance_token(&mut self) {
@@ -236,6 +272,9 @@ impl<'a> Scanner<'a> {
         }
 
         self.current_token = Some(self.tokens.as_mut().unwrap().next().unwrap().to_owned());
+
+        if self.current_token.as_ref().unwrap() == "/*" { self.comment_mode = true };
+        if self.current_token.as_ref().unwrap() == "*/" { self.comment_mode = false };
     }
 
     /// Match Number values for construct integer values and float values with ".".

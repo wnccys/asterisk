@@ -351,6 +351,8 @@ impl<'a> Parser<'a> {
             /* Jump out of the loop if condition is false */
             exit_jump = self.emit_jump(OpCode::JumpIfFalse(0)) as i32;
         }
+        /* Pop only if middle cause (X; HERE: Y) is present */
+        if exit_jump != -1 { self.emit_byte(OpCode::Pop); }
 
         /* 
             As asterisk uses a single-pass compiler model, to run the increment clause we first execute the body, 
@@ -362,11 +364,10 @@ impl<'a> Parser<'a> {
             /* This jump is set on code, so the flow continues, the body jump is executed */
             /* Set body anchor */
             let body_jump = self.emit_jump(OpCode::Jump(0));
-            /* Execute increment */
+            /* Execute increment - this is executed after body */
             let increment_start = self.chunk.code.len() -1;
+            /* Increment expression */
             self.expression();
-            /* Pop only if middle cause (X; HERE: Y) is present */
-            if exit_jump != -1 { self.emit_byte(OpCode::Pop); }
 
             self.consume(TokenCode::RightParen, "Expect ')' after for clauses.");
 
@@ -376,7 +377,8 @@ impl<'a> Parser<'a> {
             self.patch_jump(body_jump, OpCode::Jump(0));
         }
 
-        self.statement();
+        self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
+        self.block();
         self.emit_loop(loop_start);
 
         if exit_jump != -1 {

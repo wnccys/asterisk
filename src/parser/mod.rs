@@ -276,6 +276,8 @@ impl<'a> Parser<'a> {
             self.if_statement();
         } else if self.match_token(TokenCode::While) {
             self.while_statement();
+        } else if self.check(TokenCode::LeftBrace) {
+            self.declaration();
         } else {
             self.expression_statement();
         }

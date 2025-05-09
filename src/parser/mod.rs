@@ -363,7 +363,9 @@ impl<'a> Parser<'a> {
             /* Execute increment */
             let increment_start = self.chunk.code.len() -1;
             self.expression();
-            self.emit_byte(OpCode::Pop);
+            /* Pop only if middle cause (X; HERE: Y) is present */
+            if exit_jump != -1 { self.emit_byte(OpCode::Pop); }
+
             self.consume(TokenCode::RightParen, "Expect ')' after for clauses.");
 
             self.emit_loop(loop_start);

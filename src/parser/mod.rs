@@ -558,8 +558,10 @@ impl<'a> Parser<'a> {
         return self.chunk.code.len() -1;
     }
 
+    /// Loop is a jump * -1, it goes backward to where the flag was set (loop_start which generally are self.chunk.code.len() - 1)
+    /// 
     fn emit_loop(&mut self, loop_start: usize) {
-        self.emit_byte(OpCode::Loop(self.chunk.code.len() - loop_start));
+        self.emit_byte(OpCode::Loop(self.chunk.code.len() - 1 - loop_start));
     }
 
     /// Calculate jump after evaluate conditional branch and set it to jump instruction.

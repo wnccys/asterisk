@@ -110,6 +110,12 @@ impl<'a> Iterator for TokenIterator<'a> {
                     break;
                 }
 
+                /* Handling for isolating ; on start of word */
+                if self.s.as_bytes()[self.pos] == b';' {
+                    self.pos += 1;
+                    return Some(&self.s[start..self.pos])
+                }
+
                 /* Send : token to the next iteration */
                 if self.s.as_bytes()[self.pos] == b':' && start != self.pos {
                     break;

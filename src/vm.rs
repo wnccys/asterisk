@@ -476,7 +476,7 @@ impl Vm {
                 OpCode::Loop(offset) => {
                     bytecode_index -= offset;
 
-                    continue
+                    continue;
                 }
             };
 

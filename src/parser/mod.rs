@@ -388,7 +388,7 @@ impl<'a> Parser<'a> {
         self.expression();
         self.consume(TokenCode::RightParen, "Expect ')' after condition");
 
-        /* 
+        /*
             Keep track of where then jump is located by checking chunk.code.len() 
             This argument ByteCode is a placeholder, which will be lazy-populated by
             patch_jump function.

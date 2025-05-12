@@ -279,7 +279,7 @@ impl<'a> Parser<'a> {
         } else if self.check(TokenCode::LeftBrace) {
             self.declaration();
         } else if self.check(TokenCode::Switch) {
-            self.declaration();
+            self.switch_statement();
         } else {
             self.expression_statement();
         }
@@ -444,6 +444,10 @@ impl<'a> Parser<'a> {
         self.emit_loop(loop_start);
         self.patch_jump(exit_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
+    }
+
+    fn switch_statement(&mut self) {
+
     }
 
     /// Evaluate expression and consume ';' token.

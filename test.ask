@@ -1,18 +1,13 @@
-let mut a: Int = 32;
+let mut a: Int = 2;
 
-if (a == 2 && a > 10) {
-    print a;
-} else {
-    print "ELSE VALUE"; 
-    print "ANOTHER ELSE VALUE";
+switch (a) {
+    case 2 {
+        print "MATCHH";
+    }
+    case 3 {
+        print "3!!";
+    }
+    default {
+        print "DEAFUALT";
+    }
 }
-
-while (a > 30) {
-    a = a - 1;
-}
-
-for (let mut i = 3 ; i >= 0; i = i - 1) {
-    print i;
-}
-
-print a;

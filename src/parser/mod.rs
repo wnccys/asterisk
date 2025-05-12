@@ -278,6 +278,8 @@ impl<'a> Parser<'a> {
             self.while_statement();
         } else if self.check(TokenCode::LeftBrace) {
             self.declaration();
+        } else if self.check(TokenCode::Switch) {
+            self.declaration();
         } else {
             self.expression_statement();
         }

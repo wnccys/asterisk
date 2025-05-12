@@ -405,6 +405,7 @@ pub enum TokenCode {
     Or,
     Print,
     Return,
+    Switch,
     Super,
     This,
     True,
@@ -443,6 +444,7 @@ pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|
     map.insert("||", TokenCode::Or);
     map.insert("print", TokenCode::Print);
     map.insert("return", TokenCode::Return);
+    map.insert("switch", TokenCode::Switch);
     map.insert("super", TokenCode::Super);
     map.insert("this", TokenCode::This);
     map.insert("true", TokenCode::True);

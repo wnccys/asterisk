@@ -443,6 +443,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
+        TokenCode::Switch => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::Return => ParseRule {
             prefix: none,
             infix: none,

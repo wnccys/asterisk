@@ -398,6 +398,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
+        TokenCode::Case => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::Else => ParseRule {
             prefix: none,
             infix: none,

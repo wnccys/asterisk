@@ -395,6 +395,7 @@ pub enum TokenCode {
     Class,
     Const,
     Case,
+    Default,
     Else,
     False,
     For,
@@ -434,6 +435,7 @@ pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|
     map.insert("const", TokenCode::Const);
     map.insert("class", TokenCode::Class);
     map.insert("case", TokenCode::Case);
+    map.insert("default", TokenCode::Default);
     map.insert("else", TokenCode::Else);
     map.insert("false", TokenCode::False);
     map.insert("for", TokenCode::For);

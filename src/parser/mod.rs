@@ -440,50 +440,57 @@ impl<'a> Parser<'a> {
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
         self.statement();
-
         self.emit_loop(loop_start);
         self.patch_jump(exit_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
     }
 
     fn switch_statement(&mut self) {
+        self.begin_scope();
+
         self.consume(TokenCode::LeftParen, "Expect '(' after switch clause.");
         self.expression();
         self.consume(TokenCode::RightParen, "Expect ')' after expression.");
         self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
 
-        self.begin_scope();
+        let mut final_jump: i32 = -1;
 
-        /* 
-            This is executed before every branch in order to switch value be available to be compared. 
-        */
-        let switch_start_loop = self.chunk.code.len() - 1;
-        let current_branch_jump = self.emit_jump(OpCode::Jump(0));
-        let mut ultimate_jump = -1;
+        // let final_jump = self.emit_jump(OpCode::Jump(0));
 
         /* 
             Executed by getting the switch value and comparing it with the branch expression value.
         */
         while self.match_token(TokenCode::Case) {
-            self.patch_jump(current_branch_jump, OpCode::Jump(0));
+            self.emit_byte(OpCode::Copy);
+            /* This gets switch value to be compared with branch value on every iteration */
             self.expression();
             self.emit_byte(OpCode::Equal);
-            /* This ensure jump when original value is true (our branch match) NOTE */
-            self.emit_byte(OpCode::Not);
+            let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+                self.statement();
+                if final_jump == -1 { final_jump = self.emit_jump(OpCode::Jump(0)) as i32; }
+            self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
+            self.emit_jump(OpCode::Jump(1));
+            // self.patch_jump(true_jump, OpCode::Jump(0));
 
-            /* Jump to new branch if branch condition is false (in this case, false is when condition is true) see above NOTE */
-            let next_case_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-            self.statement();
-            /* Update current_branch_jump, skipping above loop that's why len() and not len() - 1 */
-            self.emit_loop(switch_start_loop);
-            self.patch_jump(next_case_jump, OpCode::JumpIfFalse(0));
+
+            self.emit_byte(OpCode::Pop);
         };
 
-        if ultimate_jump == -1 {
-            self.patch_jump(ultimate_jump as usize,OpCode::Jump(0));
-        }
+        self.patch_jump(final_jump as usize, OpCode::Jump(0));
+
         /* As all values from switch expression valuation are not changed, pop */
         self.emit_byte(OpCode::Pop);
+
+        if self.match_token(TokenCode::Default) {
+            dbg!(&last_jump_index);
+            let default_jump = self.emit_jump(OpCode::Jump(0));
+            self.statement();
+
+            if last_jump_index == -1 {
+                self.patch_jump(default_jump, OpCode::Jump(0));
+            } 
+        }
+
 
         self.consume(TokenCode::RightBrace, "Expect '}' on end-of-block.");
         self.end_scope();

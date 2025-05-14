@@ -73,10 +73,15 @@ fn byte_instruction(name: &str, chunk: &Chunk, index: &usize, offset: usize) -> 
     println!("{name}      {slot:?}");
     return offset + 1;
 }
+
 fn jump_instruction(name: &str, op_offset: &usize, offset: usize) -> usize {
     println!("{name}      {op_offset}");
 
     offset + 1
+}
+
+fn print_function() {
+
 }
 
 pub fn print_value(value: &Primitive) {
@@ -91,6 +96,9 @@ pub fn print_value(value: &Primitive) {
             print!("&");
             print_value(&ref_value);
         },
+        Primitive::Function(f) => {
+            println!("&fn<{}, {}>", f.arity, f.name);
+        }
         _ => panic!("invalid value."),
     }
 }

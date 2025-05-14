@@ -21,5 +21,8 @@ pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> 
         parser.declaration();
     }
 
-    (parser.end_compiler(), InterpretResult::Ok)
+    match parser.end_compiler() {
+        Some(f) => (f, InterpretResult::Ok),
+        None => { panic!("Invalid function call.")}
+    }
 }

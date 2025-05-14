@@ -653,15 +653,17 @@ impl<'a> Parser<'a> {
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
-    pub fn end_compiler(&mut self) -> Function {
+    pub fn end_compiler(&mut self) -> Option<Function> {
         if !self.had_error {
             // STUB
             #[cfg(feature = "debug")]
             disassemble_chunk(&self.function.chunk, self.function.name.to_string());
         }
 
-        /* TODO drop parser and return function */
-        self.function.clone()
+        match self.had_error {
+            false => Some(self.function.clone()),
+            true => None,
+        }
     }
 
     /// Panic on errors with panic_mode handling.

@@ -8,7 +8,7 @@ use crate::{
     errors::parser_errors::ParserResult,
     types::hash_table::{hash_key, HashTable},
     utils::{parse_type, print::disassemble_chunk},
-    value::{Modifier, Primitive, Type, Value},
+    value::{Function, FunctionType, Modifier, Primitive, Type, Value},
 };
 
 pub mod ruler;
@@ -16,7 +16,9 @@ pub mod scanner;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
-    pub chunk: Chunk,
+    pub function: Function,
+    pub function_type: FunctionType,
+    // pub chunk: Chunk,
     pub token_stream: TokenStream<'a>,
     pub current: Option<&'a Token>,
     pub previous: Option<&'a Token>,
@@ -66,9 +68,15 @@ impl<'a> Default for Scope {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(_strings: &'a mut HashTable<String, String>, token_stream: TokenStream<'a>) -> Self {
+    pub fn new(
+        _strings: &'a mut HashTable<String, String>,
+        token_stream: TokenStream<'a>, 
+        function: Function,
+        function_type: FunctionType
+    ) -> Self {
         Parser {
-            chunk: Chunk::default(),
+            function,
+            function_type,
             token_stream,
             current: None,
             previous: None,
@@ -196,7 +204,7 @@ impl<'a> Parser<'a> {
         // Gets chars from token and set it as var name
         let value = &self.previous.unwrap().lexeme;
 
-        self.chunk.write_constant(Primitive::String(value.clone()))
+        self.function.chunk.write_constant(Primitive::String(value.clone()))
     }
 
     pub fn declare_variable(&mut self, modifier: Modifier) {
@@ -340,7 +348,7 @@ impl<'a> Parser<'a> {
         /* 
             This is the condition evaluation itself, this is where the loop begins, intructionally speaking xD
         */
-        let mut loop_start = self.chunk.code.len() - 1;
+        let mut loop_start = self.function.chunk.code.len() - 1;
         /* 
             -1 is a fallback value, meaning the loop must not be patched, or better saying, the loop will not break.
         */
@@ -367,7 +375,7 @@ impl<'a> Parser<'a> {
             /* Set jump over body */
             let body_jump = self.emit_jump(OpCode::Jump(0));
             /* Execute increment - this is executed after body */
-            let increment_start = self.chunk.code.len() -1;
+            let increment_start = self.function.chunk.code.len() -1;
             /* Increment expression */
             self.expression();
 
@@ -430,7 +438,7 @@ impl<'a> Parser<'a> {
 
     fn while_statement(&mut self) {
         /* The Bytecode index jump needs to go backward to restart loop */
-        let loop_start = self.chunk.code.len() - 1;
+        let loop_start = self.function.chunk.code.len() - 1;
 
         self.consume(TokenCode::LeftParen, "Expect '(' after 'while'");
         self.expression();
@@ -466,9 +474,8 @@ impl<'a> Parser<'a> {
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
         /* 
-            Executed by getting the original switch value, copying it and comparing it with the branch expression value. 
+            Executed by getting the original switch value, copying it and comparing it with the branch expression value.
             Basically, when a branch is true, it's value is propagated until the end of loop.
-            /* FIXME improve this */
         */
         while self.match_token(TokenCode::Case) {
             /* The below jump is executed in order to skip the execution of the entire branch once a true value (from previous branch) is found. */
@@ -600,7 +607,7 @@ impl<'a> Parser<'a> {
     /// Emit: param code
     ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.chunk.write(code, self.current.unwrap().line);
+        self.function.chunk.write(code, self.current.unwrap().line);
     }
 
     /// Write value to constant vec and set it's bytecode.
@@ -608,7 +615,7 @@ impl<'a> Parser<'a> {
     /// Emit: OpCode::Constant
     ///
     pub fn emit_constant(&mut self, value: Value) {
-        let const_index = self.chunk.write_constant(value.to_owned().value);
+        let const_index = self.function.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
     }
@@ -620,40 +627,41 @@ impl<'a> Parser<'a> {
         self.emit_byte(instruction);
 
         /* Return instruction count */
-        return self.chunk.code.len() -1;
+        return self.function.chunk.code.len() -1;
     }
 
     /// Loop is a jump * -1, it goes backward to where the flag was set (loop_start which generally are self.chunk.code.len() - 1)
     /// 
     fn emit_loop(&mut self, loop_start: usize) {
-        self.emit_byte(OpCode::Loop(self.chunk.code.len() - 1 - loop_start));
+        self.emit_byte(OpCode::Loop(self.function.chunk.code.len() - 1 - loop_start));
     }
 
     /// Calculate jump after evaluate conditional branch and set it to jump instruction.
     /// 
     fn patch_jump(&mut self, offset: usize, instruction: OpCode) {
-        let jump = self.chunk.code.len() - offset;
+        let jump = self.function.chunk.code.len() - offset;
 
         if jump > usize::MAX { self.error("Max jump bytes reached.") }
 
         match instruction {
-            OpCode::JumpIfTrue(_) =>   self.chunk.code[offset] = OpCode::JumpIfTrue(jump),
-            OpCode::JumpIfFalse(_) =>   self.chunk.code[offset] = OpCode::JumpIfFalse(jump),
-            OpCode::Jump(_) =>          self.chunk.code[offset] = OpCode::Jump(jump),
+            OpCode::JumpIfTrue(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfTrue(jump),
+            OpCode::JumpIfFalse(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfFalse(jump),
+            OpCode::Jump(_) =>          self.function.chunk.code[offset] = OpCode::Jump(jump),
             _ => panic!("Invalid jump intruction."),
         }
     }
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
-    pub fn end_compiler(&mut self) -> Chunk {
+    pub fn end_compiler(&mut self) -> Function {
         if !self.had_error {
             // STUB
             #[cfg(feature = "debug")]
-            disassemble_chunk(&self.chunk, "code".to_string());
+            disassemble_chunk(&self.function.chunk, self.function.name.to_string());
         }
 
-        self.chunk.clone()
+        /* TODO drop parser and return function */
+        self.function.clone()
     }
 
     /// Panic on errors with panic_mode handling.

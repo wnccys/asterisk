@@ -29,6 +29,7 @@ pub enum OpCode {
     SetRefGlobal(usize),
     SetType(Type),
     JumpIfFalse(usize),
+    JumpIfTrue(usize),
     Jump(usize),
     Loop(usize),
 }

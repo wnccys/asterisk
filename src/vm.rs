@@ -476,6 +476,22 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                OpCode::JumpIfTrue(offset) => {
+                    /* Check for false conditional on top of stack */
+                   match self.chunk.stack.last().unwrap().borrow().value {
+                        Primitive::Bool(v) => {
+                            if v == true {
+                                /* Set current opcode index to current + offset */
+                                bytecode_index += offset;
+
+                                continue;
+                            }
+                        }
+                        _ => ()
+                    }
+
+                    InterpretResult::Ok
+                }
                 OpCode::Jump(offset) => {
                     bytecode_index += offset;
 

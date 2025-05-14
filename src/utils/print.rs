@@ -80,10 +80,6 @@ fn jump_instruction(name: &str, op_offset: &usize, offset: usize) -> usize {
     offset + 1
 }
 
-fn print_function() {
-
-}
-
 pub fn print_value(value: &Primitive) {
     match value {
         Primitive::Float(f) => println!("{f:.1}"),

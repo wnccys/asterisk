@@ -3,6 +3,8 @@ use std::{
     cell::RefCell, fmt::Display, ops::{Add, Div, Mul}, rc::Rc
 };
 
+use crate::chunk::Chunk;
+
 /// All Asterisk Values definition.
 ///
 #[derive(Debug, Clone)]
@@ -10,6 +12,29 @@ pub struct Value {
     pub value: Primitive,
     pub _type: Type,
     pub modifier: Modifier,
+}
+
+#[derive(Debug, Clone)]
+pub struct Function {
+    pub arity: i32,
+    pub chunk: Chunk,
+    pub name: u64,
+}
+
+impl Function {
+    fn new(name: u64) -> Self {
+        Function {
+            arity: 0,
+            chunk: Chunk::default(),
+            name,
+        }
+    }
+}
+
+impl PartialEq for Function {
+    fn eq(&self, other: &Self) -> bool {
+        self.name == other.name && self.arity == self.arity
+    }
 }
 
 impl Default for Value {
@@ -40,6 +65,7 @@ pub enum Primitive {
     Int(i32),
     Bool(bool),
     String(String),
+    Function(Function),
     Ref(Rc<RefCell<Value>>),
     RefMut(*mut Value),
     Void(()),

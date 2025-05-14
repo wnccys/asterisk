@@ -453,44 +453,56 @@ impl<'a> Parser<'a> {
         self.consume(TokenCode::RightParen, "Expect ')' after expression.");
         self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
 
-        let mut final_jump: i32 = -1;
-
-        // let final_jump = self.emit_jump(OpCode::Jump(0));
+        self.consume(TokenCode::Case, "Expected 'case' statement.");
+        self.emit_byte(OpCode::Copy);
+        /* This gets switch value to be compared with branch value on every iteration */
+        self.expression();
+        self.emit_byte(OpCode::Equal);
+        let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+            /* 
+                Statements doesnt let dangling values on stack, so no pop is needed. 
+                Finally, the value available on top is going to be the expression() result one.
+            */
+            self.statement();
+        self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
         /* 
-            Executed by getting the switch value and comparing it with the branch expression value.
+            Executed by getting the original switch value, copying it and comparing it with the branch expression value. 
+            Basically, when a branch is true, it's value is propagated until the end of loop.
+            /* FIXME improve this */
         */
         while self.match_token(TokenCode::Case) {
+            /* The below jump is executed in order to skip the execution of the entire branch once a true value (from previous branch) is found. */
+            let branch_jump = self.emit_jump(OpCode::JumpIfTrue(0));
+            /* If conditional was indeeed false, pop it (old branch value) and continues */
+            self.emit_byte(OpCode::Pop);
+
             self.emit_byte(OpCode::Copy);
             /* This gets switch value to be compared with branch value on every iteration */
             self.expression();
             self.emit_byte(OpCode::Equal);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
                 self.statement();
-                if final_jump == -1 { final_jump = self.emit_jump(OpCode::Jump(0)) as i32; }
+                /* Need to patch this jump to final of switch */
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
-            self.emit_jump(OpCode::Jump(1));
-            // self.patch_jump(true_jump, OpCode::Jump(0));
 
-
-            self.emit_byte(OpCode::Pop);
+            self.patch_jump(branch_jump, OpCode::JumpIfTrue(0));
+            /* On final of loop, the expression value of branch is still available, once the pop is on next iteration */
         };
 
-        self.patch_jump(final_jump as usize, OpCode::Jump(0));
-
-        /* As all values from switch expression valuation are not changed, pop */
-        self.emit_byte(OpCode::Pop);
+        /* If a true value was found, it will be available on top of stack, so we check if it is false. */
+        let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
         if self.match_token(TokenCode::Default) {
-            dbg!(&last_jump_index);
-            let default_jump = self.emit_jump(OpCode::Jump(0));
             self.statement();
-
-            if last_jump_index == -1 {
-                self.patch_jump(default_jump, OpCode::Jump(0));
-            } 
         }
 
+        self.patch_jump(default_jump, OpCode::JumpIfTrue(0));
+        /* Pop default_jump conditional */
+        self.emit_byte(OpCode::Pop);
+
+        /* As original switch value are available, pop */
+        self.emit_byte(OpCode::Pop);
 
         self.consume(TokenCode::RightBrace, "Expect '}' on end-of-block.");
         self.end_scope();
@@ -628,6 +640,7 @@ impl<'a> Parser<'a> {
         if jump > usize::MAX { self.error("Max jump bytes reached.") }
 
         match instruction {
+            OpCode::JumpIfTrue(_) =>   self.chunk.code[offset] = OpCode::JumpIfTrue(jump),
             OpCode::JumpIfFalse(_) =>   self.chunk.code[offset] = OpCode::JumpIfFalse(jump),
             OpCode::Jump(_) =>          self.chunk.code[offset] = OpCode::Jump(jump),
             _ => panic!("Invalid jump intruction."),

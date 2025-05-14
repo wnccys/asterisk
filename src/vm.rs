@@ -232,14 +232,6 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
-                OpCode::Copy => {
-                    let chunk = self.chunk.as_mut();
-
-                    let copied = chunk.stack.last().unwrap();
-                    chunk.stack.push(Rc::clone(copied));
-
-                    InterpretResult::Ok
-                }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
                     let chunk = self.chunk.as_mut();

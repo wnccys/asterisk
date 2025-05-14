@@ -155,7 +155,7 @@ fn literal(parser: &mut Parser, _can_assign: bool) {
 fn string(parser: &mut Parser, _can_assign: bool) {
     let str = &parser.previous.unwrap().lexeme;
 
-    let index = parser.chunk.write_constant(Primitive::String(str.clone()));
+    let index = parser.function.chunk.write_constant(Primitive::String(str.clone()));
     parser.emit_byte(OpCode::Constant(index));
 }
 

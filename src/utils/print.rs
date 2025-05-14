@@ -45,6 +45,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::SetRefLocal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetType(_) => simple_instruction("OP_SET_TYPE", offset),
         OpCode::JumpIfFalse(op_offset) => jump_instruction("OP_JUMP_IF_FALSE", op_offset, offset),
+        OpCode::JumpIfTrue(op_offset) => jump_instruction("OP_JUMP_IF_TRUE", op_offset, offset),
         OpCode::Jump(op_offset) => jump_instruction("OP_JUMP", op_offset, offset),
         OpCode::Loop(op_offset) => jump_instruction("OP_LOOP", op_offset, offset),
     };

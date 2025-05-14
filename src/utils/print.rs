@@ -30,6 +30,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::False => simple_instruction("OP_FALSE", offset),
         OpCode::Not => simple_instruction("OP_NOT", offset),
         OpCode::Equal => simple_instruction("OP_EQUAL", offset),
+        OpCode::PartialEqual => simple_instruction("OP_PARTIAL_EQUAL", offset),
         OpCode::Greater => simple_instruction("OP_GREATER", offset),
         OpCode::Less => simple_instruction("OP_LESS", offset),
         OpCode::Print => simple_instruction("OP_PRINT", offset),

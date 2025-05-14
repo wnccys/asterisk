@@ -189,6 +189,20 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                OpCode::PartialEqual => {
+                    let chunk = self.chunk.as_mut();
+                    let a = chunk.stack.pop().unwrap();
+                    let b = chunk.stack.pop().unwrap();
+
+                    chunk.stack.push(Rc::clone(&b));
+                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                        value: Primitive::Bool(a == b),
+                        modifier: Modifier::Unassigned,
+                        _type: Type::Bool,
+                    })));
+
+                    InterpretResult::Ok
+                }
                 OpCode::Greater => {
                     self.binary_op(">");
 

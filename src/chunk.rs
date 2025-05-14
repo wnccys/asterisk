@@ -9,6 +9,8 @@ pub enum OpCode {
     True,
     False,
     Equal,
+    /// Same as Equal, but persist the 'b' variable value on stack.
+    PartialEqual,
     Pop,
     Greater,
     Less,

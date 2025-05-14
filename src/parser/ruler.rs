@@ -463,6 +463,11 @@ pub fn get_rule(token_code: &TokenCode) -> ParseRule {
             infix: none,
             precedence: Precedence::None,
         },
+        TokenCode::Continue  => ParseRule {
+            prefix: none,
+            infix: none,
+            precedence: Precedence::None,
+        },
         TokenCode::Super => ParseRule {
             prefix: none,
             infix: none,

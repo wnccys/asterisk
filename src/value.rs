@@ -14,11 +14,17 @@ pub struct Value {
     pub modifier: Modifier,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Function {
     pub arity: i32,
     pub chunk: Chunk,
     pub name: u64,
+}
+
+#[derive(Debug)]
+pub enum FunctionType {
+    Fn,
+    Script
 }
 
 impl Function {

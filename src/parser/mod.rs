@@ -454,16 +454,15 @@ impl<'a> Parser<'a> {
         self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
 
         self.consume(TokenCode::Case, "Expected 'case' statement.");
-        self.emit_byte(OpCode::Copy);
         /* This gets switch value to be compared with branch value on every iteration */
         self.expression();
-        self.emit_byte(OpCode::Equal);
+        self.emit_byte(OpCode::PartialEqual);
         let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-            /* 
-                Statements doesnt let dangling values on stack, so no pop is needed. 
-                Finally, the value available on top is going to be the expression() result one.
-            */
-            self.statement();
+        /* 
+            Statements doesnt let dangling values on stack, so no pop is needed. 
+            Finally, the value available on top is going to be the expression() result one.
+        */
+        self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
         /* 
@@ -477,13 +476,11 @@ impl<'a> Parser<'a> {
             /* If conditional was indeeed false, pop it (old branch value) and continues */
             self.emit_byte(OpCode::Pop);
 
-            self.emit_byte(OpCode::Copy);
             /* This gets switch value to be compared with branch value on every iteration */
             self.expression();
-            self.emit_byte(OpCode::Equal);
+            self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-                self.statement();
-                /* Need to patch this jump to final of switch */
+            self.statement();
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
             self.patch_jump(branch_jump, OpCode::JumpIfTrue(0));

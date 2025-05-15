@@ -18,7 +18,7 @@ pub struct Value {
 pub struct Function {
     pub arity: i32,
     pub chunk: Chunk,
-    pub name: u64,
+    pub name: String,
 }
 
 #[derive(Debug)]
@@ -28,7 +28,7 @@ pub enum FunctionType {
 }
 
 impl Function {
-    fn new(name: u64) -> Self {
+    pub fn new(name: String) -> Self {
         Function {
             arity: 0,
             chunk: Chunk::default(),
@@ -60,6 +60,7 @@ pub enum Type {
     Int,
     Bool,
     String,
+    Fn,
     /* Types need to be thread-safe, that's why Arc<..> is here */
     Ref(Rc<Type>),
     Void,

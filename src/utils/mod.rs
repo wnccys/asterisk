@@ -13,6 +13,7 @@ pub fn parse_type(p: &Primitive) -> Type {
         Primitive::String(_) => Type::String,
         Primitive::Bool(_) => Type::Bool,
         Primitive::Ref(t) => Type::Ref(Rc::new(t.borrow()._type.clone())),
+        Primitive::Function(_) => Type::Fn,
         _ => panic!("Error parsing type."),
     }
 }

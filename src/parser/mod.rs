@@ -25,9 +25,6 @@ pub struct Parser<'a> {
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
-    /// String interning model
-    ///
-    pub _strings: &'a mut HashTable<String, String>,
 }
 
 /// General scope handler.
@@ -69,7 +66,6 @@ impl<'a> Default for Scope {
 
 impl<'a> Parser<'a> {
     pub fn new(
-        _strings: &'a mut HashTable<String, String>,
         token_stream: TokenStream<'a>, 
         function: Function,
         function_type: FunctionType
@@ -82,7 +78,6 @@ impl<'a> Parser<'a> {
             previous: None,
             had_error: false,
             panic_mode: false,
-            _strings,
             scopes: vec![],
         }
     }
@@ -94,7 +89,9 @@ impl<'a> Parser<'a> {
     ///    | statement
     ///
     pub fn declaration(&mut self) {
-        if self.match_token(TokenCode::Var) {
+        if self.match_token(TokenCode::Fun) {
+            self.fun_declaration();
+        } else if self.match_token(TokenCode::Var) {
             self.var_declaration();
         } else if self.match_token(TokenCode::LeftBrace) {
             self.begin_scope();
@@ -108,6 +105,61 @@ impl<'a> Parser<'a> {
         if self.panic_mode {
             self.syncronize();
         }
+    }
+
+    /// Where the fun starts
+    /// 
+    fn fun_declaration(&mut self) {
+        let modifier = Modifier::Const;
+        let global_var = self.parse_variable("Expect function name.", modifier);
+        /* Let function values available on top of stack */
+        self.function(FunctionType::Fn);
+        self.define_variable(global_var, modifier);
+    }
+
+    /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
+    /// 
+    fn function(&mut self, function_t: FunctionType) {
+        let func_name = self.previous.unwrap().lexeme.clone();
+        /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
+        let mut parser: Parser = Parser {
+            function: Function::new(func_name),
+            function_type: function_t,
+            /* TODO improve this */
+            token_stream: self.token_stream.clone(),
+            current: self.current,
+            previous: self.previous,
+            had_error: false,
+            panic_mode: false,
+            scopes: vec![],
+        };
+
+        parser.begin_scope();
+        parser.consume(TokenCode::LeftParen, "Expect '(' after function name.");
+        /* TODO Initialize parameters */
+        if !parser.check(TokenCode::RightParen) {
+            loop {
+                self.function.arity += 1;
+                let modifier = Modifier::Const;
+                let var = self.parse_variable("Expect parameter name.", modifier);
+
+                if !self.match_token(TokenCode::Comma) { break }
+            }
+        }
+        parser.consume(TokenCode::RightParen, "Expect ')' after function parameters.");
+        parser.consume(TokenCode::LeftBrace, "Expect '(' after function name.");
+        parser.block();
+        /* End-of-scope are automatically handled by block() */
+
+        let function = Value {
+            value: Primitive::Function(parser.end_compiler().unwrap()),
+            _type: Type::Fn,
+            modifier: Modifier::Const,
+        };
+        self.current = parser.current;
+        self.previous = parser.previous;
+
+        self.emit_constant(function);
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

@@ -6,13 +6,13 @@ use crate::value::Function;
 use crate::value::FunctionType;
 use crate::vm::InterpretResult;
 
-pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> (Function, InterpretResult) {
+pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> Option<(Function, InterpretResult)> {
     let mut source_lines = source_code.lines();
     let mut scanner = Scanner::new(&mut source_lines);
 
     let function = Function::default();
 
-    let mut parser = Parser::new(strings, scanner.scan(), function, FunctionType::Script);
+    let mut parser = Parser::new(scanner.scan(), function, FunctionType::Script);
     #[cfg(feature = "debug-scan")]
     dbg!(&parser.token_stream);
     parser.advance();
@@ -22,7 +22,7 @@ pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> 
     }
 
     match parser.end_compiler() {
-        Some(f) => (f, InterpretResult::Ok),
-        None => { panic!("Invalid function call.")}
+        Some(f) => Some((f, InterpretResult::Ok)),
+        None => None
     }
 }

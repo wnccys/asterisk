@@ -24,8 +24,8 @@ pub struct Vm {
 
 pub struct CallFrame {
     function: *const Function,
-    op_code: Option<OpCode>,
-    slots: Option<*const [Rc<RefCell<Value>>]>,
+    op_code: Option<*const OpCode>,
+    slots: Option<*const Rc<RefCell<Value>>>,
 }
 
 // impl CallFrame {
@@ -66,13 +66,17 @@ impl Vm {
             source_code
         );
 
-        let (function, result) = compile(&mut self.strings, source_code);
+        let result = compile(&mut self.strings, source_code);
+        if result.is_none() { return InterpretResult::CompileError };
 
-        if result != InterpretResult::Ok {
-            panic!("{:?}", result);
-        }
+        self.function = result.unwrap().0;
+        let frame = CallFrame {
+            function: &self.function,
+            op_code: Some(self.function.chunk.code.as_ptr()),
+            slots: Some(self.function.chunk.stack.as_ptr()),
+        };
+        self.frames.push(frame);
 
-        self.function = function;
         self.run()
     }
 
@@ -80,6 +84,7 @@ impl Vm {
     ///
     fn run(&mut self) -> InterpretResult {
         let mut op_status = InterpretResult::CompileError;
+        let frame = self.frames.last().unwrap();
 
         #[cfg(feature = "debug")]
         println!("Constants Vec: {:?}", self.chunk.constants);

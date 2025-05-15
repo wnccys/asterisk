@@ -17,14 +17,37 @@ pub enum InterpretResult {
 
 pub struct Vm {
     function: Function,
+    frames: Vec<CallFrame>,
     globals: HashTable<String, Value>,
     strings: HashTable<String, String>,
+}
+
+pub struct CallFrame {
+    function: *const Function,
+    op_code: Option<OpCode>,
+    slots: Option<*const [Rc<RefCell<Value>>]>,
+}
+
+// impl CallFrame {
+//     const FRAMES_MAX: u32 = u32::MAX;
+//     const STACK_MAX: u32 = u32::MAX;
+// }
+
+impl Default for CallFrame {
+    fn default() -> Self {
+        CallFrame {
+            function: &Function::default(),
+            op_code: None,
+            slots: None,
+        }
+    }
 }
 
 impl Default for Vm {
     fn default() -> Self {
         Self {
             function: Function::default(),
+            frames: Vec::default(),
             globals: HashTable::default(),
             strings: HashTable::default(),
         }

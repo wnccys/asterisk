@@ -1,16 +1,5 @@
-let mut a: Int = 10;
+fn manoj() {
+    print "mule";
+} 
 
-switch (a) {
-    case 2 {
-        print "2!!";
-    }
-    case 3 {
-        print "3!!";
-    }
-    case 4 {
-        print "4!!";
-    }
-    default {
-        print "DEAFAULT!!";
-    }
-}
+manoj;

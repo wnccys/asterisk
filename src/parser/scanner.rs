@@ -93,8 +93,7 @@ impl<'a> Iterator for TokenIterator<'a> {
                 */
 
                 /* (CONDITION) handling */
-                if self.s.as_bytes()[self.pos] == b'(' {
-                    self.pos += 1;
+                if self.s.as_bytes()[self.pos] == b'(' && start != self.pos {
                     break;
                 }
 

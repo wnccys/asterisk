@@ -15,13 +15,13 @@ pub mod ruler;
 pub mod scanner;
 
 #[derive(Debug)]
-pub struct Parser<'a> {
+pub struct Parser<'a: 'b, 'b> {
     pub function: Function,
     pub function_type: FunctionType,
     // pub chunk: Chunk,
-    pub token_stream: TokenStream<'a>,
-    pub current: Option<&'a Token>,
-    pub previous: Option<&'a Token>,
+    pub token_stream: &'a mut TokenStream<'b>,
+    pub current: Option<&'b Token>,
+    pub previous: Option<&'b Token>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
@@ -64,9 +64,9 @@ impl<'a> Default for Scope {
     }
 }
 
-impl<'a> Parser<'a> {
+impl<'a, 'b> Parser<'a, 'b> {
     pub fn new(
-        token_stream: TokenStream<'a>, 
+        token_stream: &'b mut TokenStream<'b>, 
         function: Function,
         function_type: FunctionType
     ) -> Self {
@@ -125,8 +125,7 @@ impl<'a> Parser<'a> {
         let mut parser: Parser = Parser {
             function: Function::new(func_name),
             function_type: function_t,
-            /* TODO improve this */
-            token_stream: self.token_stream.clone(),
+            token_stream: self.token_stream,
             current: self.current,
             previous: self.previous,
             had_error: false,
@@ -139,15 +138,15 @@ impl<'a> Parser<'a> {
         /* TODO Initialize parameters */
         if !parser.check(TokenCode::RightParen) {
             loop {
-                self.function.arity += 1;
+                parser.function.arity += 1;
                 let modifier = Modifier::Const;
-                let var = self.parse_variable("Expect parameter name.", modifier);
+                let var = parser.parse_variable("Expect parameter name.", modifier);
 
-                if !self.match_token(TokenCode::Comma) { break }
+                if !parser.match_token(TokenCode::Comma) { break }
             }
         }
         parser.consume(TokenCode::RightParen, "Expect ')' after function parameters.");
-        parser.consume(TokenCode::LeftBrace, "Expect '(' after function name.");
+        parser.consume(TokenCode::LeftBrace, "Expect '{' after function name.");
         parser.block();
         /* End-of-scope are automatically handled by block() */
 
@@ -156,10 +155,8 @@ impl<'a> Parser<'a> {
             _type: Type::Fn,
             modifier: Modifier::Const,
         };
-        self.current = parser.current;
-        self.previous = parser.previous;
 
-        self.emit_constant(function);
+        // self.emit_constant(function);
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

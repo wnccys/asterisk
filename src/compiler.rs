@@ -1,18 +1,18 @@
-use crate::chunk::Chunk;
 use crate::parser::scanner::*;
 use crate::parser::Parser;
-use crate::types::hash_table::HashTable;
 use crate::value::Function;
 use crate::value::FunctionType;
 use crate::vm::InterpretResult;
 
-pub fn compile(strings: &mut HashTable<String, String>, source_code: String) -> Option<(Function, InterpretResult)> {
+pub fn compile(source_code: String) -> Option<(Function, InterpretResult)> {
     let mut source_lines = source_code.lines();
     let mut scanner = Scanner::new(&mut source_lines);
+    let mut token_stream = scanner.scan();
 
+    /* Default app function, "main" so to speak. */
     let function = Function::default();
 
-    let mut parser = Parser::new(scanner.scan(), function, FunctionType::Script);
+    let mut parser = Parser::new(&mut token_stream, function, FunctionType::Script);
     #[cfg(feature = "debug-scan")]
     dbg!(&parser.token_stream);
     parser.advance();

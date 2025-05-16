@@ -2,4 +2,4 @@ fn manoj() {
     print "mule";
 } 
 
-manoj;
+print manoj;

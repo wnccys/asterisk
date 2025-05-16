@@ -18,6 +18,7 @@ pub enum InterpretResult {
 pub struct Vm {
     function: Function,
     frames: Vec<CallFrame>,
+    frame_count: i32,
     globals: HashTable<String, Value>,
     strings: HashTable<String, String>,
 }
@@ -48,6 +49,7 @@ impl Default for Vm {
         Self {
             function: Function::default(),
             frames: Vec::default(),
+            frame_count: 0,
             globals: HashTable::default(),
             strings: HashTable::default(),
         }
@@ -66,7 +68,7 @@ impl Vm {
             source_code
         );
 
-        let result = compile(&mut self.strings, source_code);
+        let result = compile(source_code);
         if result.is_none() { return InterpretResult::CompileError };
 
         self.function = result.unwrap().0;
@@ -87,7 +89,7 @@ impl Vm {
         let frame = self.frames.last().unwrap();
 
         #[cfg(feature = "debug")]
-        println!("Constants Vec: {:?}", self.chunk.constants);
+        println!("Constants Vec: {:?}", self.function.chunk.constants);
 
         let mut bytecode_index: usize = 0;
         let code_len =  self.function.chunk.code.len();
@@ -98,8 +100,8 @@ impl Vm {
             #[cfg(feature = "debug")]
             {
                 print!("\n");
-                print_stack(&self.chunk);
-                println!("current code: {:?}", self.chunk.code[bytecode_index]);
+                print_stack(&self.function.chunk);
+                println!("current code: {:?}", self.function.chunk.code[bytecode_index]);
             }
 
             let chunk = &mut self.function.chunk;

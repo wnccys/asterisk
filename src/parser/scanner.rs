@@ -14,12 +14,11 @@ pub static TYPE_KEYS: [&str; 5] = ["Int", "Float", "String", "Bool", "Void"];
 struct TokenIterator<'a> {
     s: &'a str,
     pos: usize,
-    pub comment_mode: bool,
 }
 
 impl<'a> TokenIterator<'a> {
     fn new(s: &'a str) -> Self {
-        TokenIterator { s, pos: 0, comment_mode: false }
+        TokenIterator { s, pos: 0 }
     }
 }
 

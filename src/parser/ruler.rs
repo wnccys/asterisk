@@ -41,9 +41,9 @@ impl Precedence {
 /// Determine which Rules are equivalent to which Token.
 ///
 #[derive(Debug)]
-pub struct ParseRule<'a, 'b> {
-    pub prefix: fn(&mut Parser<'a, 'b>, bool),
-    pub infix: fn(&mut Parser<'a, 'b>, bool),
+pub struct ParseRule {
+    pub prefix: fn(&mut Parser, bool),
+    pub infix: fn(&mut Parser, bool),
     pub precedence: Precedence,
 }
 

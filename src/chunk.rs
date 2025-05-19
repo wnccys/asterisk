@@ -33,6 +33,7 @@ pub enum OpCode {
     JumpIfTrue(usize),
     Jump(usize),
     Loop(usize),
+    Call(usize),
 }
 
 #[derive(Debug, Default, Clone)]

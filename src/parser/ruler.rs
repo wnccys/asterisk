@@ -264,14 +264,38 @@ fn or_(parser: &mut Parser, _can_assign: bool) {
     parser.patch_jump(end_jump, OpCode::Jump(0));
 }
 
+/// Get argument count by evaluating expression on function arguments.
+/// 
+fn call(parser: &mut Parser, _can_assign: bool) {
+    let arg_count = arg_list(parser);
+
+    parser.emit_byte(OpCode::Call(arg_count));
+}
+
+fn arg_list(parser: &mut Parser) -> usize {
+    let mut arg_count = 0;
+
+    if !parser.check(TokenCode::RightParen) {
+        loop {
+            parser.expression();
+            arg_count += 1;
+
+            if !parser.match_token(TokenCode::Comma) { break; }
+        }
+    }
+    parser.consume(TokenCode::RightParen, "Expect ')' after function arguments.");
+
+    arg_count
+}
+
 /// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.
 ///
 pub fn get_rule(token_code: &TokenCode) -> ParseRule {
     match token_code {
         TokenCode::LeftParen => ParseRule {
             prefix: grouping,
-            infix: none,
-            precedence: Precedence::None,
+            infix: call,
+            precedence: Precedence::Call,
         },
         TokenCode::RightParen => ParseRule {
             prefix: none,

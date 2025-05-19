@@ -124,7 +124,7 @@ impl<'a> Iterator for TokenIterator<'a> {
                         self.pos += 1;
                     }
 
-                    break
+                    break;
                 }
 
                 if self.s.as_bytes()[self.pos] == b'*' {
@@ -134,7 +134,7 @@ impl<'a> Iterator for TokenIterator<'a> {
                         self.pos += 1;
                     }
 
-                    break
+                    break;
                 }
 
                 if self.s.as_bytes()[self.pos] == b';' && start != self.pos {

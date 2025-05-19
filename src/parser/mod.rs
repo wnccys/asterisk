@@ -15,13 +15,12 @@ pub mod ruler;
 pub mod scanner;
 
 #[derive(Debug)]
-pub struct Parser<'a: 'b, 'b> {
+pub struct Parser<'a> {
     pub function: Function,
     pub function_type: FunctionType,
-    // pub chunk: Chunk,
-    pub token_stream: &'a mut TokenStream<'b>,
-    pub current: Option<&'b Token>,
-    pub previous: Option<&'b Token>,
+    pub token_stream: Option<&'a mut TokenStream<'a>>,
+    pub current: Option<&'a Token>,
+    pub previous: Option<&'a Token>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
@@ -64,16 +63,16 @@ impl<'a> Default for Scope {
     }
 }
 
-impl<'a, 'b> Parser<'a, 'b> {
+impl<'a> Parser<'a> {
     pub fn new(
-        token_stream: &'b mut TokenStream<'b>, 
+        token_stream: &'a mut TokenStream<'a>, 
         function: Function,
         function_type: FunctionType
     ) -> Self {
         Parser {
             function,
             function_type,
-            token_stream,
+            token_stream: Some(token_stream),
             current: None,
             previous: None,
             had_error: false,
@@ -112,7 +111,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
         let global_var = self.parse_variable("Expect function name.", modifier);
-        /* Let function values available on top of stack */
+        /* Let function as value available on top of stack */
         self.function(FunctionType::Fn);
         self.define_variable(global_var, modifier);
     }
@@ -125,9 +124,10 @@ impl<'a, 'b> Parser<'a, 'b> {
         let mut parser: Parser = Parser {
             function: Function::new(func_name),
             function_type: function_t,
-            token_stream: self.token_stream,
-            current: self.current,
-            previous: self.previous,
+            /* Temporally moves token_stream to inner parser */
+            token_stream: self.token_stream.take(),
+            current: self.current.take(),
+            previous: self.previous.take(),
             had_error: false,
             panic_mode: false,
             scopes: vec![],
@@ -156,7 +156,12 @@ impl<'a, 'b> Parser<'a, 'b> {
             modifier: Modifier::Const,
         };
 
-        // self.emit_constant(function);
+        /* Re-gain ownership over TokenStream and it's Tokens */
+        self.token_stream = Some(parser.token_stream.take().unwrap());
+        self.previous = parser.previous;
+        self.current = parser.current;
+
+        self.emit_constant(function);
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
@@ -604,10 +609,7 @@ impl<'a, 'b> Parser<'a, 'b> {
     pub fn advance(&mut self) {
         self.previous = self.current;
 
-        self.current = self.token_stream.next();
-
-        #[cfg(feature = "debug")]
-        dbg!(self.current);
+        self.current = self.token_stream.as_mut().unwrap().next();
 
         if let TokenCode::Error(msg) = self.current.unwrap().code {
             self.error(&format!("Error advancing token. {}", msg));

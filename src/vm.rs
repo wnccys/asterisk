@@ -582,8 +582,8 @@ impl Vm {
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = Rc::clone(&self.function.chunk.stack.pop().expect("Value b not loaded."));
-        let a = Rc::clone(&self.function.chunk.stack.pop().expect("Value a not loaded"));
+        let b = Rc::clone(&self.stack.pop().expect("Value b not loaded."));
+        let a = Rc::clone(&self.stack.pop().expect("Value a not loaded"));
 
         let mut c = Value::default();
 
@@ -599,7 +599,7 @@ impl Vm {
             _ => panic!("Invalid binary operation."),
         }
         
-        self.function.chunk.stack.push(Rc::new(RefCell::new(c)));
+        self.stack.push(Rc::new(RefCell::new(c)));
 
         InterpretResult::Ok
     }

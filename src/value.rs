@@ -3,7 +3,7 @@ use std::{
     cell::RefCell, fmt::Display, ops::{Add, Div, Mul}, rc::Rc
 };
 
-use crate::chunk::Chunk;
+use crate::{chunk::Chunk, object::NativeFunction};
 
 /// All Asterisk Values definition.
 ///
@@ -61,6 +61,7 @@ pub enum Type {
     Bool,
     String,
     Fn,
+    NativeFn,
     Ref(Rc<Type>),
     Void,
 }
@@ -72,6 +73,7 @@ pub enum Primitive {
     Bool(bool),
     String(String),
     Function(Function),
+    NativeFunction(NativeFunction),
     Ref(Rc<RefCell<Value>>),
     RefMut(*mut Value),
     Void(()),

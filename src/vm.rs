@@ -80,28 +80,23 @@ impl Vm {
     /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
     ///
     fn run(&mut self) -> InterpretResult {
-        let mut op_status = InterpretResult::CompileError;
-        let frame = self.frames.last().unwrap();
+        let op_status = InterpretResult::CompileError;
 
         #[cfg(feature = "debug")]
-        println!("Constants Vec: {:?}", self.function.chunk.constants);
+        println!("Constants Vec: {:?}", self.frames.last_mut().unwrap().function.chunk.constants);
 
-        let mut bytecode_index: usize = 0;
-        let code_len =  self.function.chunk.code.len();
+        // let bytecode_index = &self.frames.last().unwrap().function.chunk.code[0] as *const OpCode;
 
-        while bytecode_index < code_len {
-            let code = self.function.chunk.code[bytecode_index].clone();
-
+        while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
                 print!("\n");
-                print_stack(&self.function.chunk);
-                println!("current code: {:?}", self.function.chunk.code[bytecode_index]);
+                print_stack(&self.stack);
+                println!("current frame: {:?}", self.frames.last().unwrap().function);
+                println!("current code: {:?}", unsafe { self.frames.last().unwrap().ip.read() });
             }
 
-            let chunk = &mut self.function.chunk;
-
-            op_status = match code {
+            match unsafe { self.frames.last().unwrap().ip.read() } {
                 OpCode::Return => {
                     let _return = self
                         .stack
@@ -541,7 +536,7 @@ impl Vm {
                 }
             };
 
-            bytecode_index += 1;
+            unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
         }
 
         op_status

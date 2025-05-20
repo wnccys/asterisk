@@ -17,6 +17,7 @@ pub mod scanner;
 #[derive(Debug)]
 pub struct Parser<'a> {
     pub function: Function,
+    pub stack: Option<&'a mut Vec<Rc<RefCell<Value>>>>,
     pub function_type: FunctionType,
     pub token_stream: Option<&'a mut TokenStream<'a>>,
     pub current: Option<&'a Token>,
@@ -67,10 +68,12 @@ impl<'a> Parser<'a> {
     pub fn new(
         token_stream: &'a mut TokenStream<'a>, 
         function: Function,
-        function_type: FunctionType
+        function_type: FunctionType,
+        stack_ref: &'a mut Vec<Rc<RefCell<Value>>>
     ) -> Self {
         Parser {
             function,
+            stack: Some(stack_ref),
             function_type,
             token_stream: Some(token_stream),
             current: None,
@@ -122,6 +125,7 @@ impl<'a> Parser<'a> {
         let func_name = self.previous.unwrap().lexeme.clone();
         /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
         let mut parser: Parser = Parser {
+            stack: self.stack.take(),
             function: Function::new(func_name),
             function_type: function_t,
             /* Temporally moves token_stream to inner parser */

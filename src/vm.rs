@@ -603,4 +603,11 @@ impl Vm {
 
         InterpretResult::Ok
     }
+
+    fn runtime_error(&self) {
+        println!("TODO");
+        for call_frame in self.frames.iter().rev() {
+            println!("<{}>()", call_frame.function.name);
+        }
+    }
 }

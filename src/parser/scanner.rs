@@ -96,8 +96,18 @@ impl<'a> Iterator for TokenIterator<'a> {
                     break;
                 }
 
+                if self.s.as_bytes()[self.pos] == b'(' {
+                    self.pos += 1;
+                    return Some(&self.s[start..self.pos]);
+                }
+
                 if self.s.as_bytes()[self.pos] == b')' && start != self.pos {
                     break;
+                }
+
+                if self.s.as_bytes()[self.pos] == b')' {
+                    self.pos += 1;
+                    return Some(&self.s[start..self.pos]);
                 }
 
                 /* '/' or '/ *' handling */

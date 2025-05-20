@@ -1,5 +1,6 @@
 use crate::chunk::{Chunk, OpCode};
 use crate::value::Primitive;
+use crate::vm::Stack;
 
 #[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
@@ -34,6 +35,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::Greater => simple_instruction("OP_GREATER", offset),
         OpCode::Less => simple_instruction("OP_LESS", offset),
         OpCode::Print => simple_instruction("OP_PRINT", offset),
+        OpCode::Nil => simple_instruction("OP_NIL", offset),
         OpCode::Pop => simple_instruction("OP_POP", offset),
         OpCode::DefineGlobal(index, _) => constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
         OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
@@ -48,6 +50,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::JumpIfTrue(op_offset) => jump_instruction("OP_JUMP_IF_TRUE", op_offset, offset),
         OpCode::Jump(op_offset) => jump_instruction("OP_JUMP", op_offset, offset),
         OpCode::Loop(op_offset) => jump_instruction("OP_LOOP", op_offset, offset),
+        OpCode::Call(index) => byte_instruction("OP_CALL", chunk, index, offset),
     };
 
     disassemble_instruction(chunk, offset);
@@ -99,9 +102,9 @@ pub fn print_value(value: &Primitive) {
     }
 }
 
-pub fn print_stack(chunk: &Chunk) {
+pub fn print_stack(stack: &Stack) {
     println!("==stack-trace==");
-    for value in chunk.stack.iter().rev() {
+    for value in stack.iter().rev() {
         print!(">");
         print_value(&value.borrow().value);
     }

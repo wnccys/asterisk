@@ -118,15 +118,14 @@ impl Vm {
                 }
                 OpCode::Negate => {
                     {
-                        // let chunk = self.chunk.as_mut();
-                        let to_be_negated = chunk.stack.pop().unwrap().take();
+                        let to_be_negated = self.stack.pop().unwrap().take();
 
                         match to_be_negated {
                             Value {
                                 value: Primitive::Int(value),
                                 modifier,
                                 _type,
-                            } => chunk.stack.push(Rc::new(RefCell::new(Value {
+                            } => self.stack.push(Rc::new(RefCell::new(Value {
                                 value: Primitive::Int(-value),
                                 modifier,
                                 _type,
@@ -135,7 +134,7 @@ impl Vm {
                                 value: Primitive::Float(value),
                                 modifier,
                                 _type,
-                            } => chunk.stack.push(Rc::new(RefCell::new(Value {
+                            } => self.stack.push(Rc::new(RefCell::new(Value {
                                 value: Primitive::Float(-value),
                                 modifier,
                                 _type,
@@ -144,7 +143,7 @@ impl Vm {
                                 value: Primitive::Bool(value),
                                 modifier,
                                 _type,
-                            } => chunk.stack.push(Rc::new(RefCell::new(Value {
+                            } => self.stack.push(Rc::new(RefCell::new(Value {
                                 value: Primitive::Bool(!value),
                                 modifier,
                                 _type,
@@ -157,11 +156,11 @@ impl Vm {
                 }
                 OpCode::Not => {
                     // let chunk = self.chunk.as_mut();
-                    let to_be_negated = chunk.stack.last().unwrap().take();
+                    let to_be_negated = self.stack.last().unwrap().take();
 
                     match to_be_negated {
                         Value { value: Primitive::Bool(value), .. } => {
-                            chunk.stack.last().unwrap().borrow_mut().value = Primitive::Bool(!value)
+                            self.stack.last().unwrap().borrow_mut().value = Primitive::Bool(!value)
                         }
                         _ => panic!("Value should be a boolean."),
                     };
@@ -186,7 +185,7 @@ impl Vm {
                 OpCode::True => {
                     // let chunk = self.chunk.as_mut();
 
-                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                    self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(true),
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
@@ -196,7 +195,7 @@ impl Vm {
                 }
                 OpCode::False => {
                     // let chunk = self.chunk.as_mut();
-                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                    self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(false),
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
@@ -206,10 +205,10 @@ impl Vm {
                 }
                 OpCode::Equal => {
                     // let chunk = self.chunk.as_mut();
-                    let a = chunk.stack.pop().unwrap();
-                    let b = chunk.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    let b = self.stack.pop().unwrap();
 
-                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                    self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(a == b),
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
@@ -219,11 +218,11 @@ impl Vm {
                 }
                 OpCode::PartialEqual => {
                     // let chunk = self.chunk.as_mut();
-                    let a = chunk.stack.pop().unwrap();
-                    let b = chunk.stack.pop().unwrap();
+                    let a = self.stack.pop().unwrap();
+                    let b = self.stack.pop().unwrap();
 
-                    chunk.stack.push(Rc::clone(&b));
-                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                    self.stack.push(Rc::clone(&b));
+                    self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(a == b),
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
@@ -242,7 +241,7 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Print => {
-                    let value = chunk
+                    let value = self
                         .stack
                         .pop()
                         .expect("Could not find value to print.");
@@ -251,20 +250,25 @@ impl Vm {
 
                     InterpretResult::Ok
                 }
+                OpCode::Nil => {
+                    self.stack.push(Rc::new(RefCell::new(Value::default())));
+
+                    InterpretResult::Ok
+                }
                 OpCode::Pop => {
                     // let chunk = self.chunk.as_mut();
 
-                    chunk.stack.pop().expect("Error on pop: stack underflow.");
+                    self.stack.pop().expect("Error on pop: stack underflow.");
 
                     InterpretResult::Ok
                 }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
                     // let chunk = self.chunk.as_mut();
-                    let constant = chunk.constants[var_index].clone();
+                    let constant = self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
                     let _type = parse_type(&constant);
 
-                    chunk.stack.push(Rc::new(RefCell::new(Value {
+                    self.stack.push(Rc::new(RefCell::new(Value {
                         value: constant,
                         modifier: Modifier::Unassigned,
                         _type,
@@ -276,15 +280,15 @@ impl Vm {
                 OpCode::DefineLocal(var_index, modifier) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let variable = Rc::clone(&chunk.stack[var_index]);
+                    let variable = Rc::clone(&self.stack[var_index]);
 
                     /* Type Check */
-                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if chunk.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!("Cannot assign {:?} to {:?}",  variable.borrow()._type, chunk.stack.last().unwrap().borrow()._type)
+                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
+                            panic!("Cannot assign {:?} to {:?}",  variable.borrow()._type, self.stack.last().unwrap().borrow()._type)
                         }
 
-                        chunk.stack.pop();
+                        self.stack.pop();
                     }
 
                     variable.borrow_mut().modifier = modifier;
@@ -297,22 +301,22 @@ impl Vm {
                 OpCode::SetLocal(var_index, modifier) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let variable = Rc::clone(&chunk.stack[var_index]);
+                    let variable = Rc::clone(&self.stack[var_index]);
 
                     /* Type Check */
-                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if chunk.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!("Cannot assign {:?} to {:?}", chunk.stack.last().unwrap().borrow()._type, variable.borrow()._type)
+                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
+                            panic!("Cannot assign {:?} to {:?}", self.stack.last().unwrap().borrow()._type, variable.borrow()._type)
                         }
 
-                        chunk.stack.pop();
+                        self.stack.pop();
                     }
 
                     if modifier != Modifier::Mut {
                         panic!("Cannot assign to immutable variable.")
                     }
 
-                    let value = chunk.stack.pop().unwrap().take();
+                    let value = self.stack.pop().unwrap().take();
 
                     variable.borrow_mut().value = value.value;
 
@@ -326,9 +330,9 @@ impl Vm {
                 OpCode::GetLocal(var_index) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let variable = Rc::clone(&chunk.stack[var_index]);
+                    let variable = Rc::clone(&self.stack[var_index]);
 
-                    chunk.stack.push(variable);
+                    self.stack.push(variable);
 
                     InterpretResult::Ok
                 }
@@ -339,16 +343,16 @@ impl Vm {
                 OpCode::SetRefLocal(var_value_index) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let referenced_value = Rc::clone(&chunk.stack[var_value_index]);
+                    let referenced_value = Rc::clone(&self.stack[var_value_index]);
 
-                    if chunk.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if let Type::Ref(r) = &chunk.stack.last().unwrap().borrow()._type {
+                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
+                        if let Type::Ref(r) = &self.stack.last().unwrap().borrow()._type {
                             if **r != referenced_value.borrow()._type {
-                                panic!("Cannot assign {:?} to Ref({:?})", chunk.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
+                                panic!("Cannot assign {:?} to Ref({:?})", self.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
                             };
                         };
 
-                        chunk.stack.pop();
+                        self.stack.pop();
                     }
 
                     let _ref = Value {
@@ -357,7 +361,7 @@ impl Vm {
                         modifier: Modifier::Const,
                     };
 
-                    chunk.stack.push(Rc::new(RefCell::new(_ref)));
+                    self.stack.push(Rc::new(RefCell::new(_ref)));
 
                     InterpretResult::Ok
                 }
@@ -366,12 +370,12 @@ impl Vm {
                 */
                 OpCode::DefineGlobal(var_name_index, modifier) => {
                     // let chunk = self.chunk.as_mut();
-                    let var_name = &chunk.constants[var_name_index];
+                    let var_name = &self.frames.last_mut().unwrap().function.chunk.constants[var_name_index];
 
-                    let mut variable = match chunk.stack.pop().unwrap().take() {
+                    let mut variable = match self.stack.pop().unwrap().take() {
                         /* This match only a dummy type specifier */
                         Value { value: Primitive::Void(..), _type, .. } => {
-                            let value = chunk.stack.pop().unwrap().take();
+                            let value = self.stack.pop().unwrap().take();
 
                             if value._type != _type { panic!("Cannot assign {:?} to {:?}", value._type, _type) }
 
@@ -399,7 +403,7 @@ impl Vm {
                 OpCode::GetGlobal(var_index) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[var_index] {
+                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants[var_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
@@ -409,7 +413,7 @@ impl Vm {
                         None => panic!("Use of undeclared variable '{}'", &name),
                     };
 
-                    chunk.stack.push(Rc::clone(&value));
+                    self.stack.push(Rc::clone(&value));
 
                     InterpretResult::Ok
                 }
@@ -419,7 +423,7 @@ impl Vm {
                 OpCode::SetGlobal(name_index) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let name = match &chunk.constants[name_index] {
+                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants[name_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
@@ -429,7 +433,7 @@ impl Vm {
                         panic!("Cannot assign to a immutable variable.")
                     }
 
-                    let mut to_be_inserted = chunk.stack.pop().unwrap().take();
+                    let mut to_be_inserted = self.stack.pop().unwrap().take();
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
                     if variable.borrow()._type != to_be_inserted._type {
@@ -451,7 +455,7 @@ impl Vm {
                 /* Let var type information available on stack, this is used in explicit variable declaration */
                 OpCode::SetType(t) => {
                     let dummy_value = Value { _type: t, ..Default::default() };
-                    chunk.stack.push(Rc::new(RefCell::new(dummy_value)));
+                    self.stack.push(Rc::new(RefCell::new(dummy_value)));
 
                     InterpretResult::Ok
                 }
@@ -459,7 +463,7 @@ impl Vm {
                     Get var name from constants and craft a ref value based on globals' referenced Value 
                 */
                 OpCode::SetRefGlobal(var_index) => {
-                    let referenced_name = match chunk.constants[var_index].clone() {
+                    let referenced_name = match self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone() {
                         Primitive::String(str) => str,
                         _ => panic!("Invalid var name reference."),
                     };
@@ -474,7 +478,7 @@ impl Vm {
                         modifier: Modifier::Const
                     };
 
-                    match chunk.stack.pop() {
+                    match self.stack.pop() {
                         Some(value) => {
                             match value.take() {
                                 Value { _type, .. } => { 
@@ -488,17 +492,17 @@ impl Vm {
                         None => (),
                     }
 
-                    chunk.stack.push(Rc::new(RefCell::new(_ref)));
+                    self.stack.push(Rc::new(RefCell::new(_ref)));
 
                     InterpretResult::Ok
                 }
                 OpCode::JumpIfFalse(offset) => {
                     /* Check for false conditional on top of stack */
-                   match chunk.stack.last().unwrap().borrow().value {
+                   match self.stack.last().unwrap().borrow().value {
                         Primitive::Bool(v) => {
                             if v == false {
                                 /* Set current opcode index to current + offset */
-                                bytecode_index += offset;
+                                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize); }
 
                                 continue;
                             }
@@ -510,11 +514,11 @@ impl Vm {
                 }
                 OpCode::JumpIfTrue(offset) => {
                     /* Check for false conditional on top of stack */
-                   match chunk.stack.last().unwrap().borrow().value {
+                   match self.stack.last().unwrap().borrow().value {
                         Primitive::Bool(v) => {
                             if v == true {
                                 /* Set current opcode index to current + offset */
-                                bytecode_index += offset;
+                                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize); }
 
                                 continue;
                             }
@@ -525,12 +529,19 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Jump(offset) => {
-                    bytecode_index += offset;
+                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize) };
 
                     continue;
                 }
                 OpCode::Loop(offset) => {
-                    bytecode_index -= offset;
+                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset)};
+
+                    continue;
+                }
+                OpCode::Call(args_count) => {
+                    if !self.call_value(args_count) {
+                        return InterpretResult::RuntimeError;
+                    }
 
                     continue;
                 }

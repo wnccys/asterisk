@@ -69,16 +69,10 @@ impl Vm {
             source_code
         );
 
-        let result = compile(source_code);
+        let result = compile(source_code, &mut self.stack);
         if result.is_none() { return InterpretResult::CompileError };
 
-        self.function = result.unwrap().0;
-        let frame = CallFrame {
-            function: &self.function,
-            op_code: Some(self.function.chunk.code.as_ptr()),
-            slots: Some(self.function.chunk.stack.as_ptr()),
-        };
-        self.frames.push(frame);
+        self.call(result.unwrap().0, 0);
 
         self.run()
     }
@@ -547,6 +541,44 @@ impl Vm {
         }
 
         op_status
+    }
+
+    fn call_value(&mut self, args_count: usize) -> bool {
+        /* The function calling the code */
+        let callee = Rc::clone(&self.stack[self.stack.len() - 1 - args_count]);
+        let value = callee.borrow();
+
+        match value.clone() {
+            Value { _type: Type::Fn, value, .. } => {
+                let callee_function = match value {
+                    Primitive::Function(fun) => fun,
+                    _ => panic!("Tried to call not callabble object: {value:?}")
+                };
+
+                return self.call(callee_function, args_count);
+            },
+            _ => panic!("Object {callee:?} is not callabble"),
+        }
+    }
+
+    fn call(&mut self, function: Function, args_count: usize) -> bool {
+        if function.arity != args_count {
+            println!("Expected {} but got {} arguments.", function.arity, args_count);
+            self.runtime_error();
+            return false;
+        }
+
+        let stack_len = self.stack.len();
+        let bytecode_ptr= &function.chunk.code[0] as *const OpCode;
+
+        let frame = CallFrame {
+            function,
+            ip: bytecode_ptr,
+            slots: (stack_len - args_count, stack_len),
+        };
+
+        self.frames.push(frame);
+        return true;
     }
 
     fn binary_op(&mut self, op: &str) -> InterpretResult {

@@ -40,8 +40,6 @@ pub enum OpCode {
 pub struct Chunk {
     /// The sequence of Bytecodes used to change the stack state.
     pub code: Vec<OpCode>,
-    /// Where the Bytecodes' operations itself are executed.
-    pub stack: Vec<Rc<RefCell<Value>>>,
     /// Where values are saved before being used.
     pub constants: Vec<Primitive>,
     pub lines: Vec<i32>,

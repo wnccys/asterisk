@@ -49,9 +49,8 @@ impl Default for CallFrame {
 impl Default for Vm {
     fn default() -> Self {
         Self {
-            function: Function::default(),
             frames: Vec::default(),
-            frame_count: 0,
+            stack: Vec::default(),
             globals: HashTable::default(),
             strings: HashTable::default(),
         }

@@ -31,21 +31,6 @@ pub struct CallFrame {
     pub slots: (usize, usize),
 }
 
-// impl CallFrame {
-//     const FRAMES_MAX: u32 = u32::MAX;
-//     const STACK_MAX: u32 = u32::MAX;
-// }
-
-impl Default for CallFrame {
-    fn default() -> Self {
-        CallFrame {
-            function: &Function::default(),
-            op_code: None,
-            slots: None,
-        }
-    }
-}
-
 impl Default for Vm {
     fn default() -> Self {
         Self {

@@ -3,8 +3,9 @@ use crate::parser::Parser;
 use crate::value::Function;
 use crate::value::FunctionType;
 use crate::vm::InterpretResult;
+use crate::vm::Stack;
 
-pub fn compile(source_code: String) -> Option<(Function, InterpretResult)> {
+pub fn compile(source_code: String, stack_ref: &mut Stack) -> Option<(Function, InterpretResult)> {
     let mut source_lines = source_code.lines();
     let mut scanner = Scanner::new(&mut source_lines);
     let mut token_stream = scanner.scan();
@@ -12,7 +13,7 @@ pub fn compile(source_code: String) -> Option<(Function, InterpretResult)> {
     /* Default app function, "main" so to speak. */
     let function = Function::default();
 
-    let mut parser = Parser::new(&mut token_stream, function, FunctionType::Script);
+    let mut parser = Parser::new(&mut token_stream, function, FunctionType::Script, stack_ref);
     #[cfg(feature = "debug-scan")]
     dbg!(&parser.token_stream);
     parser.advance();

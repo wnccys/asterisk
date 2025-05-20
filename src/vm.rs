@@ -103,19 +103,23 @@ impl Vm {
 
             op_status = match code {
                 OpCode::Return => {
-                    {
-                        // let chunk = self.chunk.as_mut();
-                        print_value(
-                            &chunk
-                                .stack
-                                .pop()
-                                .expect("Error on return: stack underflow.")
-                                .borrow()
-                                .value,
+                    let _return = self
+                        .stack
+                        .pop()
+                        .expect(
+                            &format!("Could not pop empty value from: {:?}", self.frames.last().unwrap().function.name)
                         );
+
+                    self.frames.pop().unwrap();
+                    if self.frames.len() == 0 {
+                        return InterpretResult::Ok;
                     }
 
-                    InterpretResult::Ok
+                    /* Advance current call ip offset by 1 */
+                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1); }
+                    self.stack.push(_return);
+
+                    continue
                 }
                 OpCode::Negate => {
                     {

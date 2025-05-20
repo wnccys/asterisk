@@ -23,10 +23,12 @@ pub struct Vm {
     strings: HashTable<String, String>,
 }
 
+#[derive(Debug)]
 pub struct CallFrame {
-    function: *const Function,
-    op_code: Option<*const OpCode>,
-    slots: Option<*const Rc<RefCell<Value>>>,
+    pub function: Function,
+    pub ip: *const OpCode,
+    /* Init and final of frame stack scope range */
+    pub slots: (usize, usize),
 }
 
 // impl CallFrame {

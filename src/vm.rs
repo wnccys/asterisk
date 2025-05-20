@@ -15,10 +15,10 @@ pub enum InterpretResult {
     RuntimeError,
 }
 
+pub type Stack = Vec<Rc<RefCell<Value>>>;
 pub struct Vm {
-    function: Function,
     frames: Vec<CallFrame>,
-    frame_count: i32,
+    stack: Stack,
     globals: HashTable<String, Value>,
     strings: HashTable<String, String>,
 }

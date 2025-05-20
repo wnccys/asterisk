@@ -340,6 +340,8 @@ impl<'a> Parser<'a> {
             self.for_statement();
         } else if self.match_token(TokenCode::If) {
             self.if_statement();
+        } else if self.match_token(TokenCode::Return) {
+            self.return_statement();
         } else if self.match_token(TokenCode::While) {
             self.while_statement();
         } else if self.match_token(TokenCode::Switch) {
@@ -492,6 +494,20 @@ impl<'a> Parser<'a> {
 
         if self.match_token(TokenCode::Else) { self.statement(); }
         self.patch_jump(else_jump, OpCode::Jump(0));
+    }
+
+    fn return_statement(&mut self) {
+        if self.function_type == FunctionType::Script {
+            self.error("Can't return from top-level code.");
+        }
+
+        if self.match_token(TokenCode::SemiColon) {
+            self.emit_return();
+        } else {
+            self.expression();
+            self.consume(TokenCode::SemiColon, "Expect ; after return value.");
+            self.emit_byte(OpCode::Return);
+        };
     }
 
     fn while_statement(&mut self) {
@@ -706,9 +722,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn emit_return(&mut self) {
+        self.emit_byte(OpCode::Nil);
+        self.emit_byte(OpCode::Return)
+    }
+
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
     pub fn end_compiler(&mut self) -> Option<Function> {
+        self.emit_return();
+
         if !self.had_error {
             // STUB
             #[cfg(feature = "debug")]

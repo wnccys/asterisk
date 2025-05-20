@@ -1,5 +1,8 @@
-fn manoj() {
-    print "mule";
-} 
+fn areWeDone() {
+    print "yes we are";
+    return 2;
+}
 
-print manoj;
+print areWeDone();
+
+print "lasciate che vi raccontare";

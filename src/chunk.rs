@@ -1,8 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use crate::value::{Modifier, Primitive, Type};
 
-use crate::value::{Modifier, Primitive, Type, Value};
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum OpCode {
     Return,
     Constant(usize),
@@ -20,6 +18,7 @@ pub enum OpCode {
     Divide,
     Negate,
     Print,
+    Nil,
     DefineLocal(usize, Modifier),
     SetLocal(usize, Modifier),
     GetLocal(usize),

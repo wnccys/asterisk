@@ -16,7 +16,7 @@ pub struct Value {
 
 #[derive(Debug, Clone, Default)]
 pub struct Function {
-    pub arity: i32,
+    pub arity: usize,
     pub chunk: Chunk,
     pub name: String,
 }

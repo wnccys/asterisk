@@ -141,10 +141,19 @@ impl<'a> Parser<'a> {
         parser.consume(TokenCode::LeftParen, "Expect '(' after function name.");
         /* TODO Initialize parameters */
         if !parser.check(TokenCode::RightParen) {
+            let modifier = Modifier::Const;
             loop {
                 parser.function.arity += 1;
-                let modifier = Modifier::Const;
-                let var = parser.parse_variable("Expect parameter name.", modifier);
+                let local_name = parser.current.unwrap().lexeme.clone();
+                dbg!(&local_name);
+                parser.consume(TokenCode::SemiColon, "Expect : Type specification on function signature.");
+
+                let t = self.parse_var_type();
+                parser.emit_byte(OpCode::SetType(t));
+                dbg!("sadas");
+
+                parser.mark_initialized(local_name);
+                parser.parse_variable("Expect parameter name.", modifier);
 
                 if !parser.match_token(TokenCode::Comma) { break }
             }

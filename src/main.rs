@@ -3,6 +3,7 @@ mod compiler;
 mod errors;
 mod macros;
 mod parser;
+mod object;
 mod types;
 mod utils;
 mod value;

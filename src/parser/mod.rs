@@ -145,15 +145,14 @@ impl<'a> Parser<'a> {
             loop {
                 parser.function.arity += 1;
                 let local_name = parser.current.unwrap().lexeme.clone();
+                parser.parse_variable("Could not parse arguments.", modifier);
+
                 dbg!(&local_name);
-                parser.consume(TokenCode::SemiColon, "Expect : Type specification on function signature.");
+                parser.consume(TokenCode::Colon, "Expect : Type specification on function signature.");
 
-                let t = self.parse_var_type();
+                let t = parser.parse_var_type();
                 parser.emit_byte(OpCode::SetType(t));
-                dbg!("sadas");
-
                 parser.mark_initialized(local_name);
-                parser.parse_variable("Expect parameter name.", modifier);
 
                 if !parser.match_token(TokenCode::Comma) { break }
             }

@@ -77,7 +77,7 @@ impl Vm {
             {
                 print!("\n");
                 print_stack(&self.stack);
-                println!("current frame: {:?}", self.frames.last().unwrap().function);
+                println!("current frame: {:?}", self.frames.last().unwrap().function.name);
                 println!("current code: {:?}", unsafe { self.frames.last().unwrap().ip.read() });
             }
 
@@ -90,10 +90,14 @@ impl Vm {
                             &format!("Could not pop empty value from: {:?}", self.frames.last().unwrap().function.name)
                         );
 
-                    self.frames.pop().unwrap();
+                    let last_frame = self.frames.pop().unwrap();
+                    let last_frame_args = last_frame.function.arity;
                     if self.frames.len() == 0 {
                         return InterpretResult::Ok;
                     }
+
+                    while last_frame_args < {}
+                    
 
                     /* Advance current call ip offset by 1 */
                     unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1); }
@@ -527,6 +531,8 @@ impl Vm {
                     if !self.call_value(args_count) {
                         return InterpretResult::RuntimeError;
                     }
+
+                    self.stack.remove(self.stack.len() - 1 - args_count);
 
                     continue;
                 }

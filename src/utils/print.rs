@@ -43,7 +43,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::GetLocal(index) => byte_instruction("OP_GET_LOCAL", chunk, index, offset),
         OpCode::SetLocal(index, _) => byte_instruction("OP_SET_LOCAL", chunk, index, offset),
         OpCode::SetRefGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
-        OpCode::DefineLocal(index, _) => constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
+        OpCode::DefineLocal(_, _) => simple_instruction("DEFINE_LOCAL", offset),// constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
         OpCode::SetRefLocal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetType(_) => simple_instruction("OP_SET_TYPE", offset),
         OpCode::JumpIfFalse(op_offset) => jump_instruction("OP_JUMP_IF_FALSE", op_offset, offset),

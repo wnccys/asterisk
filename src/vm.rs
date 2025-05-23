@@ -71,8 +71,6 @@ impl Vm {
         #[cfg(feature = "debug")]
         println!("Constants Vec: {:?}", self.frames.last_mut().unwrap().function.chunk.constants);
 
-        // let bytecode_index = &self.frames.last().unwrap().function.chunk.code[0] as *const OpCode;
-
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
@@ -152,7 +150,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Not => {
-                    // let chunk = self.chunk.as_mut();
                     let to_be_negated = self.stack.last().unwrap().take();
 
                     match to_be_negated {
@@ -180,8 +177,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::True => {
-                    // let chunk = self.chunk.as_mut();
-
                     self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(true),
                         modifier: Modifier::Unassigned,
@@ -191,7 +186,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::False => {
-                    // let chunk = self.chunk.as_mut();
                     self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(false),
                         modifier: Modifier::Unassigned,
@@ -201,7 +195,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Equal => {
-                    // let chunk = self.chunk.as_mut();
                     let a = self.stack.pop().unwrap();
                     let b = self.stack.pop().unwrap();
 
@@ -214,7 +207,6 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::PartialEqual => {
-                    // let chunk = self.chunk.as_mut();
                     let a = self.stack.pop().unwrap();
                     let b = self.stack.pop().unwrap();
 
@@ -253,15 +245,12 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Pop => {
-                    // let chunk = self.chunk.as_mut();
-
                     self.stack.pop().expect("Error on pop: stack underflow.");
 
                     InterpretResult::Ok
                 }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
-                    // let chunk = self.chunk.as_mut();
                     let constant = self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
                     let _type = parse_type(&constant);
 
@@ -275,8 +264,6 @@ impl Vm {
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
 
                     /* Type Check */
@@ -296,8 +283,6 @@ impl Vm {
                     Set new value to local variable.
                 */
                 OpCode::SetLocal(var_index, modifier) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let variable = Rc::clone(&self.stack[var_index]);
 
                     /* Type Check */
@@ -320,13 +305,10 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 /*
-                    // NOTE Check for duplicated variable
                     Get value from value position and load it into the top of stack,
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
                     // dbg!(self.frames.last().unwrap().slots);
                     // dbg!(&variable);
@@ -340,8 +322,6 @@ impl Vm {
                     Set ref to stack bucket where variable value is and let it available on stack.
                 */
                 OpCode::SetRefLocal(var_value_index) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let referenced_value = Rc::clone(&self.stack[var_value_index]);
 
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
@@ -368,7 +348,6 @@ impl Vm {
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
                 OpCode::DefineGlobal(var_name_index, modifier) => {
-                    // let chunk = self.chunk.as_mut();
                     let var_name = &self.frames.last_mut().unwrap().function.chunk.constants[var_name_index];
 
                     let mut variable = match self.stack.pop().unwrap().take() {
@@ -400,8 +379,6 @@ impl Vm {
                     This means every value referencing this value is referencing the value itself, not a copy on stack as globals and stack are exchangeable.
                 */
                 OpCode::GetGlobal(var_index) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let name = match &self.frames.last_mut().unwrap().function.chunk.constants[var_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
@@ -420,8 +397,6 @@ impl Vm {
                     Re-assign to already set global variable.
                 */
                 OpCode::SetGlobal(name_index) => {
-                    // let chunk = self.chunk.as_mut();
-
                     let name = match &self.frames.last_mut().unwrap().function.chunk.constants[name_index] {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),

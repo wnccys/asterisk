@@ -81,6 +81,9 @@ impl Vm {
                 println!("current code: {:?}", unsafe { self.frames.last().unwrap().ip.read() });
             }
 
+            #[cfg(feature = "delay-exec")]
+            std::thread::sleep(Duration::from_secs(1));
+
             match unsafe { self.frames.last().unwrap().ip.read() } {
                 OpCode::Return => {
                     let _return = self

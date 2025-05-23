@@ -1,8 +1,9 @@
-fn areWeDone() {
-    print "yes we are";
-    return 2;
+/* Recursive printing */
+fn printr(n: Int) {
+    if (n == 0) { return; }
+
+    printr(n - 1);
+    print n;
 }
 
-print areWeDone();
-
-print "lasciate che vi raccontare";
+printr(10);

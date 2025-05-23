@@ -147,7 +147,6 @@ impl<'a> Parser<'a> {
                 let local_name = parser.current.unwrap().lexeme.clone();
                 parser.parse_variable("Could not parse arguments.", modifier);
 
-                dbg!(&local_name);
                 parser.consume(TokenCode::Colon, "Expect : Type specification on function signature.");
 
                 let t = parser.parse_var_type();

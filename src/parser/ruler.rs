@@ -1,3 +1,6 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use crate::chunk::OpCode;
 use crate::parser::scanner::TokenCode;
 use crate::parser::Parser;
@@ -199,18 +202,17 @@ fn variable(parser: &mut Parser, can_assign: bool) {
 fn named_variable(parser: &mut Parser, can_assign: bool) {
     let (get_op, set_op): (OpCode, OpCode);
 
-    let scopes = 
-        parser
-        .scopes
-        .last();
+    let scopes = &mut parser.scopes;
 
-    if scopes.is_some() {
-        let local = 
-            scopes 
-            .unwrap()
-            .get_local(
-                parser.previous.unwrap().lexeme.clone()
-            );
+    if scopes.len() > 0 {
+        let mut local: Option<Rc<RefCell<(usize, Modifier)>>> = None;
+
+        /* Pass check on all scopes */
+        for scope in scopes { 
+            local = scope.get_local(parser.previous.unwrap().lexeme.clone());
+
+            if local.is_some() { break; }
+        }
 
         /* Global variables inside scope handling */
         if local.is_none() {
@@ -231,6 +233,7 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
         set_op = OpCode::SetGlobal(var_index);
     }
 
+        println!("\n\n");
     if can_assign && parser.match_token(TokenCode::Equal) {
         parser.expression();
         parser.emit_byte(set_op);

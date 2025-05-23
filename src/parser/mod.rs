@@ -66,7 +66,7 @@ impl<'a> Default for Scope {
 
 impl<'a> Parser<'a> {
     pub fn new(
-        token_stream: &'a mut TokenStream<'a>, 
+        token_stream: &'a mut TokenStream<'a>,
         function: Function,
         function_type: FunctionType,
         stack_ref: &'a mut Vec<Rc<RefCell<Value>>>

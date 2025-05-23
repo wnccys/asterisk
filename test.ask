@@ -1,9 +1,7 @@
-/* Recursive printing */
-fn printr(n: Int) {
-    if (n == 0) { return; }
+fn fib(n: Int) {
+    if n < 2 { return n; }
 
-    printr(n - 1);
-    print n;
+    return fib(n - 1) + fib(n - 2);
 }
 
-printr(10);
+print fib(10);

@@ -1,5 +1,6 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+use std::time::Duration;
 
 use crate::chunk::*;
 use crate::compiler::compile;
@@ -95,12 +96,16 @@ impl Vm {
 
                     let last_frame = self.frames.pop().unwrap();
                     let last_frame_args = last_frame.function.arity;
+
+                    /* Sanitize locals after frame is dropped */
+                    for _ in 0..last_frame_args {
+                        self.stack.pop();
+                    }
+
                     if self.frames.len() == 0 {
                         return InterpretResult::Ok;
                     }
 
-                    while last_frame_args < {}
-                    
 
                     /* Advance current call ip offset by 1 */
                     unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1); }
@@ -272,7 +277,7 @@ impl Vm {
                 OpCode::DefineLocal(var_index, modifier) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let variable = Rc::clone(&self.stack[var_index]);
+                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
 
                     /* Type Check */
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
@@ -322,7 +327,9 @@ impl Vm {
                 OpCode::GetLocal(var_index) => {
                     // let chunk = self.chunk.as_mut();
 
-                    let variable = Rc::clone(&self.stack[var_index]);
+                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
+                    // dbg!(self.frames.last().unwrap().slots);
+                    // dbg!(&variable);
 
                     self.stack.push(variable);
 

@@ -233,7 +233,6 @@ fn named_variable(parser: &mut Parser, can_assign: bool) {
         set_op = OpCode::SetGlobal(var_index);
     }
 
-        println!("\n\n");
     if can_assign && parser.match_token(TokenCode::Equal) {
         parser.expression();
         parser.emit_byte(set_op);

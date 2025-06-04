@@ -309,7 +309,7 @@ impl Vm {
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
+                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0.checked_sub(1).unwrap_or(0))]);
                     // dbg!(self.frames.last().unwrap().slots);
                     // dbg!(&variable);
 

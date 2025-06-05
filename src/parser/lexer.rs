@@ -42,7 +42,7 @@ impl<R: std::io::Read> Lexer<R> {
             b'!' => self.check_ahead(b'=', Token::Bang, Token::BangEqual),
             b'=' => self.check_ahead(b'=', Token::Equal, Token::EqualEqual),
             b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
-            b'<' => self.check_ahead(b'<', Token::Less, Token::LessEqual),
+            b'<' => self.check_ahead(b'=', Token::Less, Token::LessEqual),
             b'0'..=b'9' => self.number(byt),
             b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
             b'\0' => Token::Eof,

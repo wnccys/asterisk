@@ -1,13 +1,10 @@
-use std::{
-    collections::HashMap, io::Bytes, iter::Peekable, sync::LazyLock
-};
+use std::{io::Bytes, iter::Peekable};
 
 use crate::value::Type;
 
 #[derive(Debug)]
 pub struct Lexer<R: std::io::Read> {
     source: Peekable::<Bytes::<R>>,
-    current: Token,
     line: u16
 }
 
@@ -15,7 +12,6 @@ impl<R: std::io::Read> Lexer<R> {
     fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
-            current: Token::Eof,
             line: 0
         }
     }
@@ -36,14 +32,25 @@ impl<R: std::io::Read> Lexer<R> {
             b'+' => Token::Plus,
             b':' => Token::Colon,
             b';' => Token::SemiColon,
-            b'/' => Token::Slash,
             b'*' => Token::Star,
             b'&' => self.check_ahead(b'&', Token::Ampersand, Token::And),
             b'!' => self.check_ahead(b'=', Token::Bang, Token::BangEqual),
             b'=' => self.check_ahead(b'=', Token::Equal, Token::EqualEqual),
             b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
             b'<' => self.check_ahead(b'=', Token::Less, Token::LessEqual),
+            b'/' =>  {
+                if self.peek_byte() == &b'/' {
+                    self.read_byte();
+                    self.comment(false)
+                } else if self.peek_byte() == &b'*' {
+                    self.read_byte();
+                    self.comment(true)
+                } else {
+                    Token::Slash
+                }
+            },
             b'0'..=b'9' => self.number(byt),
+            b'\'' | b'"' => self.string(),
             b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
             b'\0' => Token::Eof,
             _ => panic!("invalid token {}", byt as char)
@@ -56,6 +63,10 @@ impl<R: std::io::Read> Lexer<R> {
             Some(_) => panic!("error on byte peek"),
             None => &b'\0',
         }
+    }
+    
+    fn next_byte(&mut self) -> Option<u8> {
+        self.source.next().and_then(|r| Some(r.unwrap()))
     }
 
     fn read_byte(&mut self) -> u8 {
@@ -75,10 +86,26 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number(&mut self, num: u8) -> Token {
+
     }
 
-    fn keyword(&mut self, char: u8) -> Token {
+    fn string(&mut self) -> Token {
+
+    }
+
+    fn keyword(&mut self, ch: u8) -> Token {
         let mut word = String::new();
+        word.push(ch as char);
+
+        loop {
+            match *self.peek_byte() as char {
+                t if t.is_alphanumeric() || t == '_' => {
+                    self.read_byte();
+                    word.push(t);
+                }
+                _ => break
+            }
+        }
 
         match &word as &str {
             "and" => Token::And,
@@ -101,8 +128,32 @@ impl<R: std::io::Read> Lexer<R> {
             "this" => Token::This,
             "let" => Token::Var,
             "while" => Token::While,
-            _ => panic!("invalid keyword {word}")
+            _ => Token::Identifier,
         }
+    }
+
+    fn comment(&mut self, multi: bool) -> Token {
+        match multi {
+            true => {
+                while let Some(c) = self.next_byte() {
+                    if c == b'*' {
+                        d = self.read_byte();
+
+                        if d == b'\\' {
+                            break;
+                        }
+                    }
+                }
+            }
+            false => {
+                while let Some(c) = self.next_byte() {
+                    if n == b'\n' { break }
+                }
+            }
+        }
+
+
+        self.next()
     }
 }
 

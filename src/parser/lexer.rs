@@ -86,7 +86,42 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number(&mut self, num: u8) -> Token {
+        match self.read_byte() {
+            t if t == b'b' => {
+                self.number_binary()
+            }
+            t if t == b'x' => {
+                self.number_hex()
+            }
+            t if t.is_ascii_digit() => {
+                let n_buf = [u8; 8];
+                n_buf[0] = num;
 
+                while let Some(n) = self.next_byte() {
+                    if !n.is_ascii_digit() { break; }
+                    n_buf << n;
+                };
+
+                if self.read_byte() == b'.' {
+                    return self.number_float();
+                }
+
+                Token::Integer(i64::from_be_bytes(n_buf))
+            }
+            _ => panic!("invalid number")
+        }
+    }
+
+    fn number_float(&mut self, first_half: [u8; 8]) -> Token {
+
+    }
+
+    fn number_binary(&mut self) -> Token {
+        todo!();
+    }
+
+    fn number_hex(&mut self) -> Token {
+        todo!();
     }
 
     fn string(&mut self) -> Token {
@@ -185,7 +220,6 @@ pub enum Token {
     LessEqual,
     // Literals
     Identifier,
-    Void(()),
     ShortStr(),
     MidStr(),
     LongStr(),

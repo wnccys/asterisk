@@ -48,14 +48,8 @@ impl Vm {
     ///
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     ///
-    pub fn interpret(&mut self, source_code: String) -> InterpretResult {
-        let source_code = format!(
-            "{}
-        EOF",
-            source_code
-        );
-
-        let result = compile(source_code, &mut self.stack);
+    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> InterpretResult {
+        let result = compile(source_code);
         if result.is_none() { return InterpretResult::CompileError };
 
         self.call(result.unwrap().0, 0);

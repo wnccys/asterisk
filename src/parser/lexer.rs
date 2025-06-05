@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, io::Bytes, iter::Peekable, slice::Iter, str::Lines, sync::LazyLock
+    collections::HashMap, io::Bytes, iter::Peekable, sync::LazyLock
 };
 
 use crate::value::Type;
@@ -7,28 +7,58 @@ use crate::value::Type;
 #[derive(Debug)]
 pub struct Lexer<R: std::io::Read> {
     source: Peekable::<Bytes::<R>>,
-    current: Token
+    current: Token,
+    line: u16
 }
 
 impl<R: std::io::Read> Lexer<R> {
     fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
-            current: Token::Eof
+            current: Token::Eof,
+            line: 0
         }
     }
 
     fn next(&mut self) -> Token {
-        if let Token::Eof = self.current {
-            self.do_next()
-        } else {
+        let byt = self.read_byte();
 
+        match byt {
+            b'(' => Token::LeftParen,
+            b')' => Token::RightParen,
+            b'{' => Token::LeftBrace,
+            b'}' => Token::RightBrace,
+            b',' => Token::Comma,
+            b'.' => Token::Dot,
+            b'-' => Token::Minus,
+            b'+' => Token::Plus,
+            b':' => Token::Colon,
+            b';' => Token::SemiColon,
+            b'/' => Token::Slash,
+            b'*' => Token::Star,
+            b'&' => self.check_ahead(b'&', Token::Ampersand, Token::And),
+            _ => panic!("invalid token {}", byt as char)
         }
     }
 
-    fn peek() -> Token {}
+    fn peek_byte(&mut self) -> &u8 {
+        match self.source.peek() {
+            Some(r) => r.as_ref().unwrap(),
+            None => &b'\0',
+        }
+    }
 
-    fn do_next(&mut self) -> Token {}
+    fn read_byte(&mut self) -> u8 {
+        self.source.next().unwrap().unwrap()
+    }
+
+    fn check_ahead(&mut self, ahead: u8, short: Token, long: Token) -> Token {
+        if *self.peek_byte() == ahead {
+            long
+        } else {
+            short
+        }
+    }
 }
 
 #[allow(unused)]
@@ -89,9 +119,9 @@ pub enum Token {
     Var,
     While,
 
+    Comment,
     Error(&'static str),
     Eof,
-    Comment,
 }
 
 pub const KEYWORDS: LazyLock<HashMap<&'static str, TokenCode>> = LazyLock::new(|| {

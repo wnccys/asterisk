@@ -24,6 +24,8 @@ impl<R: std::io::Read> Lexer<R> {
         let byt = self.read_byte();
 
         match byt {
+            b' ' | b'\t' | b'\r'  => self.next(),
+            b'\n' => { self.line+=1; self.next() },
             b'(' => Token::LeftParen,
             b')' => Token::RightParen,
             b'{' => Token::LeftBrace,
@@ -37,6 +39,13 @@ impl<R: std::io::Read> Lexer<R> {
             b'/' => Token::Slash,
             b'*' => Token::Star,
             b'&' => self.check_ahead(b'&', Token::Ampersand, Token::And),
+            b'!' => self.check_ahead(b'=', Token::Bang, Token::BangEqual),
+            b'=' => self.check_ahead(b'=', Token::Equal, Token::EqualEqual),
+            b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
+            b'<' => self.check_ahead(b'<', Token::Less, Token::LessEqual),
+            b'0'..=b'9' => self.number(byt),
+            b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
+            b'\0' => Token::Eof,
             _ => panic!("invalid token {}", byt as char)
         }
     }
@@ -49,7 +58,11 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn read_byte(&mut self) -> u8 {
-        self.source.next().unwrap().unwrap()
+        match self.source.next() {
+            Some(Ok(ch)) => ch,
+            Some(_) => panic!("error reading byte on 0 line {}", self.line),
+            None => b'\0'
+        }
     }
 
     fn check_ahead(&mut self, ahead: u8, short: Token, long: Token) -> Token {
@@ -57,6 +70,37 @@ impl<R: std::io::Read> Lexer<R> {
             long
         } else {
             short
+        }
+    }
+
+    fn number(&mut self, num: u8) -> Token {
+    }
+
+    fn keyword(&mut self, char: u8) -> Token {
+        let mut word = String::new();
+
+        match &word as &str {
+            "and" => Token::And,
+            "or" => Token::Or,
+            "class" => Token::Class,
+            "case" => Token::Case,
+            "const" => Token::Const,
+            "continue" => Token::Continue,
+            "default" => Token::Default,
+            "else" => Token::Else,
+            "false" => Token::False,
+            "for" => Token::For,
+            "fn" => Token::Fun,
+            "if" => Token::If,
+            "mut" => Token::Modifier,
+            "print" => Token::Print,
+            "return" => Token::Return,
+            "switch" => Token::Switch,
+            "super" => Token::Super,
+            "this" => Token::This,
+            "let" => Token::Var,
+            "while" => Token::While,
+            _ => panic!("invalid keyword {word}")
         }
     }
 }
@@ -120,7 +164,7 @@ pub enum Token {
     While,
 
     Comment,
-    Error(&'static str),
+    Error,
     Eof,
 }
 

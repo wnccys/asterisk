@@ -1,7 +1,7 @@
 use std::{cell::RefCell, fmt::Write, rc::Rc, thread::{self, current}, time::Duration};
 
 use ruler::{get_rule, Precedence};
-use scanner::{Token, TokenCode, TokenStream};
+use lexer::{Lexer, Token, TokenCode, TokenStream};
 
 use crate::{
     chunk::{Chunk, OpCode},
@@ -12,19 +12,37 @@ use crate::{
 };
 
 pub mod ruler;
-pub mod scanner;
+pub mod lexer;
 
 #[derive(Debug)]
 pub struct Parser<'a> {
     pub function: Function,
-    pub stack: Option<&'a mut Vec<Rc<RefCell<Value>>>>,
     pub function_type: FunctionType,
-    pub token_stream: Option<&'a mut TokenStream<'a>>,
+    pub lexer: Option<&'a mut Lexer>,
     pub current: Option<&'a Token>,
     pub previous: Option<&'a Token>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
+}
+
+impl<'a> Parser<'a> {
+    pub fn new(
+        function: Function,
+        function_type: FunctionType,
+        lexer: &'a mut Lexer<R>,
+        stack_ref: &'a mut Vec<Rc<RefCell<Value>>>
+    ) -> Self {
+        Parser {
+            function,
+            function_type,
+            current: None,
+            previous: None,
+            had_error: false,
+            panic_mode: false,
+            scopes: vec![],
+        }
+    }
 }
 
 /// General scope handler.
@@ -65,25 +83,6 @@ impl<'a> Default for Scope {
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(
-        token_stream: &'a mut TokenStream<'a>,
-        function: Function,
-        function_type: FunctionType,
-        stack_ref: &'a mut Vec<Rc<RefCell<Value>>>
-    ) -> Self {
-        Parser {
-            function,
-            stack: Some(stack_ref),
-            function_type,
-            token_stream: Some(token_stream),
-            current: None,
-            previous: None,
-            had_error: false,
-            panic_mode: false,
-            scopes: vec![],
-        }
-    }
-
     /// Declaration Flow Order
     /// → classDecl
     ///    | funDecl

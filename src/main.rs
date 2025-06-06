@@ -9,7 +9,8 @@ mod utils;
 mod value;
 mod vm;
 
-use std::io::{BufRead, Write};
+use std::fs::File;
+use std::io::{BufReader, Write};
 use std::{env, fs, io};
 use vm::{InterpretResult, Vm};
 
@@ -52,13 +53,10 @@ fn repl(vm: &mut Vm) {
 }
 
 fn run_file(vm: &mut Vm, file_path: &str) {
-    let source_code = fs::read_to_string(file_path);
-    if source_code.is_err() {
-        panic!("could not read bytes from file.")
-    }
+    let input = File::open(file_path)?;
+    let source = BufReader::new(input);
 
-    let source_chars = source_code.unwrap().chars().collect();
-    match vm.interpret(source_chars) {
+    match vm.interpret(source) {
         InterpretResult::Ok => (),
         InterpretResult::RuntimeError => std::process::exit(2),
         InterpretResult::CompileError => std::process::exit(3),

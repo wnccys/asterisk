@@ -50,7 +50,7 @@ impl<R: std::io::Read> Lexer<R> {
                 }
             },
             b'0'..=b'9' => self.number(byt),
-            b'\'' | b'"' => self.string(),
+            b'\'' | b'"' => self.string(byt),
             b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
             b'\0' => Token::Eof,
             _ => panic!("invalid token {}", byt as char)
@@ -141,8 +141,17 @@ impl<R: std::io::Read> Lexer<R> {
         todo!();
     }
 
-    fn string(&mut self) -> Token {
+    fn string(&mut self, t: u8) -> Token {
+        let mut str: Vec<u8> = Vec::new();
 
+        loop {
+            let ch = self.read_byte();
+            if ch == t { break; }
+
+            str.push(ch);
+        }
+
+        Token::String(str)
     }
 
     fn keyword(&mut self, ch: u8) -> Token {

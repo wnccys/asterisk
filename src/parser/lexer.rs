@@ -97,13 +97,18 @@ impl<R: std::io::Read> Lexer<R> {
                 let mut result = u64::try_from(num).unwrap();
 
                 loop {
-                    let n = self.next_byte().unwrap();
-                    if !(n as char).is_ascii_digit() { break; }
+                    if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
 
-                    result = (result * 10) + ((n - b'0') as u64);
+                    let n = self.next_byte().unwrap();
+
+                    result = result
+                                .checked_mul(10).expect("number overflow")
+                                .checked_add((n - b'0') as u64).expect("cannot add {n} to {result}");
                 };
 
-                if self.read_byte() == b'.' {
+                if self.peek_byte() == &b'.' {
+                    self.read_byte();
+
                     return self.number_float(result);
                 }
 

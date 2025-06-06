@@ -12,7 +12,7 @@ impl<R: std::io::Read> Lexer<R> {
     fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
-            line: 0
+            line: 1
         }
     }
 
@@ -94,26 +94,28 @@ impl<R: std::io::Read> Lexer<R> {
                 self.number_hex()
             }
             t if t.is_ascii_digit() => {
-                let n_buf = [u8; 8];
-                n_buf[0] = num;
+                let mut result = u64::try_from(num).unwrap();
 
-                while let Some(n) = self.next_byte() {
-                    if !n.is_ascii_digit() { break; }
-                    n_buf << n;
+                loop {
+                    let n = self.next_byte().unwrap();
+                    if !(n as char).is_ascii_digit() { break; }
+
+                    result = (result * 10) + ((n - b'0') as u64);
                 };
 
                 if self.read_byte() == b'.' {
-                    return self.number_float();
+                    return self.number_float(result);
                 }
 
-                Token::Integer(i64::from_be_bytes(n_buf))
+                Token::Integer(result as i64)
             }
             _ => panic!("invalid number")
         }
     }
 
-    fn number_float(&mut self, first_half: [u8; 8]) -> Token {
+    fn number_float(&mut self, first_half: u64) -> Token {
 
+        Token::Float(result)
     }
 
     fn number_binary(&mut self) -> Token {
@@ -220,9 +222,7 @@ pub enum Token {
     LessEqual,
     // Literals
     Identifier,
-    ShortStr(),
-    MidStr(),
-    LongStr(),
+    String(Vec<u8>),
     Float(f64),
     Integer(i64),
     // Keywords

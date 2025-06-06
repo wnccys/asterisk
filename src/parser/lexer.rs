@@ -119,8 +119,18 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number_float(&mut self, first_half: u64) -> Token {
+        let mut result = 0.0;
+        let mut divisor= 1.0;
 
-        Token::Float(result)
+        loop {
+            if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
+            let ch = self.read_byte();
+
+            result = result + ((ch - b'0') as f64)/(10.0 * divisor);
+            divisor += 1.0;
+        }
+
+        Token::Float(first_half as f64 + result)
     }
 
     fn number_binary(&mut self) -> Token {

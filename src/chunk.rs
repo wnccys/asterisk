@@ -29,7 +29,7 @@ pub enum OpCode {
     SetGlobal(usize),
     GetGlobal(usize),
     SetRefGlobal(usize),
-    SetType(Rc<Type>),
+    SetType(Type),
     JumpIfFalse(usize),
     JumpIfTrue(usize),
     Jump(usize),

@@ -88,7 +88,7 @@ pub fn print_value(value: &Primitive) {
         Primitive::Float(f) => println!("{f:.1}"),
         Primitive::Int(i) => println!("{i}"),
         Primitive::Bool(b) => println!("{b}"),
-        Primitive::String(str) => println!("{str}"),
+        Primitive::String(str) => println!("{}", std::str::from_utf8(str).unwrap()),
         Primitive::Void(t) => println!("{t:?}"),
         Primitive::Ref(value_ptr) => {
             let ref_value = &value_ptr.borrow().value;

@@ -38,7 +38,7 @@ impl<R: std::io::Read> Lexer<R> {
         }
     }
 
-    fn next(&mut self) -> Token {
+    pub fn next(&mut self) -> Token {
         let byt = self.read_byte();
 
         match byt {

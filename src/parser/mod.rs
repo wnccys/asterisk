@@ -155,7 +155,7 @@ impl<R: std::io::Read> Parser<R> {
                     Token::Identifier(name) => name,
                     _ => panic!("Could not parse arguments.")
                 };
-                parser.parse_variable(modifier);
+                parser.parse_variable(modifier, local_name.clone());
 
                 parser.consume(Token::Colon, "Expect : Type specification on function signature.");
 
@@ -177,7 +177,7 @@ impl<R: std::io::Read> Parser<R> {
             modifier: Modifier::Const,
         };
 
-        /* Re-gain ownership over TokenStream and it's Tokens */
+        /* Re-gain ownership over Lexer and it's Tokens */
         self.lexer = parser.lexer.take();
         self.previous = parser.previous;
         self.current = parser.current;
@@ -187,13 +187,13 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     ///
-    pub fn var_declaration(&mut self) {
+    fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let var_name = match self.get_previous() {
             Token::Identifier(s) => s,
             _ => panic!("Expect variable name.")
         };
-        let global = self.parse_variable(modifier);
+        let global = self.parse_variable(modifier, var_name.clone());
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {
@@ -210,26 +210,23 @@ impl<R: std::io::Read> Parser<R> {
             }
 
             self.emit_byte(OpCode::SetType(t));
-
-            if global == 0 { self.mark_initialized(var_name); }
-        // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
         }
-
 
         self.consume(
             Token::SemiColon,
             "Expect ';' after variable declaration.",
         );
 
+        if global == 0 { self.mark_initialized(var_name); return; }
 
         self.define_variable(global, modifier);
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     ///
-    pub fn parse_modifier(&mut self) -> Modifier {
+    fn parse_modifier(&mut self) -> Modifier {
         match &self.current {
             Token::Modifier => {
                 self.advance();
@@ -249,13 +246,13 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     ///
-    pub fn parse_variable(&mut self, modifier: Modifier) -> usize {
+    fn parse_variable(&mut self, modifier: Modifier, name: String) -> usize {
         // Check if var is global
         if self.scopes.len() == 0 {
-            return self.identifier_constant();
+            return self.identifier_constant(name);
         }
 
-        self.declare_variable(modifier);
+        self.add_local(modifier, name);
         return 0;
     }
 
@@ -264,7 +261,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Executed when explicit type definition is set with :
     ///
     pub fn parse_var_type(&mut self) -> Type {
-        match self.current.as_ref().unwrap() {
+        match &self.current {
             Token::TypeDef(t) => {
                 self.advance();
                 t
@@ -275,25 +272,14 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
-    pub fn identifier_constant(&mut self) -> usize {
-        // Gets chars from token and set it as var name
-        let value = &self.previous.unwrap().lexeme;
-
-        self.function.chunk.write_constant(Primitive::String(value.clone()))
-    }
-
-    pub fn declare_variable(&mut self, modifier: Modifier) {
-        if self.scopes.len() == 0 {
-            return;
-        }
-
-        self.add_local(modifier);
+    fn identifier_constant(&mut self, name: String) -> usize {
+        self.function.chunk.write_constant(Primitive::String(name))
     }
 
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
-    fn add_local(&mut self, modifier: Modifier) {
-        self.scopes.last_mut().unwrap().add_local(self.previous.unwrap().lexeme.clone(), modifier);
+    fn add_local(&mut self, modifier: Modifier, name: String) {
+        self.scopes.last_mut().unwrap().add_local(name, modifier);
     }
 
     /// Initialize Local Var by emitting DefineLocal
@@ -315,10 +301,6 @@ impl<R: std::io::Read> Parser<R> {
     ///
     ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        if self.scopes.len() > 0 {
-            return;
-        }
-
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
     }
 
@@ -381,9 +363,9 @@ impl<R: std::io::Read> Parser<R> {
     pub fn syncronize(&mut self) {
         self.panic_mode = false;
 
-        while *self.current.as_ref().unwrap() != Token::Eof {
-            if *self.previous.as_ref().unwrap() == Token::SemiColon {
-                match self.current.as_ref().unwrap() {
+        while self.current != Token::Eof {
+            if self.previous == Token::SemiColon {
+                match self.current {
                     Token::Class
                     | Token::Fun
                     | Token::Var
@@ -646,17 +628,17 @@ impl<R: std::io::Read> Parser<R> {
     /// Compare current Token with param Token.
     ///
     pub fn check(&self, token: Token) -> bool {
-        *self.current.as_ref().unwrap() == token
+        self.current == token
     }
 
     /// Scan new token and set it as self.current.
     ///
     pub fn advance(&mut self) {
-        self.previous = self.current.take();
+        self.previous = self.get_current();
 
-        self.current = Some(self.lexer.as_mut().unwrap().next());
+        self.current = self.lexer.as_mut().unwrap().next();
 
-        if let Token::Error(msg) = self.current.as_ref().unwrap() {
+        if let Token::Error(msg) = &self.current {
             self.error(&format!("Error advancing token. {}", msg));
         }
     }
@@ -675,15 +657,15 @@ impl<R: std::io::Read> Parser<R> {
     pub fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
-        let prefix_rule = get_rule(&self.previous.as_ref().unwrap().code).prefix;
+        let prefix_rule = get_rule(&self.previous).prefix;
 
         let can_assign = precedence <= Precedence::Assignment;
         prefix_rule(self, can_assign);
 
-        while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
+        while precedence <= get_rule(&self.current).precedence {
             self.advance();
 
-            let infix_rule = get_rule(self.previous.as_ref().unwrap().code).infix;
+            let infix_rule = get_rule(&self.previous).infix;
             (infix_rule)(self, can_assign)
         }
     }
@@ -691,7 +673,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Match token_code with self.current and advance if true.
     ///
     pub fn consume(&mut self, token_code: Token, msg: &str) {
-        if self.current.take().unwrap() == token_code {
+        if self.current == token_code {
             self.advance();
         } else {
             self.error(msg);
@@ -703,7 +685,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Emit: param code
     ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.function.chunk.write(code, self.current.unwrap().line);
+        self.function.chunk.write(code, self.lexer.as_ref().unwrap().line);
     }
 
     /// Write value to constant vec and set it's bytecode.

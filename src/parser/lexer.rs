@@ -1,4 +1,4 @@
-use std::{io::Bytes, iter::Peekable};
+use std::{io::Bytes, iter::Peekable, rc::Rc};
 
 use crate::value::Type;
 
@@ -189,7 +189,7 @@ impl<R: std::io::Read> Lexer<R> {
             "this" => Token::This,
             "let" => Token::Var,
             "while" => Token::While,
-            _ => Token::Identifier,
+            _ => Token::Identifier(word),
         }
     }
 
@@ -198,7 +198,7 @@ impl<R: std::io::Read> Lexer<R> {
             true => {
                 while let Some(c) = self.next_byte() {
                     if c == b'*' {
-                        d = self.read_byte();
+                        let d = self.read_byte();
 
                         if d == b'\\' {
                             break;
@@ -208,7 +208,7 @@ impl<R: std::io::Read> Lexer<R> {
             }
             false => {
                 while let Some(c) = self.next_byte() {
-                    if n == b'\n' { break }
+                    if c == b'\n' { break }
                 }
             }
         }
@@ -222,58 +222,20 @@ impl<R: std::io::Read> Lexer<R> {
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Single char tokens
-    LeftParen,
-    RightParen,
-    LeftBrace,
-    RightBrace,
-    Comma,
-    Dot,
-    Minus,
-    Plus,
-    Colon,
-    SemiColon,
-    Slash,
-    Star,
-    Ampersand,
-    // One or two char token
-    Bang,
-    BangEqual,
-    Equal,
-    EqualEqual,
-    Greater,
-    GreaterEqual,
-    Less,
-    LessEqual,
-    // Literals
-    Identifier,
-    String(Vec<u8>),
-    Float(f64),
-    Integer(i64),
-    // Keywords
-    And,
-    Class,
-    Case,
-    Const,
-    Continue,
-    Default,
-    Else,
-    False,
-    For,
-    Fun,
-    If,
-    Modifier,
-    TypeDef(Type),
-    Or,
-    Print,
-    Return,
-    Switch,
-    Super,
-    This,
-    True,
-    Var,
-    While,
+    LeftParen, RightParen, LeftBrace, RightBrace, Comma,
+    Dot, Minus, Plus, Colon, SemiColon,
+    Slash, Star, Ampersand,
 
-    Comment,
-    Error,
-    Eof,
+    // One or two char tokens
+    Bang, BangEqual, Equal, EqualEqual, Greater,
+    GreaterEqual, Less, LessEqual,
+    // Literals
+
+    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Bool(bool),
+    // Keywords
+    And, Class, Case, Const, Continue,
+    Default, Else, False, For, Fun,
+    If, Modifier, TypeDef(Rc::<Type>), Or, Print,
+    Return, Switch, Super, This, True,
+    Var, While, Comment, Error(String), Eof,
 }

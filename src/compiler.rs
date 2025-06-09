@@ -15,7 +15,7 @@ pub fn compile<T: std::io::Read>(source_code: T) -> Option<(Function, InterpretR
     dbg!(&parser.token_stream);
     parser.advance();
 
-    while **parser.current.as_ref().unwrap() != Token::Eof {
+    while *parser.current.as_ref().unwrap() != Token::Eof {
         parser.declaration();
     }
 

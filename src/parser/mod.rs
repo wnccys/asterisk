@@ -15,18 +15,18 @@ pub mod ruler;
 pub mod lexer;
 
 #[derive(Debug)]
-pub struct Parser<'a, R: std::io::Read> {
+pub struct Parser<R: std::io::Read> {
     pub function: Function,
     pub function_type: FunctionType,
     pub lexer: Option<Lexer<R>>,
-    pub current: Option<&'a Token>,
-    pub previous: Option<&'a Token>,
+    pub current: Option<Token>,
+    pub previous: Option<Token>,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
 }
 
-impl<'a, R: std::io::Read> Parser<'a, R> {
+impl<R: std::io::Read> Parser<R> {
     pub fn new(
         function: Function,
         function_type: FunctionType,
@@ -82,7 +82,7 @@ impl<'a> Default for Scope {
     }
 }
 
-impl<'a, R: std::io::Read> Parser<'a, R> {
+impl<R: std::io::Read> Parser<R> {
     /// Declaration Flow Order
     /// → classDecl
     ///    | funDecl
@@ -93,7 +93,8 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
         if self.match_token(Token::Fun) {
             self.fun_declaration();
         } else if self.match_token(Token::Var) {
-            self.var_declaration(); } else if self.match_token(Token::LeftBrace) {
+            self.var_declaration();
+        } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self.block();
             self.end_scope();
@@ -125,7 +126,7 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
         let mut parser: Parser = Parser {
             function: Function::new(func_name),
             function_type: function_t,
-            lexer: self.lexer.take().(),
+            lexer: self.lexer.take(),
             /* Temporally moves token_stream to inner parser */
             current: self.current.take(),
             previous: self.previous.take(),
@@ -165,7 +166,7 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
         };
 
         /* Re-gain ownership over TokenStream and it's Tokens */
-        self.token_stream = Some(parser.token_stream.take().unwrap());
+        self.lexer = parser.lexer.take();
         self.previous = parser.previous;
         self.current = parser.current;
 

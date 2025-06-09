@@ -27,7 +27,7 @@ pub enum Token {
 #[derive(Debug)]
 pub struct Lexer<R: std::io::Read> {
     source: Peekable::<Bytes::<R>>,
-    line: u16
+    pub line: u32 
 }
 
 impl<R: std::io::Read> Lexer<R> {

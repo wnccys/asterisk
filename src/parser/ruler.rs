@@ -159,7 +159,7 @@ impl<R: std::io::Read> ParseRule<R> {
             _ => panic!("Invalid string value")
         };
 
-        let index = parser.function.chunk.write_constant(Primitive::String(str));
+        let index = parser.function.chunk.write_constant(Primitive::String(String::from_utf8(str).unwrap()));
         parser.emit_byte(OpCode::Constant(index));
     }
 

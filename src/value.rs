@@ -69,13 +69,13 @@ pub enum Type {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Primitive {
     Float(f64),
-    Int(i32),
+    Int(i64),
     Bool(bool),
-    String(String),
-    Function(Function),
+    String(Vec<u8>),
+    Function(Rc<Function>),
     NativeFunction(NativeFunction),
     Ref(Rc<RefCell<Value>>),
-    RefMut(*mut Value),
+    RefMut(Rc<Value>),
     Void(()),
 }
 

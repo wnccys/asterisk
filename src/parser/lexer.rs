@@ -15,7 +15,7 @@ pub enum Token {
     GreaterEqual, Less, LessEqual,
     // Literals
 
-    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Bool(bool),
+    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Nil,
     // Keywords
     And, Class, Case, Const, Continue,
     Default, Else, False, For, Fun,
@@ -234,7 +234,6 @@ impl<R: std::io::Read> Lexer<R> {
                 }
             }
         }
-
 
         self.next()
     }

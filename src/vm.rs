@@ -26,7 +26,7 @@ pub struct Vm {
 
 #[derive(Debug)]
 pub struct CallFrame {
-    pub function: Function,
+    pub function: Rc::<Function>,
     pub ip: *const OpCode,
     /* Init and final of frame stack scope range */
     pub slots: (usize, usize),
@@ -52,7 +52,7 @@ impl Vm {
         let result = compile(source_code);
         if result.is_none() { return InterpretResult::CompileError };
 
-        self.call(result.unwrap().0, 0);
+        self.call(Rc::new(result.unwrap().0), 0);
 
         self.run()
     }
@@ -380,7 +380,7 @@ impl Vm {
 
                     let value = match self.globals.get(name) {
                         Some(value) => value,
-                        None => panic!("Use of undeclared variable '{}'", &name),
+                        None => panic!("Use of undeclared variable '{}'", name),
                     };
 
                     self.stack.push(Rc::clone(&value));
@@ -541,7 +541,7 @@ impl Vm {
         }
     }
 
-    fn call(&mut self, function: Function, args_count: usize) -> bool {
+    fn call(&mut self, function: Rc::<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!("Expected {} but got {} arguments.", function.arity, args_count);
             self.runtime_error();

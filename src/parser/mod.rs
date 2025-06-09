@@ -70,8 +70,8 @@ impl Scope {
 
     /// Return Local index to be used by stack if it exists
     /// 
-    fn get_local(&self, lexeme: String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
-        self.locals.get(&lexeme)
+    fn get_local(&self, lexeme: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        self.locals.get(lexeme)
     }
 }
 
@@ -176,7 +176,7 @@ impl<R: std::io::Read> Parser<R> {
         /* End-of-scope are automatically handled by block() */
 
         let function = Value {
-            value: Primitive::Function(parser.end_compiler().unwrap()),
+            value: Primitive::Function(Rc::new(parser.end_compiler().unwrap())),
             _type: Type::Fn,
             modifier: Modifier::Const,
         };
@@ -278,7 +278,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
     fn identifier_constant(&mut self, name: String) -> usize {
-        self.function.chunk.write_constant(Primitive::String(name))
+        self.function.chunk.write_constant(Primitive::String(name.into()))
     }
 
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
@@ -296,7 +296,7 @@ impl<R: std::io::Read> Parser<R> {
             .scopes
             .last_mut()
             .unwrap()
-            .get_local(local_name)
+            .get_local(&local_name)
             .unwrap();
 
         self.emit_byte(OpCode::DefineLocal(local_index.borrow().0, local_index.borrow().1));
@@ -667,7 +667,7 @@ impl<R: std::io::Read> Parser<R> {
         let can_assign = precedence <= Precedence::Assignment;
         prefix_rule(self, can_assign);
 
-        while precedence <= get_rule(&self.current).precedence {
+        while precedence <= get_rule::<R>(&self.current).precedence {
             self.advance();
 
             let infix_rule = get_rule(&self.previous).infix;

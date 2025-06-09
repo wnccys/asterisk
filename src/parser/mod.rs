@@ -257,7 +257,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Executed when explicit type definition is set with :
     ///
     pub fn parse_var_type(&mut self) -> Type {
-        match self.current.unwrap().code.clone() {
+        match self.current.as_ref().unwrap() {
             Token::TypeDef(t) => {
                 self.advance();
                 t
@@ -366,9 +366,9 @@ impl<R: std::io::Read> Parser<R> {
     pub fn syncronize(&mut self) {
         self.panic_mode = false;
 
-        while self.current.unwrap().code != Token::Eof {
-            if self.previous.unwrap().code == Token::SemiColon {
-                match self.current.unwrap().code {
+        while *self.current.as_ref().unwrap() != Token::Eof {
+            if *self.previous.as_ref().unwrap() == Token::SemiColon {
+                match self.current.as_ref().unwrap() {
                     Token::Class
                     | Token::Fun
                     | Token::Var
@@ -631,17 +631,17 @@ impl<R: std::io::Read> Parser<R> {
     /// Compare current Token with param Token.
     ///
     pub fn check(&self, token: Token) -> bool {
-        self.current.unwrap().code == token
+        *self.current.as_ref().unwrap() == token
     }
 
     /// Scan new token and set it as self.current.
     ///
     pub fn advance(&mut self) {
-        self.previous = self.current;
+        self.previous = self.current.take();
 
-        self.current = self.token_stream.as_mut().unwrap().next();
+        self.current = Some(self.lexer.as_mut().unwrap().next());
 
-        if let Token::Error(msg) = self.current.unwrap().code {
+        if let Token::Error(msg) = self.current.as_ref().unwrap() {
             self.error(&format!("Error advancing token. {}", msg));
         }
     }

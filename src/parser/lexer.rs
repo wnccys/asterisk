@@ -2,6 +2,28 @@ use std::{io::Bytes, iter::Peekable, rc::Rc};
 
 use crate::value::Type;
 
+#[allow(unused)]
+#[derive(Debug, PartialEq, Clone)]
+pub enum Token {
+    // Single char tokens
+    LeftParen, RightParen, LeftBrace, RightBrace, Comma,
+    Dot, Minus, Plus, Colon, SemiColon,
+    Slash, Star, Ampersand,
+
+    // One or two char tokens
+    Bang, BangEqual, Equal, EqualEqual, Greater,
+    GreaterEqual, Less, LessEqual,
+    // Literals
+
+    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Bool(bool),
+    // Keywords
+    And, Class, Case, Const, Continue,
+    Default, Else, False, For, Fun,
+    If, Modifier, TypeDef(Rc::<Type>), Or, Print,
+    Return, Switch, Super, This, True,
+    Var, While, Comment, Error(String), Eof,
+}
+
 #[derive(Debug)]
 pub struct Lexer<R: std::io::Read> {
     source: Peekable::<Bytes::<R>>,
@@ -216,26 +238,4 @@ impl<R: std::io::Read> Lexer<R> {
 
         self.next()
     }
-}
-
-#[allow(unused)]
-#[derive(Debug, PartialEq, Clone)]
-pub enum Token {
-    // Single char tokens
-    LeftParen, RightParen, LeftBrace, RightBrace, Comma,
-    Dot, Minus, Plus, Colon, SemiColon,
-    Slash, Star, Ampersand,
-
-    // One or two char tokens
-    Bang, BangEqual, Equal, EqualEqual, Greater,
-    GreaterEqual, Less, LessEqual,
-    // Literals
-
-    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Bool(bool),
-    // Keywords
-    And, Class, Case, Const, Continue,
-    Default, Else, False, For, Fun,
-    If, Modifier, TypeDef(Rc::<Type>), Or, Print,
-    Return, Switch, Super, This, True,
-    Var, While, Comment, Error(String), Eof,
 }

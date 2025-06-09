@@ -19,7 +19,7 @@ pub enum Token {
     // Keywords
     And, Class, Case, Const, Continue,
     Default, Else, False, For, Fun,
-    If, Modifier, TypeDef(Rc::<Type>), Or, Print,
+    If, Modifier, TypeDef(Type), Or, Print,
     Return, Switch, Super, This, True,
     Var, While, Comment, Error(String), Eof,
 }

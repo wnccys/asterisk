@@ -9,7 +9,7 @@ pub struct Lexer<R: std::io::Read> {
 }
 
 impl<R: std::io::Read> Lexer<R> {
-    fn new(source: R) -> Self {
+    pub fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
             line: 1

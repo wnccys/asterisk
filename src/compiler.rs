@@ -11,11 +11,7 @@ pub fn compile<T: std::io::Read>(source_code: T) -> Option<(Function, InterpretR
 
     let mut parser = Parser::new(function, FunctionType::Script, lex);
 
-    #[cfg(feature = "debug-scan")]
-    dbg!(&parser.token_stream);
-    parser.advance();
-
-    while *parser.current.as_ref().unwrap() != Token::Eof {
+    while parser.current != Token::Eof {
         parser.declaration();
     }
 

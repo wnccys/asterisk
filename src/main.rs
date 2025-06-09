@@ -10,7 +10,7 @@ mod value;
 mod vm;
 
 use std::fs::File;
-use std::io::{BufReader, Write};
+use std::io::{BufRead, BufReader, Cursor, Write};
 use std::{env, fs, io};
 use vm::{InterpretResult, Vm};
 
@@ -32,28 +32,26 @@ fn check_cmd_args(vm: &mut Vm) {
 fn repl(vm: &mut Vm) {
     let stdin = io::stdin();
     let mut handle = stdin.lock();
-    let mut buffer = String::new();
 
     loop {
+        let mut buffer = std::io::Cursor::new(String::new());
+
         print!("> ");
         io::stdout().flush().unwrap();
-        buffer.clear();
 
-        let bytes_read = handle.read_line(&mut buffer).unwrap();
+        let bytes_read = handle.read_line(&mut buffer.get_mut()).unwrap();
 
         if bytes_read == 0 {
             println!("exiting...");
             break;
         }
 
-        let trimmed_buffer = buffer.trim().to_string();
-        let chars = trimmed_buffer.to_owned().chars().collect();
-        vm.interpret(chars);
+        vm.interpret(buffer);
     }
 }
 
 fn run_file(vm: &mut Vm, file_path: &str) {
-    let input = File::open(file_path)?;
+    let input = File::open(file_path).unwrap();
     let source = BufReader::new(input);
 
     match vm.interpret(source) {

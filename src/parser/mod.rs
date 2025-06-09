@@ -112,7 +112,7 @@ impl<R: std::io::Read> Parser<R> {
     /// 
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
-        let global_var = self.parse_variable("Expect function name.", modifier);
+        let global_var = self.parse_variable(modifier);
         /* Let function as value available on top of stack */
         self.function(FunctionType::Fn);
         self.define_variable(global_var, modifier);
@@ -121,9 +121,12 @@ impl<R: std::io::Read> Parser<R> {
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     /// 
     fn function(&mut self, function_t: FunctionType) {
-        let func_name = self.previous.unwrap().clone();
+        let func_name = match self.previous.take().unwrap() {
+            Token::Identifier(name) => name,
+            _ => panic!("Expect function name.")
+        };
         /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
-        let mut parser: Parser = Parser {
+        let mut parser: Parser<R> = Parser {
             function: Function::new(func_name),
             function_type: function_t,
             lexer: self.lexer.take(),
@@ -142,8 +145,11 @@ impl<R: std::io::Read> Parser<R> {
             let modifier = Modifier::Const;
             loop {
                 parser.function.arity += 1;
-                let local_name = parser.current.unwrap().lexeme.clone();
-                parser.parse_variable("Could not parse arguments.", modifier);
+                let local_name = match parser.current.take().unwrap() {
+                    Token::Identifier(name) => name,
+                    _ => panic!("Could not parse arguments.")
+                };
+                parser.parse_variable(modifier);
 
                 parser.consume(Token::Colon, "Expect : Type specification on function signature.");
 
@@ -177,10 +183,11 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
-        let global = self.parse_variable("Expect variable name.", modifier);
-        let mut local_name: Option<String> = None;
-
-        if global == 0 { local_name = Some(self.previous.unwrap().lexeme.clone()); };
+        let var_name = match self.previous.take().unwrap() {
+            Token::Identifier(s) => s,
+            _ => panic!("Expect variable name.")
+        };
+        let global = self.parse_variable(modifier);
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {
@@ -198,7 +205,7 @@ impl<R: std::io::Read> Parser<R> {
 
             self.emit_byte(OpCode::SetType(t));
 
-            if local_name.is_some() { self.mark_initialized(local_name.unwrap()); }
+            if global == 0 { self.mark_initialized(var_name); }
         // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
@@ -235,9 +242,7 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     ///
-    pub fn parse_variable(&mut self, error_msg: &str, modifier: Modifier) -> usize {
-        self.consume(Token::Identifier, error_msg);
-
+    pub fn parse_variable(&mut self, modifier: Modifier) -> usize {
         // Check if var is global
         if self.scopes.len() == 0 {
             return self.identifier_constant();
@@ -671,7 +676,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Match token_code with self.current and advance if true.
     ///
     pub fn consume(&mut self, token_code: Token, msg: &str) {
-        if self.current.unwrap().code == token_code {
+        if self.current.take().unwrap() == token_code {
             self.advance();
         } else {
             self.error(msg);

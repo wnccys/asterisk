@@ -71,7 +71,7 @@ pub enum Primitive {
     Float(f64),
     Int(i64),
     Bool(bool),
-    String(Vec<u8>),
+    String(String),
     Function(Rc<Function>),
     NativeFunction(NativeFunction),
     Ref(Rc<RefCell<Value>>),

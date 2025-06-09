@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::value::{Modifier, Primitive, Type};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -27,7 +29,7 @@ pub enum OpCode {
     SetGlobal(usize),
     GetGlobal(usize),
     SetRefGlobal(usize),
-    SetType(Type),
+    SetType(Rc<Type>),
     JumpIfFalse(usize),
     JumpIfTrue(usize),
     Jump(usize),

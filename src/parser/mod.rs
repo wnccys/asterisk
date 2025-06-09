@@ -191,11 +191,13 @@ impl<R: std::io::Read> Parser<R> {
     ///
     fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
-        let var_name = match self.get_previous() {
+        let var_name = match self.get_current() {
             Token::Identifier(s) => s,
             _ => panic!("Expect variable name.")
         };
         let global = self.parse_variable(modifier, var_name.clone());
+
+        self.advance();
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {

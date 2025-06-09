@@ -19,8 +19,8 @@ pub struct Parser<R: std::io::Read> {
     pub function: Function,
     pub function_type: FunctionType,
     pub lexer: Option<Lexer<R>>,
-    pub current: Option<Token>,
-    pub previous: Option<Token>,
+    pub current: Token,
+    pub previous: Token,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
@@ -30,14 +30,16 @@ impl<R: std::io::Read> Parser<R> {
     pub fn new(
         function: Function,
         function_type: FunctionType,
-        lexer: Lexer<R>,
+        mut lexer: Lexer<R>,
     ) -> Self {
+        let curr = lexer.next();
+
         Parser {
             function,
             function_type,
             lexer: Some(lexer),
-            current: None,
-            previous: None,
+            current: curr,
+            previous: Token::Eof,
             had_error: false,
             panic_mode: false,
             scopes: vec![],
@@ -121,18 +123,22 @@ impl<R: std::io::Read> Parser<R> {
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     /// 
     fn function(&mut self, function_t: FunctionType) {
-        let func_name = match self.previous.take().unwrap() {
+        let func_name = match self.get_previous()
+        {
             Token::Identifier(name) => name,
             _ => panic!("Expect function name.")
         };
+
+        let current = self.get_current();
+        let previous = self.get_previous();
         /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
         let mut parser: Parser<R> = Parser {
             function: Function::new(func_name),
             function_type: function_t,
             lexer: self.lexer.take(),
             /* Temporally moves token_stream to inner parser */
-            current: self.current.take(),
-            previous: self.previous.take(),
+            current,
+            previous,
             had_error: false,
             panic_mode: false,
             scopes: vec![],
@@ -145,7 +151,7 @@ impl<R: std::io::Read> Parser<R> {
             let modifier = Modifier::Const;
             loop {
                 parser.function.arity += 1;
-                let local_name = match parser.current.take().unwrap() {
+                let local_name = match parser.get_current() {
                     Token::Identifier(name) => name,
                     _ => panic!("Could not parse arguments.")
                 };
@@ -183,7 +189,7 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
-        let var_name = match self.previous.take().unwrap() {
+        let var_name = match self.get_previous() {
             Token::Identifier(s) => s,
             _ => panic!("Expect variable name.")
         };
@@ -224,9 +230,10 @@ impl<R: std::io::Read> Parser<R> {
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     ///
     pub fn parse_modifier(&mut self) -> Modifier {
-        match self.current.as_ref().unwrap() {
+        match &self.current {
             Token::Modifier => {
                 self.advance();
+
                 Modifier::Mut
             }
             Token::Identifier(_) => Modifier::Const,
@@ -313,6 +320,14 @@ impl<R: std::io::Read> Parser<R> {
         }
 
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+    }
+
+    fn get_current(&mut self) -> Token {
+        std::mem::replace(&mut self.current, Token::Eof)
+    }
+
+    fn get_previous(&mut self) -> Token {
+        std::mem::replace(&mut self.previous, Token::Eof)
     }
 
     pub fn begin_scope(&mut self) {

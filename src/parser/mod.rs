@@ -30,15 +30,13 @@ impl<R: std::io::Read> Parser<R> {
     pub fn new(
         function: Function,
         function_type: FunctionType,
-        mut lexer: Lexer<R>,
+        lexer: Lexer<R>,
     ) -> Self {
-        let curr = lexer.next();
-
         Parser {
             function,
             function_type,
             lexer: Some(lexer),
-            current: curr,
+            current: Token::Eof,
             previous: Token::Eof,
             had_error: false,
             panic_mode: false,
@@ -642,6 +640,9 @@ impl<R: std::io::Read> Parser<R> {
         self.previous = self.get_current();
 
         self.current = self.lexer.as_mut().unwrap().next();
+
+        #[cfg(feature = "debug-scan")]
+        dbg!(&self.current);
 
         if let Token::Error(msg) = &self.current {
             self.error(&format!("Error advancing token. {}", msg));

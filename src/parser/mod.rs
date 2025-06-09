@@ -224,12 +224,12 @@ impl<R: std::io::Read> Parser<R> {
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     ///
     pub fn parse_modifier(&mut self) -> Modifier {
-        match &self.current.unwrap().code {
+        match self.current.as_ref().unwrap() {
             Token::Modifier => {
                 self.advance();
                 Modifier::Mut
             }
-            Token::Identifier => Modifier::Const,
+            Token::Identifier(_) => Modifier::Const,
             _ => panic!("Error parsing variable."),
         }
     }

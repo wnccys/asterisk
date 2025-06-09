@@ -114,7 +114,11 @@ impl<R: std::io::Read> Parser<R> {
     /// 
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
-        let global_var = self.parse_variable(modifier);
+        let name = match self.get_previous() {
+            Token::Identifier(s) => s,
+            _ => panic!("Expect function name")
+        };
+        let global_var = self.parse_variable(modifier, name);
         /* Let function as value available on top of stack */
         self.function(FunctionType::Fn);
         self.define_variable(global_var, modifier);
@@ -261,9 +265,10 @@ impl<R: std::io::Read> Parser<R> {
     /// Executed when explicit type definition is set with :
     ///
     pub fn parse_var_type(&mut self) -> Type {
-        match &self.current {
+        match self.get_current() {
             Token::TypeDef(t) => {
                 self.advance();
+
                 t
             }
             _ => panic!("Invalid Var Type."),
@@ -758,11 +763,11 @@ impl<R: std::io::Read> Parser<R> {
             return;
         }
 
-        let token = self.current.unwrap();
-        match token.code {
+        let token = &self.current;
+        match token {
             Token::Eof => println!(" at end."),
-            Token::Error => (),
-            _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme),
+            Token::Error(_) => (),
+            _ => println!(" at line {}", self.lexer.as_ref().unwrap().line),
         }
 
         println!("{}", msg);

@@ -6,6 +6,7 @@ mod parser;
 mod object;
 mod types;
 mod utils;
+mod native;
 mod value;
 mod vm;
 

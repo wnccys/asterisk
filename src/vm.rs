@@ -1,11 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+#[allow(unused)]
 use std::time::Duration;
 
 use crate::chunk::*;
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
 use crate::utils::parse_type;
+#[allow(unused)]
 use crate::utils::print::{print_stack, print_value};
 use crate::value::{Function, Modifier, Primitive, Type, Value};
 
@@ -258,7 +260,13 @@ impl Vm {
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
+                    let var_offset = self.frames.last().unwrap().slots.0;
+                    let variable = Rc::clone(
+                        &self.stack[
+                            // checked_sub handle global and defined function args handling
+                            var_index + var_offset.checked_sub(1).unwrap_or(var_offset)
+                        ]
+                    );
 
                     /* Type Check */
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
@@ -304,8 +312,8 @@ impl Vm {
                 */
                 OpCode::GetLocal(var_index) => {
                     let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0.checked_sub(1).unwrap_or(0))]);
-                    // dbg!(self.frames.last().unwrap().slots);
-                    // dbg!(&variable);
+                    dbg!(self.frames.last().unwrap().slots);
+                    dbg!(&variable);
 
                     self.stack.push(variable);
 

@@ -98,6 +98,9 @@ pub fn print_value(value: &Primitive) {
         Primitive::Function(f) => {
             println!("&fn<{}, {}>", f.arity, f.name);
         }
+        Primitive::NativeFunction(f) => {
+            println!("&native_fn<{:?}>", f);
+        }
         _ => panic!("invalid value."),
     }
 }

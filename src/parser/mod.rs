@@ -112,25 +112,21 @@ impl<R: std::io::Read> Parser<R> {
     /// 
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
+        self.advance();
+
         let name = match self.get_previous() {
             Token::Identifier(s) => s,
             _ => panic!("Expect function name")
         };
-        let global_var = self.parse_variable(modifier, name);
+        let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
-        self.function(FunctionType::Fn);
+        self.function(FunctionType::Fn, name);
         self.define_variable(global_var.unwrap(), modifier);
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     /// 
-    fn function(&mut self, function_t: FunctionType) {
-        let func_name = match self.get_previous()
-        {
-            Token::Identifier(name) => name,
-            _ => panic!("Expect function name.")
-        };
-
+    fn function(&mut self, function_t: FunctionType, func_name: String) {
         let current = self.get_current();
         let previous = self.get_previous();
         /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
@@ -157,6 +153,7 @@ impl<R: std::io::Read> Parser<R> {
                     Token::Identifier(name) => name,
                     _ => panic!("Could not parse arguments.")
                 };
+                parser.advance();
                 parser.parse_variable(modifier, local_name.clone());
 
                 parser.consume(Token::Colon, "Expect : Type specification on function signature.");
@@ -295,8 +292,6 @@ impl<R: std::io::Read> Parser<R> {
     /// Initialize Local Var by emitting DefineLocal
     /// 
     fn mark_initialized(&mut self, local_name: String) {
-        dbg!(&self.scopes);
-
         let local_index = self
             .scopes
             .last_mut()

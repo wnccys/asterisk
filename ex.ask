@@ -24,6 +24,8 @@ print b;
         let a = "inner scoped!!";
         print a;
     }
+
+    print a;
 }
 
 // First var "a" is still valid (local doesn't colide with it)

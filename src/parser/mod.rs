@@ -263,11 +263,11 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn parse_var_type(&mut self) -> Type {
         match self.get_current() {
-            Token::TypeDef(t) => {
+            Token::Ampersand => {
                 self.advance();
-
-                t
+                Type::Ref(Rc::new(self.parse_var_type()))
             }
+            Token::TypeDef(t) =>  { self.advance(); t },
             _ => panic!("Invalid Var Type."),
         }
     }

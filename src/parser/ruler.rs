@@ -179,7 +179,7 @@ impl<R: std::io::Read> ParseRule<R> {
         match parser.scopes.len() {
             0 => {
                     let var_index = parser.identifier_constant(name);
-                    parser.emit_byte(OpCode::SetRefGlobal(var_index));
+                    parser.emit_byte(OpCode::SetRefGlobal(var_index.unwrap()));
             },
             _ => {
                 let var_index = parser
@@ -226,8 +226,8 @@ impl<R: std::io::Read> ParseRule<R> {
             if local.is_none() {
                 let var_index = parser.identifier_constant(var_name);
 
-                get_op = OpCode::GetGlobal(var_index);
-                set_op = OpCode::SetGlobal(var_index);
+                get_op = OpCode::GetGlobal(var_index.unwrap());
+                set_op = OpCode::SetGlobal(var_index.unwrap());
             } else {
                 let local = local.unwrap();
 
@@ -237,8 +237,8 @@ impl<R: std::io::Read> ParseRule<R> {
         } else {
             let var_index = parser.identifier_constant(var_name);
 
-            get_op = OpCode::GetGlobal(var_index);
-            set_op = OpCode::SetGlobal(var_index);
+            get_op = OpCode::GetGlobal(var_index.unwrap());
+            set_op = OpCode::SetGlobal(var_index.unwrap());
         }
 
         if can_assign && parser.match_token(Token::Equal) {

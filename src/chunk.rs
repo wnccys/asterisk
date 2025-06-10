@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use crate::value::{Modifier, Primitive, Type};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -41,13 +43,13 @@ pub struct Chunk {
     pub code: Vec<OpCode>,
     /// Where values are saved before being used.
     pub constants: Vec<Primitive>,
-    pub lines: Vec<i32>,
+    pub lines: Vec<u32>,
 }
 
 impl Chunk {
     /// Push to code vec.
     ///
-    pub fn write(&mut self, byte: OpCode, line: i32) {
+    pub fn write(&mut self, byte: OpCode, line: u32) {
         self.code.push(byte);
         self.lines.push(line);
     }

@@ -1,7 +1,9 @@
-let mut a = 32;
-a = 50;
+fn fib(n: Int) {
+  if (n < 2) { return n; }
 
-let b = 50;
+  return fib(n-1) + fib(n-2);
+}
 
-print a;
-print b;
+duration();
+print fib(10);
+duration();

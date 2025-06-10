@@ -1,11 +1,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
+#[allow(unused)]
 use std::time::Duration;
 
-use crate::chunk::*;
+use crate::native::duration;
+use crate::{chunk::*};
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
 use crate::utils::parse_type;
+#[allow(unused)]
 use crate::utils::print::{print_stack, print_value};
 use crate::value::{Function, Modifier, Primitive, Type, Value};
 
@@ -26,7 +29,7 @@ pub struct Vm {
 
 #[derive(Debug)]
 pub struct CallFrame {
-    pub function: Function,
+    pub function: Rc::<Function>,
     pub ip: *const OpCode,
     /* Init and final of frame stack scope range */
     pub slots: (usize, usize),
@@ -48,19 +51,18 @@ impl Vm {
     ///
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     ///
-    pub fn interpret(&mut self, source_code: String) -> InterpretResult {
-        let source_code = format!(
-            "{}
-        EOF",
-            source_code
-        );
-
-        let result = compile(source_code, &mut self.stack);
+    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> InterpretResult {
+        self.init_std_lib();
+        let result = compile(source_code);
         if result.is_none() { return InterpretResult::CompileError };
 
-        self.call(result.unwrap().0, 0);
+        self.call(Rc::new(result.unwrap().0), 0);
 
         self.run()
+    }
+
+    fn init_std_lib(&mut self) {
+        self.globals.insert(&"duration".to_string(), Value { value: Primitive::NativeFunction(duration), _type: Type::NativeFn, modifier: Modifier::Const });
     }
 
     /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
@@ -264,7 +266,13 @@ impl Vm {
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
+                    let var_offset = self.frames.last().unwrap().slots.0;
+                    let variable = Rc::clone(
+                        &self.stack[
+                            // checked_sub handle global and defined function args handling
+                            var_index + var_offset.checked_sub(1).unwrap_or(var_offset)
+                        ]
+                    );
 
                     /* Type Check */
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
@@ -309,9 +317,7 @@ impl Vm {
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0 - 1)]);
-                    // dbg!(self.frames.last().unwrap().slots);
-                    // dbg!(&variable);
+                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0.checked_sub(1).unwrap_or(0))]);
 
                     self.stack.push(variable);
 
@@ -386,7 +392,7 @@ impl Vm {
 
                     let value = match self.globals.get(name) {
                         Some(value) => value,
-                        None => panic!("Use of undeclared variable '{}'", &name),
+                        None => panic!("Use of undeclared variable '{}'", name),
                     };
 
                     self.stack.push(Rc::clone(&value));
@@ -531,25 +537,26 @@ impl Vm {
 
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
-        let callee = Rc::clone(&self.stack[self.stack.len() - 1 - args_count]);
+        let callee = Rc::clone(&self.stack[self.stack.len().checked_sub(1).unwrap_or(0).checked_sub(args_count).unwrap_or(0)]);
         let value = callee.borrow();
 
-        match value.clone() {
-            Value { _type: Type::Fn, value, .. } => {
-                let callee_function = match value {
-                    Primitive::Function(fun) => fun,
-                    _ => panic!("Tried to call not callabble object: {value:?}")
-                };
-
-                return self.call(callee_function, args_count);
+        match *value {
+            Value { value: Primitive::Function(ref f), .. } => {
+                return self.call(f.clone(), args_count);
             },
+            Value { value: Primitive::NativeFunction(f), .. } => {
+                f();
+                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+                true
+            }
             _ => panic!("Object {callee:?} is not callabble"),
         }
     }
 
-    fn call(&mut self, function: Function, args_count: usize) -> bool {
+    fn call(&mut self, function: Rc::<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!("Expected {} but got {} arguments.", function.arity, args_count);
+
             self.runtime_error();
             return false;
         }

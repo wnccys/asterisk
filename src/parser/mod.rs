@@ -1,7 +1,7 @@
 use std::{cell::RefCell, fmt::Write, rc::Rc, thread::{self, current}, time::Duration};
 
 use ruler::{get_rule, Precedence};
-use scanner::{Token, TokenCode, TokenStream};
+use lexer::{Lexer, Token};
 
 use crate::{
     chunk::{Chunk, OpCode},
@@ -12,19 +12,37 @@ use crate::{
 };
 
 pub mod ruler;
-pub mod scanner;
+pub mod lexer;
 
 #[derive(Debug)]
-pub struct Parser<'a> {
+pub struct Parser<R: std::io::Read> {
     pub function: Function,
-    pub stack: Option<&'a mut Vec<Rc<RefCell<Value>>>>,
     pub function_type: FunctionType,
-    pub token_stream: Option<&'a mut TokenStream<'a>>,
-    pub current: Option<&'a Token>,
-    pub previous: Option<&'a Token>,
+    pub lexer: Option<Lexer<R>>,
+    pub current: Token,
+    pub previous: Token,
     pub had_error: bool,
     pub panic_mode: bool,
     pub scopes: Vec<Scope>,
+}
+
+impl<R: std::io::Read> Parser<R> {
+    pub fn new(
+        function: Function,
+        function_type: FunctionType,
+        lexer: Lexer<R>,
+    ) -> Self {
+        Parser {
+            function,
+            function_type,
+            lexer: Some(lexer),
+            current: Token::Eof,
+            previous: Token::Eof,
+            had_error: false,
+            panic_mode: false,
+            scopes: vec![],
+        }
+    }
 }
 
 /// General scope handler.
@@ -43,15 +61,15 @@ pub struct Scope {
 impl Scope {
     /// Add new Local by hashing and inserting it
     /// 
-    fn add_local(&mut self, lexeme: String, modifier: Modifier) {
-        self.locals.insert(&lexeme, (self.local_count, modifier));
+    fn add_local(&mut self, lexeme: String, modifier: Modifier, total_locals: usize) {
+        self.locals.insert(&lexeme, (total_locals, modifier));
         self.local_count += 1;
     }
 
     /// Return Local index to be used by stack if it exists
     /// 
-    fn get_local(&self, lexeme: String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
-        self.locals.get(&lexeme)
+    fn get_local(&self, lexeme: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        self.locals.get(lexeme)
     }
 }
 
@@ -64,26 +82,7 @@ impl<'a> Default for Scope {
     }
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(
-        token_stream: &'a mut TokenStream<'a>,
-        function: Function,
-        function_type: FunctionType,
-        stack_ref: &'a mut Vec<Rc<RefCell<Value>>>
-    ) -> Self {
-        Parser {
-            function,
-            stack: Some(stack_ref),
-            function_type,
-            token_stream: Some(token_stream),
-            current: None,
-            previous: None,
-            had_error: false,
-            panic_mode: false,
-            scopes: vec![],
-        }
-    }
-
+impl<R: std::io::Read> Parser<R> {
     /// Declaration Flow Order
     /// → classDecl
     ///    | funDecl
@@ -91,11 +90,11 @@ impl<'a> Parser<'a> {
     ///    | statement
     ///
     pub fn declaration(&mut self) {
-        if self.match_token(TokenCode::Fun) {
+        if self.match_token(Token::Fun) {
             self.fun_declaration();
-        } else if self.match_token(TokenCode::Var) {
+        } else if self.match_token(Token::Var) {
             self.var_declaration();
-        } else if self.match_token(TokenCode::LeftBrace) {
+        } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self.block();
             self.end_scope();
@@ -113,62 +112,72 @@ impl<'a> Parser<'a> {
     /// 
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
-        let global_var = self.parse_variable("Expect function name.", modifier);
+        self.advance();
+
+        let name = match self.get_previous() {
+            Token::Identifier(s) => s,
+            _ => panic!("Expect function name")
+        };
+        let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
-        self.function(FunctionType::Fn);
-        self.define_variable(global_var, modifier);
+        self.function(FunctionType::Fn, name);
+        self.define_variable(global_var.unwrap(), modifier);
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     /// 
-    fn function(&mut self, function_t: FunctionType) {
-        let func_name = self.previous.unwrap().lexeme.clone();
+    fn function(&mut self, function_t: FunctionType, func_name: String) {
+        let current = self.get_current();
+        let previous = self.get_previous();
         /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
-        let mut parser: Parser = Parser {
-            stack: self.stack.take(),
+        let mut parser: Parser<R> = Parser {
             function: Function::new(func_name),
             function_type: function_t,
+            lexer: self.lexer.take(),
             /* Temporally moves token_stream to inner parser */
-            token_stream: self.token_stream.take(),
-            current: self.current.take(),
-            previous: self.previous.take(),
+            current,
+            previous,
             had_error: false,
             panic_mode: false,
             scopes: vec![],
         };
 
         parser.begin_scope();
-        parser.consume(TokenCode::LeftParen, "Expect '(' after function name.");
+        parser.consume(Token::LeftParen, "Expect '(' after function name.");
         /* TODO Initialize parameters */
-        if !parser.check(TokenCode::RightParen) {
+        if !parser.check(Token::RightParen) {
             let modifier = Modifier::Const;
             loop {
                 parser.function.arity += 1;
-                let local_name = parser.current.unwrap().lexeme.clone();
-                parser.parse_variable("Could not parse arguments.", modifier);
+                let local_name = match parser.get_current() {
+                    Token::Identifier(name) => name,
+                    _ => panic!("Could not parse arguments.")
+                };
+                parser.advance();
+                parser.parse_variable(modifier, local_name.clone());
 
-                parser.consume(TokenCode::Colon, "Expect : Type specification on function signature.");
+                parser.consume(Token::Colon, "Expect : Type specification on function signature.");
 
                 let t = parser.parse_var_type();
                 parser.emit_byte(OpCode::SetType(t));
                 parser.mark_initialized(local_name);
 
-                if !parser.match_token(TokenCode::Comma) { break }
+                if !parser.match_token(Token::Comma) { break }
             }
         }
-        parser.consume(TokenCode::RightParen, "Expect ')' after function parameters.");
-        parser.consume(TokenCode::LeftBrace, "Expect '{' after function name.");
+        parser.consume(Token::RightParen, "Expect ')' after function parameters.");
+        parser.consume(Token::LeftBrace, "Expect '{' after function name.");
         parser.block();
         /* End-of-scope are automatically handled by block() */
 
         let function = Value {
-            value: Primitive::Function(parser.end_compiler().unwrap()),
+            value: Primitive::Function(Rc::new(parser.end_compiler().unwrap())),
             _type: Type::Fn,
             modifier: Modifier::Const,
         };
 
-        /* Re-gain ownership over TokenStream and it's Tokens */
-        self.token_stream = Some(parser.token_stream.take().unwrap());
+        /* Re-gain ownership over Lexer and it's Tokens */
+        self.lexer = parser.lexer.take();
         self.previous = parser.previous;
         self.current = parser.current;
 
@@ -177,54 +186,55 @@ impl<'a> Parser<'a> {
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     ///
-    pub fn var_declaration(&mut self) {
+    fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
-        let global = self.parse_variable("Expect variable name.", modifier);
-        let mut local_name: Option<String> = None;
+        let var_name = match self.get_current() {
+            Token::Identifier(s) => s,
+            _ => panic!("Expect variable name.")
+        };
+        let global = self.parse_variable(modifier, var_name.clone());
 
-        if global == 0 { local_name = Some(self.previous.unwrap().lexeme.clone()); };
+        self.advance();
 
         // Checks if after consuming identifier '=' Token is present.
-        if self.match_token(TokenCode::Equal) {
+        if self.match_token(Token::Equal) {
             self.expression();
 
         // Check for typedef
-        } else if self.match_token(TokenCode::Colon) {
+        } else if self.match_token(Token::Colon) {
             // Lazy-evaluated var type
             let t = self.parse_var_type();
 
             // Handle uninitialized but typed vars
-            if self.match_token(TokenCode::Equal) {
+            if self.match_token(Token::Equal) {
                 self.expression();
             }
 
             self.emit_byte(OpCode::SetType(t));
-
-            if local_name.is_some() { self.mark_initialized(local_name.unwrap()); }
-        // Uninitialized and untyped variables handling
         } else {
             panic!("Uninitialized variables are not allowed.");
         }
 
-
         self.consume(
-            TokenCode::SemiColon,
+            Token::SemiColon,
             "Expect ';' after variable declaration.",
         );
 
+        if global.is_none() { self.mark_initialized(var_name); return; }
 
-        self.define_variable(global, modifier);
+        self.define_variable(global.unwrap(), modifier);
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
     ///
-    pub fn parse_modifier(&mut self) -> Modifier {
-        match &self.current.unwrap().code {
-            TokenCode::Modifier => {
+    fn parse_modifier(&mut self) -> Modifier {
+        match &self.current {
+            Token::Modifier => {
                 self.advance();
+
                 Modifier::Mut
             }
-            TokenCode::Identifier => Modifier::Const,
+            Token::Identifier(_) => Modifier::Const,
             _ => panic!("Error parsing variable."),
         }
     }
@@ -237,16 +247,14 @@ impl<'a> Parser<'a> {
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     ///
-    pub fn parse_variable(&mut self, error_msg: &str, modifier: Modifier) -> usize {
-        self.consume(TokenCode::Identifier, error_msg);
-
+    fn parse_variable(&mut self, modifier: Modifier, name: String) -> Option<usize> {
         // Check if var is global
         if self.scopes.len() == 0 {
-            return self.identifier_constant();
+            return self.identifier_constant(name);
         }
 
-        self.declare_variable(modifier);
-        return 0;
+        self.add_local(modifier, name);
+        return None;
     }
 
     /// Try to extract current type from TypeDef Token.
@@ -254,48 +262,41 @@ impl<'a> Parser<'a> {
     /// Executed when explicit type definition is set with :
     ///
     pub fn parse_var_type(&mut self) -> Type {
-        match self.current.unwrap().code.clone() {
-            TokenCode::TypeDef(t) => {
+        match self.get_current() {
+            Token::Ampersand => {
                 self.advance();
-                t
+                Type::Ref(Rc::new(self.parse_var_type()))
             }
+            Token::TypeDef(t) =>  { self.advance(); t },
             _ => panic!("Invalid Var Type."),
         }
     }
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
-    pub fn identifier_constant(&mut self) -> usize {
-        // Gets chars from token and set it as var name
-        let value = &self.previous.unwrap().lexeme;
-
-        self.function.chunk.write_constant(Primitive::String(value.clone()))
-    }
-
-    pub fn declare_variable(&mut self, modifier: Modifier) {
-        if self.scopes.len() == 0 {
-            return;
-        }
-
-        self.add_local(modifier);
+    fn identifier_constant(&mut self, name: String) -> Option<usize> {
+        Some(self.function.chunk.write_constant(Primitive::String(name.into())))
     }
 
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
-    fn add_local(&mut self, modifier: Modifier) {
-        self.scopes.last_mut().unwrap().add_local(self.previous.unwrap().lexeme.clone(), modifier);
+    fn add_local(&mut self, modifier: Modifier, name: String) {
+        let mut total_locals = 0;
+        for i in self.scopes.iter() {
+            total_locals += i.local_count;
+        }
+
+        self.scopes.last_mut().unwrap().add_local(name, modifier, total_locals);
     }
 
     /// Initialize Local Var by emitting DefineLocal
     /// 
     fn mark_initialized(&mut self, local_name: String) {
-        if self.scopes.len() == 0 { return; }
-
         let local_index = self
             .scopes
             .last_mut()
             .unwrap()
-            .get_local(local_name)
+            .get_local(&local_name)
             .unwrap();
 
         self.emit_byte(OpCode::DefineLocal(local_index.borrow().0, local_index.borrow().1));
@@ -305,11 +306,15 @@ impl<'a> Parser<'a> {
     ///
     ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        if self.scopes.len() > 0 {
-            return;
-        }
-
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+    }
+
+    fn get_current(&mut self) -> Token {
+        std::mem::replace(&mut self.current, Token::Eof)
+    }
+
+    fn get_previous(&mut self) -> Token {
+        std::mem::replace(&mut self.previous, Token::Eof)
     }
 
     pub fn begin_scope(&mut self) {
@@ -341,19 +346,19 @@ impl<'a> Parser<'a> {
     ///    | block ;
     ///
     pub fn statement(&mut self) {
-        if self.match_token(TokenCode::Print) {
+        if self.match_token(Token::Print) {
             self.print_statement();
-        } else if self.match_token(TokenCode::For) {
+        } else if self.match_token(Token::For) {
             self.for_statement();
-        } else if self.match_token(TokenCode::If) {
+        } else if self.match_token(Token::If) {
             self.if_statement();
-        } else if self.match_token(TokenCode::Return) {
+        } else if self.match_token(Token::Return) {
             self.return_statement();
-        } else if self.match_token(TokenCode::While) {
+        } else if self.match_token(Token::While) {
             self.while_statement();
-        } else if self.match_token(TokenCode::Switch) {
+        } else if self.match_token(Token::Switch) {
             self.switch_statement();
-        } else if self.check(TokenCode::LeftBrace) {
+        } else if self.check(Token::LeftBrace) {
             self.declaration();
         } else {
             self.expression_statement();
@@ -363,17 +368,17 @@ impl<'a> Parser<'a> {
     pub fn syncronize(&mut self) {
         self.panic_mode = false;
 
-        while self.current.unwrap().code != TokenCode::Eof {
-            if self.previous.unwrap().code == TokenCode::SemiColon {
-                match self.current.unwrap().code {
-                    TokenCode::Class
-                    | TokenCode::Fun
-                    | TokenCode::Var
-                    | TokenCode::For
-                    | TokenCode::If
-                    | TokenCode::While
-                    | TokenCode::Print
-                    | TokenCode::Return => return,
+        while self.current != Token::Eof {
+            if self.previous == Token::SemiColon {
+                match self.current {
+                    Token::Class
+                    | Token::Fun
+                    | Token::Var
+                    | Token::For
+                    | Token::If
+                    | Token::While
+                    | Token::Print
+                    | Token::Return => return,
                     _ => (),
                 }
             }
@@ -388,7 +393,7 @@ impl<'a> Parser<'a> {
     ///
     fn print_statement(&mut self) {
         self.expression();
-        self.consume(TokenCode::SemiColon, "Expect ';' after value.");
+        self.consume(Token::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
     }
 
@@ -403,10 +408,10 @@ impl<'a> Parser<'a> {
         self.begin_scope();
 
         /* Match (HERE; Y; Z) */
-        self.consume(TokenCode::LeftParen, "Expect '(' after 'for'.");
-        if self.match_token(TokenCode::SemiColon) {
+        self.consume(Token::LeftParen, "Expect '(' after 'for'.");
+        if self.match_token(Token::SemiColon) {
             // No initializer
-        } else if self.match_token(TokenCode::Var) {
+        } else if self.match_token(Token::Var) {
             self.var_declaration();
         } else {
             self.expression_statement();
@@ -421,9 +426,9 @@ impl<'a> Parser<'a> {
         */
         let mut exit_jump: i32 = -1;
         /*  Verify if expression is present (x; HERE; y;) */
-        if !self.match_token(TokenCode::SemiColon) {
+        if !self.match_token(Token::SemiColon) {
             self.expression();
-            self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
+            self.consume(Token::SemiColon, "Expect ';' after expression.");
 
             /* Jump out of the loop if condition is false */
             exit_jump = self.emit_jump(OpCode::JumpIfFalse(0)) as i32;
@@ -437,7 +442,7 @@ impl<'a> Parser<'a> {
 
             Here body_jump set a jump flag bytecode, we next take the index of the current instruction (body jump)
         */
-        if !self.match_token(TokenCode::RightParen) {
+        if !self.match_token(Token::RightParen) {
             /* This jump is set on code, so the flow continues, the body jump is executed */
             /* Set jump over body */
             let body_jump = self.emit_jump(OpCode::Jump(0));
@@ -446,7 +451,7 @@ impl<'a> Parser<'a> {
             /* Increment expression */
             self.expression();
 
-            self.consume(TokenCode::RightParen, "Expect ')' after for clauses.");
+            self.consume(Token::RightParen, "Expect ')' after for clauses.");
 
             /* This loop is the one which */
             self.emit_loop(loop_start);
@@ -458,7 +463,7 @@ impl<'a> Parser<'a> {
             self.patch_jump(body_jump, OpCode::Jump(0));
         }
 
-        self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
+        self.consume(Token::LeftBrace, "Expect '{' start-of-block.");
         self.block();
         self.emit_loop(loop_start);
 
@@ -471,9 +476,9 @@ impl<'a> Parser<'a> {
     }
 
     fn if_statement(&mut self) {
-        self.consume(TokenCode::LeftParen, "Expect '(' after 'if'");
+        self.consume(Token::LeftParen, "Expect '(' after 'if'");
         self.expression();
-        self.consume(TokenCode::RightParen, "Expect ')' after condition");
+        self.consume(Token::RightParen, "Expect ')' after condition");
 
         /*
             Keep track of where then jump is located by checking chunk.code.len() 
@@ -499,7 +504,7 @@ impl<'a> Parser<'a> {
         self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
 
-        if self.match_token(TokenCode::Else) { self.statement(); }
+        if self.match_token(Token::Else) { self.statement(); }
         self.patch_jump(else_jump, OpCode::Jump(0));
     }
 
@@ -508,11 +513,11 @@ impl<'a> Parser<'a> {
             self.error("Can't return from top-level code.");
         }
 
-        if self.match_token(TokenCode::SemiColon) {
+        if self.match_token(Token::SemiColon) {
             self.emit_return();
         } else {
             self.expression();
-            self.consume(TokenCode::SemiColon, "Expect ; after return value.");
+            self.consume(Token::SemiColon, "Expect ; after return value.");
             self.emit_byte(OpCode::Return);
         };
     }
@@ -521,9 +526,9 @@ impl<'a> Parser<'a> {
         /* The Bytecode index jump needs to go backward to restart loop */
         let loop_start = self.function.chunk.code.len() - 1;
 
-        self.consume(TokenCode::LeftParen, "Expect '(' after 'while'");
+        self.consume(Token::LeftParen, "Expect '(' after 'while'");
         self.expression();
-        self.consume(TokenCode::RightParen, "Expect ')' after condition");
+        self.consume(Token::RightParen, "Expect ')' after condition");
 
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
@@ -537,12 +542,12 @@ impl<'a> Parser<'a> {
     fn switch_statement(&mut self) {
         self.begin_scope();
 
-        self.consume(TokenCode::LeftParen, "Expect '(' after switch clause.");
+        self.consume(Token::LeftParen, "Expect '(' after switch clause.");
         self.expression();
-        self.consume(TokenCode::RightParen, "Expect ')' after expression.");
-        self.consume(TokenCode::LeftBrace, "Expect '{' start-of-block.");
+        self.consume(Token::RightParen, "Expect ')' after expression.");
+        self.consume(Token::LeftBrace, "Expect '{' start-of-block.");
 
-        self.consume(TokenCode::Case, "Expected 'case' statement.");
+        self.consume(Token::Case, "Expected 'case' statement.");
         /* This gets switch value to be compared with branch value on every iteration */
         self.expression();
         self.emit_byte(OpCode::PartialEqual);
@@ -558,7 +563,7 @@ impl<'a> Parser<'a> {
             Executed by getting the original switch value, copying it and comparing it with the branch expression value.
             Basically, when a branch is true, it's value is propagated until the end of loop.
         */
-        while self.match_token(TokenCode::Case) {
+        while self.match_token(Token::Case) {
             /* The below jump is executed in order to skip the execution of the entire branch once a true value (from previous branch) is found. */
             let branch_jump = self.emit_jump(OpCode::JumpIfTrue(0));
             /* If conditional was indeeed false, pop it (old branch value) and continues */
@@ -578,7 +583,7 @@ impl<'a> Parser<'a> {
         /* If a true value was found, it will be available on top of stack, so we check if it is false. */
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
-        if self.match_token(TokenCode::Default) {
+        if self.match_token(Token::Default) {
             self.statement();
         }
 
@@ -589,7 +594,7 @@ impl<'a> Parser<'a> {
         /* As original switch value are available, pop */
         self.emit_byte(OpCode::Pop);
 
-        self.consume(TokenCode::RightBrace, "Expect '}' on end-of-block.");
+        self.consume(Token::RightBrace, "Expect '}' on end-of-block.");
         self.end_scope();
     }
 
@@ -599,25 +604,25 @@ impl<'a> Parser<'a> {
     ///
     pub fn expression_statement(&mut self) {
         self.expression();
-        self.consume(TokenCode::SemiColon, "Expect ';' after expression.");
+        self.consume(Token::SemiColon, "Expect ';' after expression.");
         // if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
     ///
     pub fn block(&mut self) {
-        while !self.check(TokenCode::RightBrace) && !self.check(TokenCode::Eof) {
+        while !self.check(Token::RightBrace) && !self.check(Token::Eof) {
             self.declaration();
         }
 
-        self.consume(TokenCode::RightBrace, "Expected '}' end-of-block.");
+        self.consume(Token::RightBrace, "Expected '}' end-of-block.");
     }
 
     /// Check if current Token matches argument Token.
     ///
     /// Advance parser current Token on match.
     ///
-    pub fn match_token(&mut self, token: TokenCode) -> bool {
+    pub fn match_token(&mut self, token: Token) -> bool {
         if !self.check(token) {
             return false;
         }
@@ -627,18 +632,21 @@ impl<'a> Parser<'a> {
 
     /// Compare current Token with param Token.
     ///
-    pub fn check(&self, token: TokenCode) -> bool {
-        self.current.unwrap().code == token
+    pub fn check(&self, token: Token) -> bool {
+        self.current == token
     }
 
     /// Scan new token and set it as self.current.
     ///
     pub fn advance(&mut self) {
-        self.previous = self.current;
+        self.previous = self.get_current();
 
-        self.current = self.token_stream.as_mut().unwrap().next();
+        self.current = self.lexer.as_mut().unwrap().next();
 
-        if let TokenCode::Error(msg) = self.current.unwrap().code {
+        #[cfg(feature = "debug-scan")]
+        dbg!(&self.current);
+
+        if let Token::Error(msg) = &self.current {
             self.error(&format!("Error advancing token. {}", msg));
         }
     }
@@ -657,23 +665,23 @@ impl<'a> Parser<'a> {
     pub fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
-        let prefix_rule = get_rule(&self.previous.as_ref().unwrap().code).prefix;
+        let prefix_rule = get_rule(&self.previous).prefix;
 
         let can_assign = precedence <= Precedence::Assignment;
         prefix_rule(self, can_assign);
 
-        while precedence <= get_rule(&self.current.as_ref().unwrap().code).precedence {
+        while precedence <= get_rule::<R>(&self.current).precedence {
             self.advance();
 
-            let infix_rule = get_rule(&self.previous.as_ref().unwrap().code).infix;
+            let infix_rule = get_rule(&self.previous).infix;
             (infix_rule)(self, can_assign)
         }
     }
 
     /// Match token_code with self.current and advance if true.
     ///
-    pub fn consume(&mut self, token_code: TokenCode, msg: &str) {
-        if self.current.unwrap().code == token_code {
+    pub fn consume(&mut self, token_code: Token, msg: &str) {
+        if self.current == token_code {
             self.advance();
         } else {
             self.error(msg);
@@ -685,7 +693,7 @@ impl<'a> Parser<'a> {
     /// Emit: param code
     ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.function.chunk.write(code, self.current.unwrap().line);
+        self.function.chunk.write(code, self.lexer.as_ref().unwrap().line);
     }
 
     /// Write value to constant vec and set it's bytecode.
@@ -758,11 +766,11 @@ impl<'a> Parser<'a> {
             return;
         }
 
-        let token = self.current.unwrap();
-        match token.code {
-            TokenCode::Eof => println!(" at end."),
-            TokenCode::Error(_) => (),
-            _ => println!(" at line {} | position: {}", token.line + 1, token.lexeme),
+        let token = &self.current;
+        match token {
+            Token::Eof => println!(" at end."),
+            Token::Error(_) => (),
+            _ => println!(" at line {}", self.lexer.as_ref().unwrap().line),
         }
 
         println!("{}", msg);

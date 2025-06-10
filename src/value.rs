@@ -3,7 +3,7 @@ use std::{
     cell::RefCell, fmt::Display, ops::{Add, Div, Mul}, rc::Rc
 };
 
-use crate::{chunk::Chunk, object::NativeFunction};
+use crate::{chunk::Chunk};
 
 /// All Asterisk Values definition.
 ///
@@ -69,13 +69,13 @@ pub enum Type {
 #[derive(Debug, Clone, PartialEq)]
 pub enum Primitive {
     Float(f64),
-    Int(i32),
+    Int(i64),
     Bool(bool),
     String(String),
-    Function(Function),
-    NativeFunction(NativeFunction),
+    Function(Rc<Function>),
+    NativeFunction(fn()),
     Ref(Rc<RefCell<Value>>),
-    RefMut(*mut Value),
+    RefMut(Rc<Value>),
     Void(()),
 }
 

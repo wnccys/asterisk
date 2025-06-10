@@ -3,6 +3,7 @@ pub mod compiler;
 pub mod errors;
 pub mod macros;
 pub mod parser;
+pub mod native;
 pub mod object;
 pub mod types;
 pub mod utils;

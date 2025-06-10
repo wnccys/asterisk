@@ -116,7 +116,9 @@ impl<R: std::io::Read> Lexer<R> {
                 self.number_hex()
             }
             t if t.is_ascii_digit() => {
-                let mut result = u64::try_from(num).unwrap();
+                let mut result = u64::try_from(num - b'0').unwrap();
+                result *= 10;
+                result += (t - b'0') as u64;
 
                 loop {
                     if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
@@ -124,8 +126,8 @@ impl<R: std::io::Read> Lexer<R> {
                     let n = self.next_byte().unwrap();
 
                     result = result
-                                .checked_mul(10).expect("number overflow")
-                                .checked_add((n - b'0') as u64).expect("cannot add {n} to {result}");
+                        .checked_mul(10).expect("number overflow")
+                        .checked_add((n - b'0') as u64).expect("cannot add {n} to {result}");
                 };
 
                 if self.peek_byte() == &b'.' {

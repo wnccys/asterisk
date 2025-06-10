@@ -108,17 +108,15 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number(&mut self, num: u8) -> Token {
-        match self.read_byte() {
-            t if t == b'b' => {
+        match num {
+            _ if num == b'b' => {
                 self.number_binary()
             }
-            t if t == b'x' => {
+            _ if num == b'x' => {
                 self.number_hex()
             }
-            t if t.is_ascii_digit() => {
+            _ => {
                 let mut result = u64::try_from(num - b'0').unwrap();
-                result *= 10;
-                result += (t - b'0') as u64;
 
                 loop {
                     if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
@@ -138,7 +136,6 @@ impl<R: std::io::Read> Lexer<R> {
 
                 Token::Integer(result as i64)
             }
-            _ => panic!("invalid number")
         }
     }
 
@@ -213,6 +210,10 @@ impl<R: std::io::Read> Lexer<R> {
             "this" => Token::This,
             "let" => Token::Var,
             "while" => Token::While,
+            "Int" => Token::TypeDef(Type::Int),
+            "Float" => Token::TypeDef(Type::Float),
+            "Bool" => Token::TypeDef(Type::Bool),
+            "String" => Token::TypeDef(Type::String),
             _ => Token::Identifier(word),
         }
     }

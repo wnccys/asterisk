@@ -3,7 +3,8 @@ use std::rc::Rc;
 #[allow(unused)]
 use std::time::Duration;
 
-use crate::chunk::*;
+use crate::native::duration;
+use crate::{chunk::*};
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
 use crate::utils::parse_type;
@@ -51,12 +52,17 @@ impl Vm {
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     ///
     pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> InterpretResult {
+        self.init_std_lib();
         let result = compile(source_code);
         if result.is_none() { return InterpretResult::CompileError };
 
         self.call(Rc::new(result.unwrap().0), 0);
 
         self.run()
+    }
+
+    fn init_std_lib(&mut self) {
+        self.globals.insert(&"duration".to_string(), Value { value: Primitive::NativeFunction(duration), _type: Type::NativeFn, modifier: Modifier::Const });
     }
 
     /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
@@ -312,8 +318,6 @@ impl Vm {
                 */
                 OpCode::GetLocal(var_index) => {
                     let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0.checked_sub(1).unwrap_or(0))]);
-                    dbg!(self.frames.last().unwrap().slots);
-                    dbg!(&variable);
 
                     self.stack.push(variable);
 
@@ -533,18 +537,18 @@ impl Vm {
 
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
-        let callee = Rc::clone(&self.stack[self.stack.len() - 1 - args_count]);
+        let callee = Rc::clone(&self.stack[self.stack.len().checked_sub(1).unwrap_or(0).checked_sub(args_count).unwrap_or(0)]);
         let value = callee.borrow();
 
-        match value.clone() {
-            Value { _type: Type::Fn, value, .. } => {
-                let callee_function = match value {
-                    Primitive::Function(fun) => fun,
-                    _ => panic!("Tried to call not callabble object: {value:?}")
-                };
-
-                return self.call(callee_function, args_count);
+        match *value {
+            Value { value: Primitive::Function(ref f), .. } => {
+                return self.call(f.clone(), args_count);
             },
+            Value { value: Primitive::NativeFunction(f), .. } => {
+                f();
+                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+                true
+            }
             _ => panic!("Object {callee:?} is not callabble"),
         }
     }
@@ -552,6 +556,7 @@ impl Vm {
     fn call(&mut self, function: Rc::<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!("Expected {} but got {} arguments.", function.arity, args_count);
+
             self.runtime_error();
             return false;
         }

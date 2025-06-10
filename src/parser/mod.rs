@@ -61,8 +61,8 @@ pub struct Scope {
 impl Scope {
     /// Add new Local by hashing and inserting it
     /// 
-    fn add_local(&mut self, lexeme: String, modifier: Modifier) {
-        self.locals.insert(&lexeme, (self.local_count, modifier));
+    fn add_local(&mut self, lexeme: String, modifier: Modifier, total_locals: usize) {
+        self.locals.insert(&lexeme, (total_locals, modifier));
         self.local_count += 1;
     }
 
@@ -198,7 +198,6 @@ impl<R: std::io::Read> Parser<R> {
         let global = self.parse_variable(modifier, var_name.clone());
 
         self.advance();
-        dbg!("=========", &var_name);
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {
@@ -224,7 +223,6 @@ impl<R: std::io::Read> Parser<R> {
             "Expect ';' after variable declaration.",
         );
 
-        dbg!(&global);
         if global.is_none() { self.mark_initialized(var_name); return; }
 
         self.define_variable(global.unwrap(), modifier);
@@ -286,13 +284,18 @@ impl<R: std::io::Read> Parser<R> {
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
     ///
     fn add_local(&mut self, modifier: Modifier, name: String) {
-        self.scopes.last_mut().unwrap().add_local(name, modifier);
+        let mut total_locals = 0;
+        for i in self.scopes.iter() {
+            total_locals += i.local_count;
+        }
+
+        self.scopes.last_mut().unwrap().add_local(name, modifier, total_locals);
     }
 
     /// Initialize Local Var by emitting DefineLocal
     /// 
     fn mark_initialized(&mut self, local_name: String) {
-        if self.scopes.len() == 0 { return; }
+        dbg!(&self.scopes);
 
         let local_index = self
             .scopes

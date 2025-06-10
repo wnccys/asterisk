@@ -168,7 +168,6 @@ impl<R: std::io::Read> ParseRule<R> {
     /// -> Emit bytecode which set referenced named variable to the stack
     /// -> Ref must reference the value in the stack itself
     /// 
-    /// 
     fn reference(parser: &mut Parser<R>, _can_assign: bool) {
         parser.advance();
         let name = match parser.get_previous() {
@@ -216,7 +215,7 @@ impl<R: std::io::Read> ParseRule<R> {
             let mut local: Option<Rc<RefCell<(usize, Modifier)>>> = None;
 
             /* Pass check on all scopes */
-            for scope in scopes { 
+            for scope in scopes.iter().rev() {
                 local = scope.get_local(&var_name);
 
                 if local.is_some() { break; }

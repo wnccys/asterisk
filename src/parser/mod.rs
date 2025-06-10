@@ -119,7 +119,7 @@ impl<R: std::io::Read> Parser<R> {
         let global_var = self.parse_variable(modifier, name);
         /* Let function as value available on top of stack */
         self.function(FunctionType::Fn);
-        self.define_variable(global_var, modifier);
+        self.define_variable(global_var.unwrap(), modifier);
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
@@ -198,6 +198,7 @@ impl<R: std::io::Read> Parser<R> {
         let global = self.parse_variable(modifier, var_name.clone());
 
         self.advance();
+        dbg!("=========", &var_name);
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {
@@ -223,9 +224,10 @@ impl<R: std::io::Read> Parser<R> {
             "Expect ';' after variable declaration.",
         );
 
-        if global == 0 { self.mark_initialized(var_name); return; }
+        dbg!(&global);
+        if global.is_none() { self.mark_initialized(var_name); return; }
 
-        self.define_variable(global, modifier);
+        self.define_variable(global.unwrap(), modifier);
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -250,14 +252,14 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
     ///
-    fn parse_variable(&mut self, modifier: Modifier, name: String) -> usize {
+    fn parse_variable(&mut self, modifier: Modifier, name: String) -> Option<usize> {
         // Check if var is global
         if self.scopes.len() == 0 {
             return self.identifier_constant(name);
         }
 
         self.add_local(modifier, name);
-        return 0;
+        return None;
     }
 
     /// Try to extract current type from TypeDef Token.
@@ -277,8 +279,8 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
-    fn identifier_constant(&mut self, name: String) -> usize {
-        self.function.chunk.write_constant(Primitive::String(name.into()))
+    fn identifier_constant(&mut self, name: String) -> Option<usize> {
+        Some(self.function.chunk.write_constant(Primitive::String(name.into())))
     }
 
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count

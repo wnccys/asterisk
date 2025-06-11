@@ -7,10 +7,7 @@ use ruler::{get_rule, Precedence};
 use lexer::{Lexer, Token};
 
 use crate::{
-    chunk::OpCode,
-    primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value},
-    objects::hash_table::{HashTable},
-    utils::print::disassemble_chunk
+    chunk::OpCode, errors::parser_errors::ParserResult, objects::hash_table::HashTable, primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value}, utils::print::disassemble_chunk
 };
 
 #[derive(Debug)]
@@ -88,28 +85,28 @@ impl<R: std::io::Read> Parser<R> {
     ///    | varDecl
     ///    | statement
     ///
-    pub fn declaration(&mut self) {
+    pub fn declaration(&mut self) -> ParserResult<()> {
         if self.match_token(Token::Fun) {
-            self.fun_declaration();
+            self.fun_declaration()
         } else if self.match_token(Token::Var) {
-            self.var_declaration();
+            self.var_declaration()
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self.block();
-            self.end_scope();
+            self.end_scope()
         } else {
             // Declaration Control Flow Fallback
             self.statement();
         }
 
-        if self.panic_mode {
-            self.syncronize();
-        }
+        // if self.panic_mode {
+        //     self.syncronize()
+        // }
     }
 
     /// Where the fun starts
     /// 
-    fn fun_declaration(&mut self) {
+    fn fun_declaration(&mut self) -> ParserResult<()> {
         let modifier = Modifier::Const;
         self.advance();
 

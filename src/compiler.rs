@@ -1,10 +1,11 @@
+use crate::errors::parser_errors::ParserResult;
 use crate::parser::lexer::*;
 use crate::parser::Parser;
-use crate::value::Function;
-use crate::value::FunctionType;
+use crate::primitives::primitive::Function;
+use crate::primitives::primitive::FunctionType;
 use crate::vm::InterpretResult;
 
-pub fn compile<T: std::io::Read>(source_code: T) -> Option<(Function, InterpretResult)> {
+pub fn compile<T: std::io::Read>(source_code: T) -> ParserResult<(Function, InterpretResult)> {
     let lex = Lexer::new(source_code);
     /* Default app function, "main" so to speak. */
     let function = Function::default();
@@ -14,6 +15,8 @@ pub fn compile<T: std::io::Read>(source_code: T) -> Option<(Function, InterpretR
     parser.advance();
 
     while parser.current != Token::Eof {
+        if parser.current == Token::Error(s) { Error(); }
+
         parser.declaration();
     }
 

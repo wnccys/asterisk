@@ -1,9 +1,0 @@
-fn fib(n: Int) {
-  return n;
-}
-
-print "start: ";
-let d = duration();
-print d;
-print "total: ";
-print d + duration();

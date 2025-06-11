@@ -1,6 +1,4 @@
-use std::rc::Rc;
-
-use crate::value::{Modifier, Primitive, Type};
+use crate::primitives::{types::{Type, Modifier}, primitive::Primitive};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OpCode {

@@ -1,5 +1,4 @@
-use super::hasher::FNV1aHasher;
-use crate::value::{ Modifier, Primitive, Type, Value };
+use crate::utils::hasher::FNV1aHasher;
 use std::{
     cell::RefCell, fmt::Display, hash::{Hash, Hasher}, rc::Rc
 };
@@ -148,6 +147,8 @@ pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize
 
 #[cfg(test)]
 mod tests {
+    use crate::primitives::{primitive::Primitive, types::{Modifier, Type}, value::Value};
+
     use super::*;
 
     #[test]

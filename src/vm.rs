@@ -3,15 +3,15 @@ use std::rc::Rc;
 #[allow(unused)]
 use std::time::Duration;
 
-use crate::native::duration;
-use crate::object::NativeFn;
+use crate::primitives::native::duration;
+use crate::primitives::primitive::NativeFn;
 use crate::{chunk::*};
 use crate::compiler::compile;
-use crate::types::hash_table::HashTable;
+use crate::objects::hash_table::HashTable;
 use crate::utils::parse_type;
 #[allow(unused)]
 use crate::utils::print::{print_stack, print_value};
-use crate::value::{Function, Modifier, Primitive, Type, Value};
+use crate::primitives::{primitive::{Function, Primitive}, types::{Type, Modifier}, value::Value};
 
 #[derive(Debug, PartialEq)]
 pub enum InterpretResult {

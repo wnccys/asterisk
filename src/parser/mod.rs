@@ -1,18 +1,17 @@
-use std::{cell::RefCell, fmt::Write, rc::Rc, thread::{self, current}, time::Duration};
+pub mod ruler;
+pub mod lexer;
+
+use std::{cell::RefCell, rc::Rc, thread::{self, current}, time::Duration};
 
 use ruler::{get_rule, Precedence};
 use lexer::{Lexer, Token};
 
 use crate::{
-    chunk::{Chunk, OpCode},
-    errors::parser_errors::ParserResult,
-    types::hash_table::{hash_key, HashTable},
-    utils::{parse_type, print::disassemble_chunk},
-    value::{Function, FunctionType, Modifier, Primitive, Type, Value},
+    chunk::OpCode,
+    primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value},
+    objects::hash_table::{HashTable},
+    utils::print::disassemble_chunk
 };
-
-pub mod ruler;
-pub mod lexer;
 
 #[derive(Debug)]
 pub struct Parser<R: std::io::Read> {

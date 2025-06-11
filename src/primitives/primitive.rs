@@ -1,5 +1,8 @@
-use std::{cell::RefCell, rc::Rc};
-use crate::value::Value;
+use std::{cell::RefCell, fmt::{self, Display}, rc::Rc};
+
+use crate::chunk::Chunk;
+
+use super::value::Value;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Primitive {

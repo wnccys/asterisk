@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 /* Primitives are variable assigned data, Type are the check for this data to be valid throught the runtime */
 #[derive(Debug, Clone, PartialEq)]
 pub enum Type {

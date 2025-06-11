@@ -1,6 +1,7 @@
-use std::{cell::RefCell, rc::Rc, time::{Duration, Instant}};
+use std::{cell::RefCell, rc::Rc, time::Instant};
 
-use crate::value::{Modifier, Primitive, Type, Value};
+use super::{primitive::Primitive, types::{Modifier, Type}, value::Value};
+
 
 pub fn duration(_args: &[Rc<RefCell<Value>>]) -> Value {
     Value {

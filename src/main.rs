@@ -3,11 +3,10 @@ mod compiler;
 mod errors;
 mod macros;
 mod parser;
-mod object;
+mod objects;
 mod types;
 mod utils;
-mod native;
-mod value;
+mod primitives;
 mod vm;
 
 use std::fs::File;

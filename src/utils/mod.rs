@@ -3,6 +3,7 @@ use std::rc::Rc;
 use crate::value::{Primitive, Type};
 
 pub mod print;
+pub mod hasher;
 
 /// Parses primitive to Type equivalent
 ///

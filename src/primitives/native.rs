@@ -8,4 +8,4 @@ pub fn duration(_args: &[Rc<RefCell<Value>>]) -> Value {
         _type: Type::Int,
         modifier: Modifier::Const,
     }
-} 
+}

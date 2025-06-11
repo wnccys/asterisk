@@ -1,3 +1,6 @@
+pub mod chunk;
+pub mod compiler;
+
 use std::cell::RefCell;
 use std::rc::Rc;
 #[allow(unused)]

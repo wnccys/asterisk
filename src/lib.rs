@@ -1,5 +1,3 @@
-pub mod chunk;
-pub mod compiler;
 pub mod errors;
 pub mod macros;
 pub mod objects;

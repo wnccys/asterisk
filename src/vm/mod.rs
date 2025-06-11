@@ -6,9 +6,10 @@ use std::rc::Rc;
 #[allow(unused)]
 use std::time::Duration;
 
-use crate::primitives::native::duration;
+use crate::{errors::vm_errors::VmResult, primitives::native::duration};
 use crate::primitives::primitive::NativeFn;
-use crate::compiler::compile;
+use crate::vm::compiler::compile;
+use crate::vm::chunk::OpCode;
 use crate::objects::hash_table::HashTable;
 use crate::utils::parse_type;
 #[allow(unused)]
@@ -54,10 +55,10 @@ impl Vm {
     ///
     /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
     ///
-    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> InterpretResult {
+    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<InterpretResult> {
         self.init_std_lib();
         let result = compile(source_code);
-        if result.is_none() { return InterpretResult::CompileError };
+
 
         self.call(Rc::new(result.unwrap().0), 0);
 
@@ -382,7 +383,7 @@ impl Vm {
                     /*  Only strings are allowed to be var names */
                     match var_name {
                         Primitive::String(name) => {
-                            self.globals.insert(name, variable);
+                            self.globals.insert(&name, variable);
                         }
                         _ => panic!("Invalid global variable name."),
                     }
@@ -399,7 +400,7 @@ impl Vm {
                         _ => panic!("Invalid global variable name."),
                     };
 
-                    let value = match self.globals.get(name) {
+                    let value = match self.globals.get(&name) {
                         Some(value) => value,
                         None => panic!("Use of undeclared variable '{}'", name),
                     };

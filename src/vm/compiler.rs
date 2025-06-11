@@ -15,13 +15,11 @@ pub fn compile<T: std::io::Read>(source_code: T) -> ParserResult<(Function, Inte
     parser.advance();
 
     while parser.current != Token::Eof {
-        if parser.current == Token::Error(s) { Error(); }
-
         parser.declaration();
     }
 
     match parser.end_compiler() {
-        Some(f) => Some((f, InterpretResult::Ok)),
-        None => None
+        Some(f) => Ok((f, InterpretResult::Ok)),
+        None => Err(())
     }
 }

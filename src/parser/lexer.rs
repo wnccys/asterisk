@@ -1,6 +1,6 @@
-use std::{io::Bytes, iter::Peekable, rc::Rc};
+use std::{io::Bytes, iter::Peekable};
 
-use crate::value::Type;
+use crate::{ value::Type};
 
 #[allow(unused)]
 #[derive(Debug, PartialEq, Clone)]

@@ -7,7 +7,7 @@ use ruler::{get_rule, Precedence};
 use lexer::{Lexer, Token};
 
 use crate::{
-    chunk::OpCode, errors::parser_errors::ParserResult, objects::hash_table::HashTable, primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value}, utils::print::disassemble_chunk
+    vm::chunk::OpCode, errors::parser_errors::ParserResult, objects::hash_table::HashTable, primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value}, utils::print::disassemble_chunk
 };
 
 #[derive(Debug)]

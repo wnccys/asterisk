@@ -1,11 +1,11 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use crate::chunk::OpCode;
+use crate::primitives::value::Value;
+use crate::vm::chunk::OpCode;
 use crate::parser::Parser;
 use crate::primitives::primitive::Primitive;
 use crate::primitives::types::{Modifier, Type};
-use crate::primitives::value::Value;
 
 use super::lexer::Token;
 

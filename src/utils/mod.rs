@@ -1,6 +1,7 @@
 use std::rc::Rc;
 
-use crate::value::{Primitive, Type};
+use crate::primitives::{primitive::Primitive, types::Type};
+
 
 pub mod print;
 pub mod hasher;

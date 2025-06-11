@@ -1,5 +1,5 @@
-use crate::chunk::{Chunk, OpCode};
-use crate::value::Primitive;
+use crate::vm::chunk::{Chunk, OpCode};
+use crate::primitives::primitive::Primitive;
 use crate::vm::Stack;
 
 #[allow(unused)]

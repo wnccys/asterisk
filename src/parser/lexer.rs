@@ -21,7 +21,7 @@ pub enum Token {
     Default, Else, False, For, Fun,
     If, Modifier, TypeDef(Type), Or, Print,
     Return, Switch, Super, This, True,
-    Var, While, Comment, Error(String), Eof,
+    Var, While, Comment, Error(&'static str), Eof,
 }
 
 #[derive(Debug)]
@@ -61,10 +61,10 @@ impl<R: std::io::Read> Lexer<R> {
             b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
             b'<' => self.check_ahead(b'=', Token::Less, Token::LessEqual),
             b'/' =>  {
-                if self.peek_byte() == &b'/' {
+                if *self.peek_byte() == b'/' {
                     self.read_byte();
                     self.comment(false)
-                } else if self.peek_byte() == &b'*' {
+                } else if *self.peek_byte() == b'*' {
                     self.read_byte();
                     self.comment(true)
                 } else {
@@ -75,7 +75,7 @@ impl<R: std::io::Read> Lexer<R> {
             b'\'' | b'"' => self.string(byt),
             b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
             b'\0' => Token::Eof,
-            _ => panic!("invalid token {}", byt as char)
+            _ => Token::Error("Invalid Token")
         }
     }
 
@@ -128,7 +128,7 @@ impl<R: std::io::Read> Lexer<R> {
                         .checked_add((n - b'0') as u64).expect("cannot add {n} to {result}");
                 };
 
-                if self.peek_byte() == &b'.' {
+                if *self.peek_byte() == b'.' {
                     self.read_byte();
 
                     return self.number_float(result);

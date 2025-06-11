@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::native::duration;
+use crate::object::NativeFn;
 use crate::{chunk::*};
 use crate::compiler::compile;
 use crate::types::hash_table::HashTable;
@@ -62,7 +63,14 @@ impl Vm {
     }
 
     fn init_std_lib(&mut self) {
-        self.globals.insert(&"duration".to_string(), Value { value: Primitive::NativeFunction(duration), _type: Type::NativeFn, modifier: Modifier::Const });
+        self.globals.insert(
+            &"duration".to_string(), 
+            Value {
+                value: Primitive::NativeFunction(NativeFn { arity: 0, _fn: duration }),
+                _type: Type::NativeFn,
+                modifier: Modifier::Const 
+            }
+        );
     }
 
     /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
@@ -106,9 +114,8 @@ impl Vm {
                         return InterpretResult::Ok;
                     }
 
-
                     /* Advance current call ip offset by 1 */
-                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1); }
+                    unsafe { self.advance_ip() }
                     self.stack.push(_return);
 
                     continue
@@ -477,12 +484,13 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::JumpIfFalse(offset) => {
-                    /* Check for false conditional on top of stack */
-                   match self.stack.last().unwrap().borrow().value {
+                    let value = Rc::clone(self.stack.last().unwrap());
+
+                    match value.borrow().value {
                         Primitive::Bool(v) => {
                             if v == false {
                                 /* Set current opcode index to current + offset */
-                                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize); }
+                                unsafe { self.jump_ip(offset as isize); }
 
                                 continue;
                             }
@@ -493,12 +501,13 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::JumpIfTrue(offset) => {
-                    /* Check for false conditional on top of stack */
-                   match self.stack.last().unwrap().borrow().value {
+                    let value = Rc::clone(self.stack.last().unwrap());
+
+                    match value.borrow().value {
                         Primitive::Bool(v) => {
                             if v == true {
                                 /* Set current opcode index to current + offset */
-                                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize); }
+                                unsafe { self.jump_ip(offset as isize) }
 
                                 continue;
                             }
@@ -509,30 +518,38 @@ impl Vm {
                     InterpretResult::Ok
                 }
                 OpCode::Jump(offset) => {
-                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset as isize) };
-
+                    unsafe { self.jump_ip(offset as isize); }
                     continue;
                 }
                 OpCode::Loop(offset) => {
-                    unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset)};
-
+                    unsafe { self.putback_ip(offset) }
                     continue;
                 }
                 OpCode::Call(args_count) => {
-                    if !self.call_value(args_count) {
-                        return InterpretResult::RuntimeError;
+                    if self.call_value(args_count) {
+                        self.stack.remove(self.stack.len() - 1 - args_count);
                     }
-
-                    self.stack.remove(self.stack.len() - 1 - args_count);
 
                     continue;
                 }
             };
 
-            unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+            unsafe { self.advance_ip() }
         }
 
         op_status
+    }
+
+    unsafe fn advance_ip(&mut self) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+    }
+
+    unsafe fn jump_ip(&mut self, offset: isize) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset) };
+    }
+
+    unsafe fn putback_ip(&mut self, offset: usize) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset) };
     }
 
     fn call_value(&mut self, args_count: usize) -> bool {
@@ -544,10 +561,16 @@ impl Vm {
             Value { value: Primitive::Function(ref f), .. } => {
                 return self.call(f.clone(), args_count);
             },
-            Value { value: Primitive::NativeFunction(f), .. } => {
-                f();
-                unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
-                true
+            Value { value: Primitive::NativeFunction(ref f), .. } => {
+                /* Pop function from stack so it remains clean */
+                self.stack.remove(self.stack.len() - 1 - args_count);
+
+                let args = &self.stack[(self.stack.len().checked_sub(1).unwrap_or(0) - args_count)..self.stack.len().checked_sub(1).unwrap_or(0)];
+
+                self.stack.push(Rc::new(RefCell::new(f.clone().call(args))));
+
+                unsafe { self.advance_ip() }
+                false 
             }
             _ => panic!("Object {callee:?} is not callabble"),
         }
@@ -558,7 +581,6 @@ impl Vm {
             println!("Expected {} but got {} arguments.", function.arity, args_count);
 
             self.runtime_error();
-            return false;
         }
 
         let stack_len = self.stack.len();
@@ -571,6 +593,8 @@ impl Vm {
         };
 
         self.frames.push(frame);
+
+
         return true;
     }
 
@@ -602,5 +626,6 @@ impl Vm {
         for call_frame in self.frames.iter().rev() {
             println!("<{}>()", call_frame.function.name);
         }
+        panic!()
     }
 }

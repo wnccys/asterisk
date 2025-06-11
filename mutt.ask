@@ -1,9 +1,9 @@
 fn fib(n: Int) {
-  if (n < 2) { return n; }
-
-  return fib(n-1) + fib(n-2);
+  return n;
 }
 
-duration();
-print fib(10);
-duration();
+print "start: ";
+let d = duration();
+print d;
+print "total: ";
+print d + duration();

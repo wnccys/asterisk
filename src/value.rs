@@ -3,7 +3,7 @@ use std::{
     cell::RefCell, fmt::Display, ops::{Add, Div, Mul}, rc::Rc
 };
 
-use crate::{chunk::Chunk};
+use crate::{chunk::Chunk, object::NativeFn};
 
 /// All Asterisk Values definition.
 ///
@@ -66,16 +66,15 @@ pub enum Type {
     Void,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Primitive {
     Float(f64),
     Int(i64),
     Bool(bool),
     String(String),
     Function(Rc<Function>),
-    NativeFunction(fn()),
+    NativeFunction(NativeFn),
     Ref(Rc<RefCell<Value>>),
-    RefMut(Rc<Value>),
     Void(()),
 }
 
@@ -86,8 +85,6 @@ impl Display for Primitive {
             Primitive::Float(_) => write!(f, "Float"),
             Primitive::Bool(_) => write!(f, "Bool"),
             Primitive::String(_) => write!(f, "String"),
-            // Primitive::Ref(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
-            // Primitive::RefMut(primitive) => write!(f, "&({})", unsafe { (**primitive).clone() }),
             _ => panic!("This type does not implement the format trait."),
         }
     }
@@ -103,7 +100,7 @@ pub enum Modifier {
 impl Default for Modifier {
     fn default() -> Self {
         Modifier::Unassigned
-    } 
+    }
 }
 
 crate::macros::gen_primitives_operations!(Float, Int);

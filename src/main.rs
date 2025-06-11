@@ -1,5 +1,3 @@
-mod chunk;
-mod compiler;
 mod errors;
 mod macros;
 mod parser;

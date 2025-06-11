@@ -8,7 +8,6 @@ use std::time::Duration;
 
 use crate::primitives::native::duration;
 use crate::primitives::primitive::NativeFn;
-use crate::{chunk::*};
 use crate::compiler::compile;
 use crate::objects::hash_table::HashTable;
 use crate::utils::parse_type;

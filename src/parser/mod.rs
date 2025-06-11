@@ -35,8 +35,8 @@ impl<R: std::io::Read> Parser<R> {
             function,
             function_type,
             lexer: Some(lexer),
-            current: Token::Eof,
-            previous: Token::Eof,
+            current: Token::Nil,
+            previous: Token::Nil,
             had_error: false,
             panic_mode: false,
             scopes: vec![],
@@ -309,11 +309,11 @@ impl<R: std::io::Read> Parser<R> {
     }
 
     fn get_current(&mut self) -> Token {
-        std::mem::replace(&mut self.current, Token::Eof)
+        std::mem::replace(&mut self.current, Token::Nil)
     }
 
     fn get_previous(&mut self) -> Token {
-        std::mem::replace(&mut self.previous, Token::Eof)
+        std::mem::replace(&mut self.previous, Token::Nil)
     }
 
     pub fn begin_scope(&mut self) {

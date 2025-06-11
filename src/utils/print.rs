@@ -50,7 +50,7 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::JumpIfTrue(op_offset) => jump_instruction("OP_JUMP_IF_TRUE", op_offset, offset),
         OpCode::Jump(op_offset) => jump_instruction("OP_JUMP", op_offset, offset),
         OpCode::Loop(op_offset) => jump_instruction("OP_LOOP", op_offset, offset),
-        OpCode::Call(index) => byte_instruction("OP_CALL", chunk, index, offset),
+        OpCode::Call(_) => simple_instruction("OP_CALL", offset),
     };
 
     disassemble_instruction(chunk, offset);

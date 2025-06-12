@@ -70,7 +70,7 @@ impl<R: std::io::Read> Parser<R> {
 
         let name = match self.get_previous() {
             Token::Identifier(s) => s,
-            _ => panic!("Expect function name")
+            _ => self.error("Expect function name"),
         };
         let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
@@ -711,7 +711,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Panic on errors with panic_mode handling.
     ///
-    pub fn error(&mut self, msg: &str) {
+    pub fn error(&mut self, msg: &str) -> ! {
         let token = &self.current;
 
         let complement = match token {

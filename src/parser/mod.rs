@@ -1,13 +1,14 @@
 pub mod ruler;
 pub mod lexer;
+pub mod scope;
 
-use std::{cell::RefCell, rc::Rc, thread::{self, current}, time::Duration};
+use std::{rc::Rc, thread::{self, current}, time::Duration};
 
 use ruler::{get_rule, Precedence};
 use lexer::{Lexer, Token};
 
 use crate::{
-    vm::chunk::OpCode, errors::parser_errors::ParserResult, objects::hash_table::HashTable, primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value}, utils::print::disassemble_chunk
+    parser::scope::Scope, primitives::{primitive::{Function, FunctionType, Primitive}, types::{Modifier, Type}, value::Value}, utils::print::disassemble_chunk, vm::chunk::OpCode
 };
 
 #[derive(Debug)]
@@ -18,7 +19,6 @@ pub struct Parser<R: std::io::Read> {
     pub current: Token,
     pub previous: Token,
     pub had_error: bool,
-    pub panic_mode: bool,
     pub scopes: Vec<Scope>,
 }
 
@@ -35,45 +35,7 @@ impl<R: std::io::Read> Parser<R> {
             current: Token::Nil,
             previous: Token::Nil,
             had_error: false,
-            panic_mode: false,
             scopes: vec![],
-        }
-    }
-}
-
-/// General scope handler.
-///
-#[derive(Debug)]
-pub struct Scope {
-    /// Represents all local variables, resolved dynamically at runtime, without a Constant Bytecode.
-    ///
-    /// (Var position on locals [consequently on Stack], Modifier))
-    pub locals: HashTable<String, (usize, Modifier)>,
-    pub local_count: usize,
-}
-
-/// Represent a block scope
-/// 
-impl Scope {
-    /// Add new Local by hashing and inserting it
-    /// 
-    fn add_local(&mut self, lexeme: String, modifier: Modifier, total_locals: usize) {
-        self.locals.insert(&lexeme, (total_locals, modifier));
-        self.local_count += 1;
-    }
-
-    /// Return Local index to be used by stack if it exists
-    /// 
-    fn get_local(&self, lexeme: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
-        self.locals.get(lexeme)
-    }
-}
-
-impl<'a> Default for Scope {
-    fn default() -> Self {
-        Scope {
-            locals: HashTable::default(),
-            local_count: 0,
         }
     }
 }
@@ -85,28 +47,24 @@ impl<R: std::io::Read> Parser<R> {
     ///    | varDecl
     ///    | statement
     ///
-    pub fn declaration(&mut self) -> ParserResult<()> {
+    pub fn declaration(&mut self) {
         if self.match_token(Token::Fun) {
-            self.fun_declaration()
+            self.fun_declaration();
         } else if self.match_token(Token::Var) {
-            self.var_declaration()
+            self.var_declaration();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self.block();
-            self.end_scope()
+            self.end_scope();
         } else {
             // Declaration Control Flow Fallback
             self.statement();
         }
-
-        // if self.panic_mode {
-        //     self.syncronize()
-        // }
     }
 
     /// Where the fun starts
     /// 
-    fn fun_declaration(&mut self) -> ParserResult<()> {
+    fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
         self.advance();
 
@@ -134,7 +92,6 @@ impl<R: std::io::Read> Parser<R> {
             current,
             previous,
             had_error: false,
-            panic_mode: false,
             scopes: vec![],
         };
 
@@ -167,7 +124,7 @@ impl<R: std::io::Read> Parser<R> {
         /* End-of-scope are automatically handled by block() */
 
         let function = Value {
-            value: Primitive::Function(Rc::new(parser.end_compiler().unwrap())),
+            value: Primitive::Function(Rc::new(parser.end_compiler())),
             _type: Type::Fn,
             modifier: Modifier::Const,
         };
@@ -361,27 +318,27 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    pub fn syncronize(&mut self) {
-        self.panic_mode = false;
+    // pub fn syncronize(&mut self) {
+    //     self.error_handler.panic_mode = false;
 
-        while self.current != Token::Eof {
-            if self.previous == Token::SemiColon {
-                match self.current {
-                    Token::Class
-                    | Token::Fun
-                    | Token::Var
-                    | Token::For
-                    | Token::If
-                    | Token::While
-                    | Token::Print
-                    | Token::Return => return,
-                    _ => (),
-                }
-            }
+    //     while self.current != Token::Eof {
+    //         if self.previous == Token::SemiColon {
+    //             match self.current {
+    //                 Token::Class
+    //                 | Token::Fun
+    //                 | Token::Var
+    //                 | Token::For
+    //                 | Token::If
+    //                 | Token::While
+    //                 | Token::Print
+    //                 | Token::Return => return,
+    //                 _ => (),
+    //             }
+    //         }
 
-            self.advance();
-        }
-    }
+    //         self.advance();
+    //     }
+    // }
 
     /// Parse further expression consuming semicolon on end.
     ///
@@ -611,7 +568,7 @@ impl<R: std::io::Read> Parser<R> {
             self.declaration();
         }
 
-        self.consume(Token::RightBrace, "Expected '}' end-of-block.");
+        self.consume(Token::RightBrace, "Expected '' end-of-block.");
     }
 
     /// Check if current Token matches argument Token.
@@ -740,7 +697,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
-    pub fn end_compiler(&mut self) -> Option<Function> {
+    pub fn end_compiler(&mut self) -> Function {
         self.emit_return();
 
         if !self.had_error {
@@ -749,26 +706,20 @@ impl<R: std::io::Read> Parser<R> {
             disassemble_chunk(&self.function.chunk, self.function.name.to_string());
         }
 
-        match self.had_error {
-            false => Some(self.function.clone()),
-            true => None,
-        }
+        std::mem::replace(&mut self.function, Function::default())
     }
 
     /// Panic on errors with panic_mode handling.
     ///
-    pub fn error(&self, msg: &str) {
-        if self.panic_mode {
-            return;
-        }
-
+    pub fn error(&mut self, msg: &str) {
         let token = &self.current;
-        match token {
-            Token::Eof => println!(" at end."),
-            Token::Error(_) => (),
-            _ => println!(" at line {}", self.lexer.as_ref().unwrap().line),
-        }
 
-        println!("{}", msg);
+        let complement = match token {
+            Token::Eof => String::from(" at end."),
+            Token::Error(s) => format!("{} at line {}", s, self.lexer.as_ref().unwrap().line),
+            _ => format!("at line {}", self.lexer.as_ref().unwrap().line),
+        };
+
+        panic!("{}", format!("{msg}, {complement} -> {}", self.lexer.as_mut().unwrap().curr_tok()));
     }
 }

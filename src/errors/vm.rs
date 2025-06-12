@@ -8,7 +8,6 @@ pub struct InterpretError {
     _type: InterpretResult
 }
 
-
 #[derive(Debug)]
 pub enum InterpretResult {
     RuntimeError,

@@ -1,3 +1,4 @@
 use crate::primitives::primitive::Function;
 
-pub type ParserResult = std::result::Result<Function, Vec<(u32, &'static str)>>;
+// ::<func | (word on source, error msg)> 
+pub type ParserResult = std::result::Result<Function, (&'static str, &'static str)>;

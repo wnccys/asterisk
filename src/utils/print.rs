@@ -16,8 +16,6 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
     }
 
     print!("{offset:0>4} ");
-    verify_lines(offset, chunk);
-
     let instruction = &chunk.code[offset];
 
     let offset = match instruction {
@@ -112,12 +110,4 @@ pub fn print_stack(stack: &Stack) {
         print_value(&value.borrow().value);
     }
     println!("===end-trace===")
-}
-
-fn verify_lines(offset: usize, chunk: &Chunk) {
-    if offset > 0 && chunk.lines[offset] == chunk.lines[offset - 1] {
-        print!("| ");
-    } else {
-        print!("{} ", chunk.lines[offset]);
-    }
 }

@@ -41,15 +41,13 @@ pub struct Chunk {
     pub code: Vec<OpCode>,
     /// Where values are saved before being used.
     pub constants: Vec<Primitive>,
-    pub lines: Vec<u32>,
 }
 
 impl Chunk {
     /// Push to code vec.
     ///
-    pub fn write(&mut self, byte: OpCode, line: u32) {
+    pub fn write(&mut self, byte: OpCode) {
         self.code.push(byte);
-        self.lines.push(line);
     }
 
     /// Push to constants vec.

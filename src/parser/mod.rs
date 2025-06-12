@@ -646,7 +646,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Emit: param code
     ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.function.chunk.write(code, self.lexer.as_ref().unwrap().line);
+        self.function.chunk.write(code);
     }
 
     /// Write value to constant vec and set it's bytecode.

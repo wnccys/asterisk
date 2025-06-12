@@ -1,5 +1,5 @@
 use super::{primitive::Primitive, types::{Modifier, Type}};
-use std::ops::{Div, Mul, Add};
+use std::ops::{Div, Mul, Add, Not};
 
 /// All Asterisk Values definition.
 ///

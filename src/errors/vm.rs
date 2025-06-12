@@ -4,8 +4,8 @@ pub type VmResult<T> = Result<T, VmError>;
 
 #[derive(Debug)]
 pub struct VmError {
-    message: &'static str,
-    _type: InterpretResult
+    pub message: &'static str,
+    pub _type: InterpretResult
 }
 
 impl VmError {

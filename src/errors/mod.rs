@@ -1,2 +1,2 @@
-pub mod parser_errors;
-pub mod vm_errors;
+pub mod parser;
+pub mod vm;

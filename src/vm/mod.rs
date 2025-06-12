@@ -57,10 +57,9 @@ impl Vm {
     ///
     pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<InterpretResult> {
         self.init_std_lib();
-        let intrs = compile(source_code);
+        let main = compile(source_code);
 
-
-        self.call(Rc::new(intrs), 0);
+        self.call(Rc::new(main), 0);
 
         self.run()
     }

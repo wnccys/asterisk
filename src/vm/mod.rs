@@ -6,7 +6,7 @@ use std::rc::Rc;
 #[allow(unused)]
 use std::time::Duration;
 
-use crate::{errors::vm_errors::VmResult, primitives::native::duration};
+use crate::{errors::vm::VmResult, primitives::native::duration};
 use crate::primitives::primitive::NativeFn;
 use crate::vm::compiler::compile;
 use crate::vm::chunk::OpCode;
@@ -57,10 +57,10 @@ impl Vm {
     ///
     pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<InterpretResult> {
         self.init_std_lib();
-        let result = compile(source_code);
+        let intrs = compile(source_code);
 
 
-        self.call(Rc::new(result.unwrap().0), 0);
+        self.call(Rc::new(intrs), 0);
 
         self.run()
     }

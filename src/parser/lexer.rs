@@ -248,6 +248,7 @@ impl<R: std::io::Read> Lexer<R> {
             let ch = self.read_byte();
             if ch != b' ' { break; }
 
+            /* \x1B[4m{}\x1B[0m */
             word.push_str(&format!("{}\u{0334}", ch) as &str);
         }
 

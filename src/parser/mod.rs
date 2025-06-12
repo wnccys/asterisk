@@ -104,7 +104,7 @@ impl<R: std::io::Read> Parser<R> {
                 parser.function.arity += 1;
                 let local_name = match parser.get_current() {
                     Token::Identifier(name) => name,
-                    _ => panic!("Could not parse arguments.")
+                    _ => self.error("Could not parse arguments.")
                 };
                 parser.advance();
                 parser.parse_variable(modifier, local_name.clone());
@@ -143,7 +143,7 @@ impl<R: std::io::Read> Parser<R> {
         let modifier = self.parse_modifier();
         let var_name = match self.get_current() {
             Token::Identifier(s) => s,
-            _ => panic!("Expect variable name.")
+            _ => self.error("Expect variable name.")
         };
         let global = self.parse_variable(modifier, var_name.clone());
 
@@ -165,7 +165,7 @@ impl<R: std::io::Read> Parser<R> {
 
             self.emit_byte(OpCode::SetType(t));
         } else {
-            panic!("Uninitialized variables are not allowed.");
+            self.error("Uninitialized variables are not allowed.");
         }
 
         self.consume(
@@ -188,7 +188,7 @@ impl<R: std::io::Read> Parser<R> {
                 Modifier::Mut
             }
             Token::Identifier(_) => Modifier::Const,
-            _ => panic!("Error parsing variable."),
+            _ => self.error("Error parsing variable."),
         }
     }
 
@@ -221,7 +221,7 @@ impl<R: std::io::Read> Parser<R> {
                 Type::Ref(Rc::new(self.parse_var_type()))
             }
             Token::TypeDef(t) =>  { self.advance(); t },
-            _ => panic!("Invalid Var Type."),
+            _ => self.error("Invalid Var Type."),
         }
     }
 
@@ -686,7 +686,7 @@ impl<R: std::io::Read> Parser<R> {
             OpCode::JumpIfTrue(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfTrue(jump),
             OpCode::JumpIfFalse(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfFalse(jump),
             OpCode::Jump(_) =>          self.function.chunk.code[offset] = OpCode::Jump(jump),
-            _ => panic!("Invalid jump intruction."),
+            _ => self.error("Invalid jump intruction."),
         }
     }
 

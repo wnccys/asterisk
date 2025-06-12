@@ -6,6 +6,7 @@ use std::rc::Rc;
 #[allow(unused)]
 use std::time::Duration;
 
+use crate::errors::vm::{InterpretResult, VmError};
 use crate::{errors::vm::VmResult, primitives::native::duration};
 use crate::primitives::primitive::NativeFn;
 use crate::vm::compiler::compile;
@@ -15,13 +16,6 @@ use crate::utils::parse_type;
 #[allow(unused)]
 use crate::utils::print::{print_stack, print_value};
 use crate::primitives::{primitive::{Function, Primitive}, types::{Type, Modifier}, value::Value};
-
-#[derive(Debug, PartialEq)]
-pub enum InterpretResult {
-    Ok,
-    CompileError,
-    RuntimeError,
-}
 
 pub type Stack = Vec<Rc<RefCell<Value>>>;
 pub struct Vm {
@@ -36,7 +30,7 @@ pub struct CallFrame {
     pub function: Rc::<Function>,
     pub ip: *const OpCode,
     /* Init and final of frame stack scope range */
-    pub slots: (usize, usize),
+    pub arg_offset: usize,
 }
 
 impl Default for Vm {
@@ -51,15 +45,17 @@ impl Default for Vm {
 }
 
 impl Vm {
-    /// Parse a Vec<char> into valid asterisk state.
+    /// This function is the "compiler" itself, running chunk's Bytecodes.
     ///
-    /// This function is the compiler itself, compile the source code into chunks and run it's emitted Bytecodes.
-    ///
-    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<InterpretResult> {
+    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<()> {
         self.init_std_lib();
+
         let main = compile(source_code);
 
         self.call(Rc::new(main), 0);
+
+        #[cfg(feature = "debug")]
+        println!("Constants Vec: {:?}", self.frames.last_mut().unwrap().function.chunk.constants);
 
         self.run()
     }
@@ -77,12 +73,7 @@ impl Vm {
 
     /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
     ///
-    fn run(&mut self) -> InterpretResult {
-        let op_status = InterpretResult::CompileError;
-
-        #[cfg(feature = "debug")]
-        println!("Constants Vec: {:?}", self.frames.last_mut().unwrap().function.chunk.constants);
-
+    fn run(&mut self) -> VmResult<()> {
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
@@ -100,9 +91,7 @@ impl Vm {
                     let _return = self
                         .stack
                         .pop()
-                        .expect(
-                            &format!("Could not pop empty value from: {:?}", self.frames.last().unwrap().function.name)
-                        );
+                        .ok_or(VmError::new("Could not return from function", InterpretResult::CompilerError))?;
 
                     let last_frame = self.frames.pop().unwrap();
                     let last_frame_args = last_frame.function.arity;
@@ -113,52 +102,25 @@ impl Vm {
                     }
 
                     if self.frames.len() == 0 {
-                        return InterpretResult::Ok;
+                        return Ok(());
                     }
 
-                    /* Advance current call ip offset by 1 */
                     unsafe { self.advance_ip() }
                     self.stack.push(_return);
 
                     continue
                 }
                 OpCode::Negate => {
-                    {
-                        let to_be_negated = self.stack.pop().unwrap().take();
+                    let n = self.stack.pop().unwrap().take();
 
-                        match to_be_negated {
-                            Value {
-                                value: Primitive::Int(value),
-                                modifier,
-                                _type,
-                            } => self.stack.push(Rc::new(RefCell::new(Value {
-                                value: Primitive::Int(-value),
-                                modifier,
-                                _type,
-                            }))),
-                            Value {
-                                value: Primitive::Float(value),
-                                modifier,
-                                _type,
-                            } => self.stack.push(Rc::new(RefCell::new(Value {
-                                value: Primitive::Float(-value),
-                                modifier,
-                                _type,
-                            }))),
-                            Value {
-                                value: Primitive::Bool(value),
-                                modifier,
-                                _type,
-                            } => self.stack.push(Rc::new(RefCell::new(Value {
-                                value: Primitive::Bool(!value),
-                                modifier,
-                                _type,
-                            }))),
-                            _ => panic!("Operation not allowed."),
-                        }
+                    match n {
+                        Value { _type: Type::Bool, .. } | Value { _type: Type::Float, .. } | Value { _type: Type::Int, .. }
+                            => {
+                                self.stack.push(Rc::new(RefCell::new(!n)));
+                                VmResult::Ok(())?
+                            }
+                        _ => VmResult::Err(VmError::new("Could not negate value.", InterpretResult::RuntimeError))?
                     }
-
-                    InterpretResult::Ok
                 }
                 OpCode::Not => {
                     let to_be_negated = self.stack.last().unwrap().take();
@@ -169,23 +131,15 @@ impl Vm {
                         }
                         _ => panic!("Value should be a boolean."),
                     };
-
-                    InterpretResult::Ok
                 }
                 OpCode::Add => {
-                    self.binary_op("+");
-
-                    InterpretResult::Ok
+                    self.binary_op("+")?
                 }
                 OpCode::Multiply => {
-                    self.binary_op("*");
-
-                    InterpretResult::Ok
+                    self.binary_op("*")?
                 }
                 OpCode::Divide => {
-                    self.binary_op("/");
-
-                    InterpretResult::Ok
+                    self.binary_op("/")?
                 }
                 OpCode::True => {
                     self.stack.push(Rc::new(RefCell::new(Value {
@@ -193,8 +147,6 @@ impl Vm {
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
                     })));
-
-                    InterpretResult::Ok
                 }
                 OpCode::False => {
                     self.stack.push(Rc::new(RefCell::new(Value {
@@ -202,8 +154,6 @@ impl Vm {
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
                     })));
-
-                    InterpretResult::Ok
                 }
                 OpCode::Equal => {
                     let a = self.stack.pop().unwrap();
@@ -214,8 +164,6 @@ impl Vm {
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
                     })));
-
-                    InterpretResult::Ok
                 }
                 OpCode::PartialEqual => {
                     let a = self.stack.pop().unwrap();
@@ -227,18 +175,12 @@ impl Vm {
                         modifier: Modifier::Unassigned,
                         _type: Type::Bool,
                     })));
-
-                    InterpretResult::Ok
                 }
                 OpCode::Greater => {
-                    self.binary_op(">");
-
-                    InterpretResult::Ok
+                    self.binary_op(">")?
                 }
                 OpCode::Less => {
-                    self.binary_op("<");
-
-                    InterpretResult::Ok
+                    self.binary_op("<")?
                 }
                 OpCode::Print => {
                     let value = self
@@ -247,18 +189,12 @@ impl Vm {
                         .expect("Could not find value to print.");
 
                     print_value(&value.borrow().value);
-
-                    InterpretResult::Ok
                 }
                 OpCode::Nil => {
                     self.stack.push(Rc::new(RefCell::new(Value::default())));
-
-                    InterpretResult::Ok
                 }
                 OpCode::Pop => {
                     self.stack.pop().expect("Error on pop: stack underflow.");
-
-                    InterpretResult::Ok
                 }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
@@ -270,12 +206,11 @@ impl Vm {
                         modifier: Modifier::Unassigned,
                         _type,
                     })));
-
-                    InterpretResult::Ok
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier) => {
-                    let var_offset = self.frames.last().unwrap().slots.0;
+                    let var_offset = self.frames.last().unwrap().arg_offset;
+
                     let variable = Rc::clone(
                         &self.stack[
                             // checked_sub handle global and defined function args handling
@@ -293,8 +228,6 @@ impl Vm {
                     }
 
                     variable.borrow_mut().modifier = modifier;
-
-                    InterpretResult::Ok
                 }
                 /*
                     Set new value to local variable.
@@ -318,19 +251,15 @@ impl Vm {
                     let value = self.stack.pop().unwrap().take();
 
                     variable.borrow_mut().value = value.value;
-
-                    InterpretResult::Ok
                 }
                 /*
                     Get value from value position and load it into the top of stack,
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().slots.0.checked_sub(1).unwrap_or(0))]);
+                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().arg_offset.checked_sub(1).unwrap_or(0))]);
 
                     self.stack.push(variable);
-
-                    InterpretResult::Ok
                 }
                 /* 
                     As local variables are defined as not the same as global ones, it needs a different treatment
@@ -356,8 +285,6 @@ impl Vm {
                     };
 
                     self.stack.push(Rc::new(RefCell::new(_ref)));
-
-                    InterpretResult::Ok
                 }
                 /*
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
@@ -386,8 +313,6 @@ impl Vm {
                         }
                         _ => panic!("Invalid global variable name."),
                     }
-
-                    InterpretResult::Ok
                 }
                 /* 
                     Get address from get globals and set it in stack.
@@ -405,8 +330,6 @@ impl Vm {
                     };
 
                     self.stack.push(Rc::clone(&value));
-
-                    InterpretResult::Ok
                 }
                 /*
                     Re-assign to already set global variable.
@@ -438,15 +361,11 @@ impl Vm {
                         let _ = self.globals.delete(name);
                         panic!("Global variable is used before it's initialization.");
                     }
-
-                    InterpretResult::Ok
                 }
                 /* Let var type information available on stack, this is used in explicit variable declaration */
                 OpCode::SetType(t) => {
                     let dummy_value = Value { _type: t, ..Default::default() };
                     self.stack.push(Rc::new(RefCell::new(dummy_value)));
-
-                    InterpretResult::Ok
                 }
                 /* 
                     Get var name from constants and craft a ref value based on globals' referenced Value 
@@ -482,8 +401,6 @@ impl Vm {
                     }
 
                     self.stack.push(Rc::new(RefCell::new(_ref)));
-
-                    InterpretResult::Ok
                 }
                 OpCode::JumpIfFalse(offset) => {
                     let value = Rc::clone(self.stack.last().unwrap());
@@ -498,9 +415,7 @@ impl Vm {
                             }
                         }
                         _ => ()
-                    }
-
-                    InterpretResult::Ok
+                    };
                 }
                 OpCode::JumpIfTrue(offset) => {
                     let value = Rc::clone(self.stack.last().unwrap());
@@ -515,9 +430,7 @@ impl Vm {
                             }
                         }
                         _ => ()
-                    }
-
-                    InterpretResult::Ok
+                    };
                 }
                 OpCode::Jump(offset) => {
                     unsafe { self.jump_ip(offset as isize); }
@@ -539,7 +452,7 @@ impl Vm {
             unsafe { self.advance_ip() }
         }
 
-        op_status
+        Ok(())
     }
 
     unsafe fn advance_ip(&mut self) {
@@ -591,18 +504,23 @@ impl Vm {
         let frame = CallFrame {
             function,
             ip: bytecode_ptr,
-            slots: (stack_len - args_count, stack_len),
+            arg_offset: stack_len - args_count,
         };
 
         self.frames.push(frame);
 
-
         return true;
     }
 
-    fn binary_op(&mut self, op: &str) -> InterpretResult {
-        let b = Rc::clone(&self.stack.pop().expect("Value b not loaded."));
-        let a = Rc::clone(&self.stack.pop().expect("Value a not loaded"));
+    fn binary_op(&mut self, op: &str) -> VmResult<()> {
+        let b = Rc::clone(
+            &self.stack.pop()
+            .ok_or(VmError::new("Value b not loaded.", InterpretResult::RuntimeError))?
+        );
+
+        let a = Rc::clone(
+            &self.stack.pop().ok_or(VmError::new("Value a not loaded.", InterpretResult::RuntimeError))?
+        );
 
         let mut c = Value::default();
 
@@ -620,7 +538,7 @@ impl Vm {
         
         self.stack.push(Rc::new(RefCell::new(c)));
 
-        InterpretResult::Ok
+        Ok(())
     }
 
     fn runtime_error(&self) {

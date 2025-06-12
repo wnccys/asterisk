@@ -2,15 +2,14 @@ mod errors;
 mod macros;
 mod parser;
 mod objects;
-mod types;
 mod utils;
 mod primitives;
 mod vm;
 
+use vm::Vm;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Write};
-use std::{env, fs, io};
-use vm::{InterpretResult, Vm};
+use std::io::{BufRead, BufReader, Write};
+use std::{env, io};
 
 fn main() {
     let mut vm = Vm::default();
@@ -52,9 +51,5 @@ fn run_file(vm: &mut Vm, file_path: &str) {
     let input = File::open(file_path).unwrap();
     let source = BufReader::new(input);
 
-    match vm.interpret(source) {
-        InterpretResult::Ok => (),
-        InterpretResult::RuntimeError => std::process::exit(2),
-        InterpretResult::CompileError => std::process::exit(3),
-    }
+    vm.interpret(source);
 }

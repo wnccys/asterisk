@@ -240,4 +240,18 @@ impl<R: std::io::Read> Lexer<R> {
 
         self.next()
     }
+
+    pub fn curr_tok(&mut self) -> String {
+        let mut word = String::new();
+
+        
+        loop {
+            let ch = self.read_byte();
+            if ch != b' ' { break; }
+
+            word.push_str(&format!("{}\u{0334}", ch) as &str);
+        }
+
+        word
+    }
 }

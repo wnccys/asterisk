@@ -1,11 +1,20 @@
 use std::{error, fmt};
 
-pub type VmResult<T> = Result<T, Box<dyn error::Error>>;
+pub type VmResult<T> = Result<T, VmError>;
 
 #[derive(Debug)]
-pub struct InterpretError {
+pub struct VmError {
     message: &'static str,
     _type: InterpretResult
+}
+
+impl VmError {
+    pub fn new(message: &'static str, _type: InterpretResult) -> Self {
+        VmError {
+            message,
+            _type
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -14,7 +23,7 @@ pub enum InterpretResult {
     CompilerError,
 }
 
-impl fmt::Display for InterpretError {
+impl fmt::Display for VmError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self._type {
             InterpretResult::RuntimeError => write!(f, "Runtime error: {}", self.message),
@@ -23,5 +32,5 @@ impl fmt::Display for InterpretError {
     }
 }
 
-impl error::Error for InterpretError {}
+impl error::Error for VmError {}
 

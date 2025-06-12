@@ -1,6 +1,6 @@
 use std::{cell::RefCell, fmt::{self, Display}, rc::Rc};
 
-use crate::chunk::Chunk;
+use crate::vm::chunk::Chunk;
 
 use super::value::Value;
 
@@ -56,7 +56,6 @@ impl PartialEq for Function {
         self.name == other.name && self.arity == self.arity
     }
 }
-
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct NativeFn {

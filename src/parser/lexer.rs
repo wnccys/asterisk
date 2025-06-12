@@ -244,7 +244,6 @@ impl<R: std::io::Read> Lexer<R> {
     pub fn curr_tok(&mut self) -> String {
         let mut word = String::new();
 
-        
         loop {
             let ch = self.read_byte();
             if ch != b' ' { break; }

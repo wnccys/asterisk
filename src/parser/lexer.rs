@@ -230,7 +230,29 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number_hex(&mut self) -> Token {
-        todo!();
+        let mut hex: i64 = 0;
+
+        match (self.read_byte() - b'0') {
+            b'A'..b'F' | b'0'..b'9' =>  {
+
+            }
+            _ => panic!("invalid hex value.")
+        }
+
+        let mut dnm: u8 = 0;
+        
+        loop {
+            let ch = self.peek_byte();
+
+            match ch {
+                b'A'..b'F' | b'0'..b'9' => {
+
+                }
+                _ => break
+            }
+        }
+
+        Token::Integer(hex)
     }
 
     fn string(&mut self, t: u8) -> Token {

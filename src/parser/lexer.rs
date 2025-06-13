@@ -150,11 +150,14 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number(&mut self, num: u8) -> Token {
+        let n = self.read_byte();
+
         match num {
-            _ if num == b'b' => self.number_binary(),
-            _ if num == b'x' => self.number_hex(),
-            _ => {
+            _ if n == b'b' => self.number_binary(n),
+            _ if n == b'x' => self.number_hex(n),
+            _ if (n as char).is_ascii_digit() => {
                 let mut result = u64::try_from(num - b'0').unwrap();
+                result = result * 10 + ((n - b'0') as u64);
 
                 loop {
                     if !(self.peek_byte().clone() as char).is_ascii_digit() {
@@ -178,6 +181,7 @@ impl<R: std::io::Read> Lexer<R> {
 
                 Token::Integer(result as i64)
             }
+            _ => panic!("invalid number.")
         }
     }
 

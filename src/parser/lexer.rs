@@ -1,4 +1,4 @@
-use std::{io::Bytes, iter::Peekable};
+use std::{io::Bytes, iter::Peekable, ops::ShlAssign};
 
 use crate::primitives::types::Type;
 
@@ -153,8 +153,8 @@ impl<R: std::io::Read> Lexer<R> {
         let n = self.read_byte();
 
         match num {
-            _ if n == b'b' => self.number_binary(n),
-            _ if n == b'x' => self.number_hex(n),
+            _ if n == b'b' && num == b'0' => self.number_binary(),
+            _ if n == b'x' && num == b'0' => self.number_hex(),
             _ if (n as char).is_ascii_digit() => {
                 let mut result = u64::try_from(num - b'0').unwrap();
                 result = result * 10 + ((n - b'0') as u64);
@@ -203,7 +203,30 @@ impl<R: std::io::Read> Lexer<R> {
     }
 
     fn number_binary(&mut self) -> Token {
-        todo!();
+        let mut bnr: i64 = (self.read_byte() - b'0') as i64;
+        if bnr != 1 && bnr != 0 { panic!("invalid binary number.") }
+
+        loop {
+            // binary number can be represented as 8chars_8chars_8chars.. in a maximum of 8 chunks (asterisk integer type is maximum 64bits long);
+            for _ in 0..8 {
+                // 2 is a escape for chars that are before 0 in ASCII table thus must be checked_sub.
+                let ch = self.peek_byte().checked_sub(b'0').unwrap_or(2);
+                if ch != 1 && ch != 0 { break; }
+                self.read_byte();
+
+                bnr <<= 1;
+                bnr = bnr.checked_add(ch as i64).expect("binary overflow.");
+            }
+
+            dbg!(&bnr);
+            dbg!(*self.peek_byte() as char);
+
+            if *self.peek_byte() != b'_' { break; }
+            self.read_byte();
+        }
+        dbg!("====", &bnr);
+
+        Token::Integer(bnr)
     }
 
     fn number_hex(&mut self) -> Token {
@@ -316,5 +339,9 @@ impl<R: std::io::Read> Lexer<R> {
         }
 
         word
+    }
+
+    fn error(&mut self) {
+
     }
 }

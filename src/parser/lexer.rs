@@ -73,7 +73,7 @@ impl<R: std::io::Read> Lexer<R> {
     pub fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
-            line: 1,
+            line: 0,
         }
     }
 
@@ -289,6 +289,7 @@ impl<R: std::io::Read> Lexer<R> {
         self.next()
     }
 
+    /// FIXME
     pub fn curr_tok(&mut self) -> String {
         let mut word = String::new();
 

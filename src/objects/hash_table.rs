@@ -1,6 +1,9 @@
 use crate::utils::hasher::FNV1aHasher;
 use std::{
-    cell::RefCell, fmt::Display, hash::{Hash, Hasher}, rc::Rc
+    cell::RefCell,
+    fmt::Display,
+    hash::{Hash, Hasher},
+    rc::Rc,
 };
 
 #[derive(Debug)]
@@ -31,18 +34,17 @@ where
         let entry = self.find_mut(&key);
         let is_new = entry.is_none();
 
-
-        /* 
+        /*
             Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
         */
         if is_new {
             *entry = Some((key.clone(), Rc::new(RefCell::new(value))));
         } else {
-            *entry.as_ref().unwrap().1.borrow_mut() = value; 
+            *entry.as_ref().unwrap().1.borrow_mut() = value;
         }
 
         /* If key already exists, return false (no entry was added) and assign new value to bucket */
-        return is_new
+        return is_new;
     }
 
     /// Get value given a key
@@ -54,7 +56,9 @@ where
     pub fn delete(&mut self, key: &K) -> bool {
         let entry = self.find_mut(key);
 
-        if entry.is_none() { return false }
+        if entry.is_none() {
+            return false;
+        }
 
         /* Take already set key and a tombstone value */
         *entry.as_ref().unwrap().1.borrow_mut() = V::default();
@@ -147,7 +151,11 @@ pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize
 
 #[cfg(test)]
 mod tests {
-    use crate::primitives::{primitive::Primitive, types::{Modifier, Type}, value::Value};
+    use crate::primitives::{
+        primitive::Primitive,
+        types::{Modifier, Type},
+        value::Value,
+    };
 
     use super::*;
 

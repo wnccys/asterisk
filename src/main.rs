@@ -1,15 +1,15 @@
 mod errors;
 mod macros;
-mod parser;
 mod objects;
-mod utils;
+mod parser;
 mod primitives;
+mod utils;
 mod vm;
 
-use vm::Vm;
 use std::fs::File;
 use std::io::{BufRead, BufReader, Write};
 use std::{env, io};
+use vm::Vm;
 
 fn main() {
     let mut vm = Vm::default();

@@ -6,35 +6,74 @@ use crate::primitives::types::Type;
 #[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     // Single char tokens
-    LeftParen, RightParen, LeftBrace, RightBrace, Comma,
-    Dot, Minus, Plus, Colon, SemiColon,
-    Slash, Star, Ampersand,
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Colon,
+    SemiColon,
+    Slash,
+    Star,
+    Ampersand,
 
     // One or two char tokens
-    Bang, BangEqual, Equal, EqualEqual, Greater,
-    GreaterEqual, Less, LessEqual,
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
     // Literals
-
-    Identifier(String), String(Vec<u8>), Float(f64), Integer(i64), Nil,
+    Identifier(String),
+    String(Vec<u8>),
+    Float(f64),
+    Integer(i64),
+    Nil,
     // Keywords
-    And, Class, Case, Const, Continue,
-    Default, Else, False, For, Fun,
-    If, Modifier, TypeDef(Type), Or, Print,
-    Return, Switch, Super, This, True,
-    Var, While, Comment, Error(&'static str), Eof,
+    And,
+    Class,
+    Case,
+    Const,
+    Continue,
+    Default,
+    Else,
+    False,
+    For,
+    Fun,
+    If,
+    Modifier,
+    TypeDef(Type),
+    Or,
+    Print,
+    Return,
+    Switch,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+    Comment,
+    Error(&'static str),
+    Eof,
 }
 
 #[derive(Debug)]
 pub struct Lexer<R: std::io::Read> {
-    source: Peekable::<Bytes::<R>>,
-    pub line: u32 
+    source: Peekable<Bytes<R>>,
+    pub line: u32,
 }
 
 impl<R: std::io::Read> Lexer<R> {
     pub fn new(source: R) -> Self {
         Lexer {
             source: source.bytes().peekable(),
-            line: 1
+            line: 1,
         }
     }
 
@@ -42,8 +81,11 @@ impl<R: std::io::Read> Lexer<R> {
         let byt = self.read_byte();
 
         match byt {
-            b' ' | b'\t' | b'\r'  => self.next(),
-            b'\n' => { self.line+=1; self.next() },
+            b' ' | b'\t' | b'\r' => self.next(),
+            b'\n' => {
+                self.line += 1;
+                self.next()
+            }
             b'(' => Token::LeftParen,
             b')' => Token::RightParen,
             b'{' => Token::LeftBrace,
@@ -60,7 +102,7 @@ impl<R: std::io::Read> Lexer<R> {
             b'=' => self.check_ahead(b'=', Token::Equal, Token::EqualEqual),
             b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
             b'<' => self.check_ahead(b'=', Token::Less, Token::LessEqual),
-            b'/' =>  {
+            b'/' => {
                 if *self.peek_byte() == b'/' {
                     self.read_byte();
                     self.comment(false)
@@ -70,12 +112,12 @@ impl<R: std::io::Read> Lexer<R> {
                 } else {
                     Token::Slash
                 }
-            },
+            }
             b'0'..=b'9' => self.number(byt),
             b'\'' | b'"' => self.string(byt),
             b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
             b'\0' => Token::Eof,
-            _ => Token::Error("Invalid Token")
+            _ => Token::Error("Invalid Token"),
         }
     }
 
@@ -86,7 +128,7 @@ impl<R: std::io::Read> Lexer<R> {
             None => &b'\0',
         }
     }
-    
+
     fn next_byte(&mut self) -> Option<u8> {
         self.source.next().and_then(|r| Some(r.unwrap()))
     }
@@ -95,7 +137,7 @@ impl<R: std::io::Read> Lexer<R> {
         match self.source.next() {
             Some(Ok(ch)) => ch,
             Some(_) => panic!("error reading byte on 0 line {}", self.line),
-            None => b'\0'
+            None => b'\0',
         }
     }
 
@@ -109,24 +151,24 @@ impl<R: std::io::Read> Lexer<R> {
 
     fn number(&mut self, num: u8) -> Token {
         match num {
-            _ if num == b'b' => {
-                self.number_binary()
-            }
-            _ if num == b'x' => {
-                self.number_hex()
-            }
+            _ if num == b'b' => self.number_binary(),
+            _ if num == b'x' => self.number_hex(),
             _ => {
                 let mut result = u64::try_from(num - b'0').unwrap();
 
                 loop {
-                    if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
+                    if !(self.peek_byte().clone() as char).is_ascii_digit() {
+                        break;
+                    }
 
                     let n = self.next_byte().unwrap();
 
                     result = result
-                        .checked_mul(10).expect("number overflow")
-                        .checked_add((n - b'0') as u64).expect("cannot add {n} to {result}");
-                };
+                        .checked_mul(10)
+                        .expect("number overflow")
+                        .checked_add((n - b'0') as u64)
+                        .expect("cannot add {n} to {result}");
+                }
 
                 if *self.peek_byte() == b'.' {
                     self.read_byte();
@@ -141,13 +183,15 @@ impl<R: std::io::Read> Lexer<R> {
 
     fn number_float(&mut self, first_half: u64) -> Token {
         let mut result = 0.0;
-        let mut divisor= 1.0;
+        let mut divisor = 1.0;
 
         loop {
-            if !(self.peek_byte().clone() as char).is_ascii_digit() { break; }
+            if !(self.peek_byte().clone() as char).is_ascii_digit() {
+                break;
+            }
             let ch = self.read_byte();
 
-            result = result + ((ch - b'0') as f64)/(10.0 * divisor);
+            result = result + ((ch - b'0') as f64) / (10.0 * divisor);
             divisor += 1.0;
         }
 
@@ -167,7 +211,9 @@ impl<R: std::io::Read> Lexer<R> {
 
         loop {
             let ch = self.read_byte();
-            if ch == t { break; }
+            if ch == t {
+                break;
+            }
 
             str.push(ch);
         }
@@ -185,7 +231,7 @@ impl<R: std::io::Read> Lexer<R> {
                     self.read_byte();
                     word.push(t);
                 }
-                _ => break
+                _ => break,
             }
         }
 
@@ -233,7 +279,9 @@ impl<R: std::io::Read> Lexer<R> {
             }
             false => {
                 while let Some(c) = self.next_byte() {
-                    if c == b'\n' { break }
+                    if c == b'\n' {
+                        break;
+                    }
                 }
             }
         }
@@ -246,7 +294,9 @@ impl<R: std::io::Read> Lexer<R> {
 
         loop {
             let ch = self.read_byte();
-            if ch != b' ' { break; }
+            if ch != b' ' {
+                break;
+            }
 
             /* \x1B[4m{}\x1B[0m */
             word.push_str(&format!("{}\u{0334}", ch) as &str);

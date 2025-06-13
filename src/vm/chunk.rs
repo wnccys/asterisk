@@ -1,4 +1,7 @@
-use crate::primitives::{types::{Type, Modifier}, primitive::Primitive};
+use crate::primitives::{
+    primitive::Primitive,
+    types::{Modifier, Type},
+};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum OpCode {

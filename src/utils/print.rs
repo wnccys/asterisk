@@ -1,5 +1,5 @@
-use crate::vm::chunk::{Chunk, OpCode};
 use crate::primitives::primitive::Primitive;
+use crate::vm::chunk::{Chunk, OpCode};
 use crate::vm::Stack;
 
 #[allow(unused)]
@@ -35,13 +35,15 @@ fn disassemble_instruction(chunk: &Chunk, offset: usize) {
         OpCode::Print => simple_instruction("OP_PRINT", offset),
         OpCode::Nil => simple_instruction("OP_NIL", offset),
         OpCode::Pop => simple_instruction("OP_POP", offset),
-        OpCode::DefineGlobal(index, _) => constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
+        OpCode::DefineGlobal(index, _) => {
+            constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset)
+        }
         OpCode::GetGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetGlobal(index) => constant_instruction("OP_SET_GLOBAL", chunk, index, offset),
         OpCode::GetLocal(index) => byte_instruction("OP_GET_LOCAL", chunk, index, offset),
         OpCode::SetLocal(index, _) => byte_instruction("OP_SET_LOCAL", chunk, index, offset),
         OpCode::SetRefGlobal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
-        OpCode::DefineLocal(_, _) => simple_instruction("DEFINE_LOCAL", offset),// constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
+        OpCode::DefineLocal(_, _) => simple_instruction("DEFINE_LOCAL", offset), // constant_instruction("OP_DEFINE_GLOBAL", chunk, index, offset),
         OpCode::SetRefLocal(index) => constant_instruction("OP_GET_GLOBAL", chunk, index, offset),
         OpCode::SetType(_) => simple_instruction("OP_SET_TYPE", offset),
         OpCode::JumpIfFalse(op_offset) => jump_instruction("OP_JUMP_IF_FALSE", op_offset, offset),
@@ -92,7 +94,7 @@ pub fn print_value(value: &Primitive) {
             let ref_value = &value_ptr.borrow().value;
             print!("&");
             print_value(&ref_value);
-        },
+        }
         Primitive::Function(f) => {
             println!("&fn<{}, {}>", f.arity, f.name);
         }

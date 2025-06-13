@@ -1,4 +1,8 @@
-use std::{cell::RefCell, fmt::{self, Display}, rc::Rc};
+use std::{
+    cell::RefCell,
+    fmt::{self, Display},
+    rc::Rc,
+};
 
 use crate::vm::chunk::Chunk;
 
@@ -38,7 +42,7 @@ pub struct Function {
 #[derive(Debug, PartialEq)]
 pub enum FunctionType {
     Fn,
-    Script
+    Script,
 }
 
 impl Function {
@@ -60,12 +64,14 @@ impl PartialEq for Function {
 #[derive(Debug, PartialEq, Clone)]
 pub struct NativeFn {
     pub arity: usize,
-    pub _fn: fn(&[Rc<RefCell<Value>>]) -> Value
+    pub _fn: fn(&[Rc<RefCell<Value>>]) -> Value,
 }
 
 impl NativeFn {
     pub fn call(&mut self, args: &[Rc<RefCell<Value>>]) -> Value {
-        if args.len() != self.arity { panic!("Expect {} but got {} arguments.", args.len(), self.arity) }
+        if args.len() != self.arity {
+            panic!("Expect {} but got {} arguments.", args.len(), self.arity)
+        }
 
         (self._fn)(args)
     }

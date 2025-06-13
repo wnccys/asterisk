@@ -7,15 +7,19 @@ use std::rc::Rc;
 use std::time::Duration;
 
 use crate::errors::vm::{InterpretResult, VmError};
-use crate::{errors::vm::VmResult, primitives::native::duration};
-use crate::primitives::primitive::NativeFn;
-use crate::vm::compiler::compile;
-use crate::vm::chunk::OpCode;
 use crate::objects::hash_table::HashTable;
+use crate::primitives::primitive::NativeFn;
+use crate::primitives::{
+    primitive::{Function, Primitive},
+    types::{Modifier, Type},
+    value::Value,
+};
 use crate::utils::parse_type;
 #[allow(unused)]
 use crate::utils::print::{print_stack, print_value};
-use crate::primitives::{primitive::{Function, Primitive}, types::{Type, Modifier}, value::Value};
+use crate::vm::chunk::OpCode;
+use crate::vm::compiler::compile;
+use crate::{errors::vm::VmResult, primitives::native::duration};
 
 pub type Stack = Vec<Rc<RefCell<Value>>>;
 pub struct Vm {
@@ -27,7 +31,7 @@ pub struct Vm {
 
 #[derive(Debug)]
 pub struct CallFrame {
-    pub function: Rc::<Function>,
+    pub function: Rc<Function>,
     pub ip: *const OpCode,
     /* Init and final of frame stack scope range */
     pub arg_offset: usize,
@@ -55,19 +59,25 @@ impl Vm {
         self.call(Rc::new(main), 0);
 
         #[cfg(feature = "debug")]
-        println!("Constants Vec: {:?}", self.frames.last_mut().unwrap().function.chunk.constants);
+        println!(
+            "Constants Vec: {:?}",
+            self.frames.last_mut().unwrap().function.chunk.constants
+        );
 
         self.run()
     }
 
     fn init_std_lib(&mut self) {
         self.globals.insert(
-            &"duration".to_string(), 
+            &"duration".to_string(),
             Value {
-                value: Primitive::NativeFunction(NativeFn { arity: 0, _fn: duration }),
+                value: Primitive::NativeFunction(NativeFn {
+                    arity: 0,
+                    _fn: duration,
+                }),
                 _type: Type::NativeFn,
-                modifier: Modifier::Const 
-            }
+                modifier: Modifier::Const,
+            },
         );
     }
 
@@ -79,8 +89,13 @@ impl Vm {
             {
                 print!("\n");
                 print_stack(&self.stack);
-                println!("current frame: {:?}", self.frames.last().unwrap().function.name);
-                println!("current code: {:?}", unsafe { self.frames.last().unwrap().ip.read() });
+                println!(
+                    "current frame: {:?}",
+                    self.frames.last().unwrap().function.name
+                );
+                println!("current code: {:?}", unsafe {
+                    self.frames.last().unwrap().ip.read()
+                });
             }
 
             #[cfg(feature = "delay-exec")]
@@ -88,10 +103,10 @@ impl Vm {
 
             match unsafe { self.frames.last().unwrap().ip.read() } {
                 OpCode::Return => {
-                    let _return = self
-                        .stack
-                        .pop()
-                        .ok_or(VmError::new("Could not return from function", InterpretResult::CompilerError))?;
+                    let _return = self.stack.pop().ok_or(VmError::new(
+                        "Could not return from function",
+                        InterpretResult::CompilerError,
+                    ))?;
 
                     let last_frame = self.frames.pop().unwrap();
                     let last_frame_args = last_frame.function.arity;
@@ -108,39 +123,46 @@ impl Vm {
                     unsafe { self.advance_ip() }
                     self.stack.push(_return);
 
-                    continue
+                    continue;
                 }
                 OpCode::Negate => {
                     let n = self.stack.pop().unwrap().take();
 
                     match n {
-                        Value { _type: Type::Bool, .. } | Value { _type: Type::Float, .. } | Value { _type: Type::Int, .. }
-                            => {
-                                self.stack.push(Rc::new(RefCell::new(!n)));
-                                VmResult::Ok(())?
-                            }
-                        _ => VmResult::Err(VmError::new("Could not negate value.", InterpretResult::RuntimeError))?
+                        Value {
+                            _type: Type::Bool, ..
+                        }
+                        | Value {
+                            _type: Type::Float, ..
+                        }
+                        | Value {
+                            _type: Type::Int, ..
+                        } => {
+                            self.stack.push(Rc::new(RefCell::new(!n)));
+                            VmResult::Ok(())?
+                        }
+                        _ => VmResult::Err(VmError::new(
+                            "Could not negate value.",
+                            InterpretResult::RuntimeError,
+                        ))?,
                     }
                 }
                 OpCode::Not => {
                     let to_be_negated = self.stack.last().unwrap().take();
 
                     match to_be_negated {
-                        Value { value: Primitive::Bool(value), .. } => {
+                        Value {
+                            value: Primitive::Bool(value),
+                            ..
+                        } => {
                             self.stack.last().unwrap().borrow_mut().value = Primitive::Bool(!value)
                         }
                         _ => panic!("Value should be a boolean."),
                     };
                 }
-                OpCode::Add => {
-                    self.binary_op("+")?
-                }
-                OpCode::Multiply => {
-                    self.binary_op("*")?
-                }
-                OpCode::Divide => {
-                    self.binary_op("/")?
-                }
+                OpCode::Add => self.binary_op("+")?,
+                OpCode::Multiply => self.binary_op("*")?,
+                OpCode::Divide => self.binary_op("/")?,
                 OpCode::True => {
                     self.stack.push(Rc::new(RefCell::new(Value {
                         value: Primitive::Bool(true),
@@ -176,17 +198,10 @@ impl Vm {
                         _type: Type::Bool,
                     })));
                 }
-                OpCode::Greater => {
-                    self.binary_op(">")?
-                }
-                OpCode::Less => {
-                    self.binary_op("<")?
-                }
+                OpCode::Greater => self.binary_op(">")?,
+                OpCode::Less => self.binary_op("<")?,
                 OpCode::Print => {
-                    let value = self
-                        .stack
-                        .pop()
-                        .expect("Could not find value to print.");
+                    let value = self.stack.pop().expect("Could not find value to print.");
 
                     print_value(&value.borrow().value);
                 }
@@ -198,7 +213,8 @@ impl Vm {
                 }
                 // Bring value from constants vector to stack
                 OpCode::Constant(var_index) => {
-                    let constant = self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
+                    let constant =
+                        self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
                     let _type = parse_type(&constant);
 
                     self.stack.push(Rc::new(RefCell::new(Value {
@@ -215,13 +231,17 @@ impl Vm {
                         &self.stack[
                             // checked_sub handle global and defined function args handling
                             var_index + var_offset.checked_sub(1).unwrap_or(var_offset)
-                        ]
+                        ],
                     );
 
                     /* Type Check */
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
                         if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!("Cannot assign {:?} to {:?}",  variable.borrow()._type, self.stack.last().unwrap().borrow()._type)
+                            panic!(
+                                "Cannot assign {:?} to {:?}",
+                                variable.borrow()._type,
+                                self.stack.last().unwrap().borrow()._type
+                            )
                         }
 
                         self.stack.pop();
@@ -238,7 +258,11 @@ impl Vm {
                     /* Type Check */
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
                         if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!("Cannot assign {:?} to {:?}", self.stack.last().unwrap().borrow()._type, variable.borrow()._type)
+                            panic!(
+                                "Cannot assign {:?} to {:?}",
+                                self.stack.last().unwrap().borrow()._type,
+                                variable.borrow()._type
+                            )
                         }
 
                         self.stack.pop();
@@ -257,11 +281,20 @@ impl Vm {
                     this way other operations can interact with the value.
                 */
                 OpCode::GetLocal(var_index) => {
-                    let variable = Rc::clone(&self.stack[var_index + (self.frames.last().unwrap().arg_offset.checked_sub(1).unwrap_or(0))]);
+                    let variable = Rc::clone(
+                        &self.stack[var_index
+                            + (self
+                                .frames
+                                .last()
+                                .unwrap()
+                                .arg_offset
+                                .checked_sub(1)
+                                .unwrap_or(0))],
+                    );
 
                     self.stack.push(variable);
                 }
-                /* 
+                /*
                     As local variables are defined as not the same as global ones, it needs a different treatment
                     Set ref to stack bucket where variable value is and let it available on stack.
                 */
@@ -271,7 +304,11 @@ impl Vm {
                     if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
                         if let Type::Ref(r) = &self.stack.last().unwrap().borrow()._type {
                             if **r != referenced_value.borrow()._type {
-                                panic!("Cannot assign {:?} to Ref({:?})", self.stack.last().unwrap().borrow()._type, referenced_value.borrow()._type);
+                                panic!(
+                                    "Cannot assign {:?} to Ref({:?})",
+                                    self.stack.last().unwrap().borrow()._type,
+                                    referenced_value.borrow()._type
+                                );
                             };
                         };
 
@@ -290,17 +327,24 @@ impl Vm {
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
                 OpCode::DefineGlobal(var_name_index, modifier) => {
-                    let var_name = &self.frames.last_mut().unwrap().function.chunk.constants[var_name_index];
+                    let var_name =
+                        &self.frames.last_mut().unwrap().function.chunk.constants[var_name_index];
 
                     let mut variable = match self.stack.pop().unwrap().take() {
                         /* This match only a dummy type specifier */
-                        Value { value: Primitive::Void(..), _type, .. } => {
+                        Value {
+                            value: Primitive::Void(..),
+                            _type,
+                            ..
+                        } => {
                             let value = self.stack.pop().unwrap().take();
 
-                            if value._type != _type { panic!("Cannot assign {:?} to {:?}", value._type, _type) }
+                            if value._type != _type {
+                                panic!("Cannot assign {:?} to {:?}", value._type, _type)
+                            }
 
                             value
-                        },
+                        }
                         /* Inferred Type, so no match is needed */
                         v => v,
                     };
@@ -314,12 +358,14 @@ impl Vm {
                         _ => panic!("Invalid global variable name."),
                     }
                 }
-                /* 
+                /*
                     Get address from get globals and set it in stack.
                     This means every value referencing this value is referencing the value itself, not a copy on stack as globals and stack are exchangeable.
                 */
                 OpCode::GetGlobal(var_index) => {
-                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants[var_index] {
+                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants
+                        [var_index]
+                    {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
@@ -335,7 +381,9 @@ impl Vm {
                     Re-assign to already set global variable.
                 */
                 OpCode::SetGlobal(name_index) => {
-                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants[name_index] {
+                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants
+                        [name_index]
+                    {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
                     };
@@ -351,7 +399,8 @@ impl Vm {
                     if variable.borrow()._type != to_be_inserted._type {
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
-                            to_be_inserted._type, variable.borrow()._type
+                            to_be_inserted._type,
+                            variable.borrow()._type
                         );
                     }
 
@@ -364,37 +413,44 @@ impl Vm {
                 }
                 /* Let var type information available on stack, this is used in explicit variable declaration */
                 OpCode::SetType(t) => {
-                    let dummy_value = Value { _type: t, ..Default::default() };
+                    let dummy_value = Value {
+                        _type: t,
+                        ..Default::default()
+                    };
                     self.stack.push(Rc::new(RefCell::new(dummy_value)));
                 }
-                /* 
-                    Get var name from constants and craft a ref value based on globals' referenced Value 
+                /*
+                    Get var name from constants and craft a ref value based on globals' referenced Value
                 */
                 OpCode::SetRefGlobal(var_index) => {
-                    let referenced_name = match self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone() {
-                        Primitive::String(str) => str,
-                        _ => panic!("Invalid var name reference."),
-                    };
+                    let referenced_name =
+                        match self.frames.last_mut().unwrap().function.chunk.constants[var_index]
+                            .clone()
+                        {
+                            Primitive::String(str) => str,
+                            _ => panic!("Invalid var name reference."),
+                        };
 
                     /* Get value to be referenced */
-                    let referenced_value = self.globals.get(&referenced_name).unwrap_or_else(|| panic!("Invalid referenced value."));
+                    let referenced_value = self
+                        .globals
+                        .get(&referenced_name)
+                        .unwrap_or_else(|| panic!("Invalid referenced value."));
                     let referenced_type = referenced_value.borrow()._type.clone();
 
                     let _ref = Value {
                         value: Primitive::Ref(referenced_value),
                         _type: Type::Ref(Rc::new(referenced_type)),
-                        modifier: Modifier::Const
+                        modifier: Modifier::Const,
                     };
 
                     match self.stack.pop() {
-                        Some(value) => {
-                            match value.take() {
-                                Value { _type, .. } => { 
-                                    if _type != _ref._type {
-                                        dbg!(&_type, &_ref._type);
-                                        panic!("Cannot assign {:?} to {:?}", _ref._type, _type)
-                                    };
-                                },
+                        Some(value) => match value.take() {
+                            Value { _type, .. } => {
+                                if _type != _ref._type {
+                                    dbg!(&_type, &_ref._type);
+                                    panic!("Cannot assign {:?} to {:?}", _ref._type, _type)
+                                };
                             }
                         },
                         None => (),
@@ -409,12 +465,14 @@ impl Vm {
                         Primitive::Bool(v) => {
                             if v == false {
                                 /* Set current opcode index to current + offset */
-                                unsafe { self.jump_ip(offset as isize); }
+                                unsafe {
+                                    self.jump_ip(offset as isize);
+                                }
 
                                 continue;
                             }
                         }
-                        _ => ()
+                        _ => (),
                     };
                 }
                 OpCode::JumpIfTrue(offset) => {
@@ -429,11 +487,13 @@ impl Vm {
                                 continue;
                             }
                         }
-                        _ => ()
+                        _ => (),
                     };
                 }
                 OpCode::Jump(offset) => {
-                    unsafe { self.jump_ip(offset as isize); }
+                    unsafe {
+                        self.jump_ip(offset as isize);
+                    }
                     continue;
                 }
                 OpCode::Loop(offset) => {
@@ -460,7 +520,9 @@ impl Vm {
     }
 
     unsafe fn jump_ip(&mut self, offset: isize) {
-        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset) };
+        unsafe {
+            self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset)
+        };
     }
 
     unsafe fn putback_ip(&mut self, offset: usize) {
@@ -469,37 +531,55 @@ impl Vm {
 
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
-        let callee = Rc::clone(&self.stack[self.stack.len().checked_sub(1).unwrap_or(0).checked_sub(args_count).unwrap_or(0)]);
+        let callee = Rc::clone(
+            &self.stack[self
+                .stack
+                .len()
+                .checked_sub(1)
+                .unwrap_or(0)
+                .checked_sub(args_count)
+                .unwrap_or(0)],
+        );
         let value = callee.borrow();
 
         match *value {
-            Value { value: Primitive::Function(ref f), .. } => {
+            Value {
+                value: Primitive::Function(ref f),
+                ..
+            } => {
                 return self.call(f.clone(), args_count);
-            },
-            Value { value: Primitive::NativeFunction(ref f), .. } => {
+            }
+            Value {
+                value: Primitive::NativeFunction(ref f),
+                ..
+            } => {
                 /* Pop function from stack so it remains clean */
                 self.stack.remove(self.stack.len() - 1 - args_count);
 
-                let args = &self.stack[(self.stack.len().checked_sub(1).unwrap_or(0) - args_count)..self.stack.len().checked_sub(1).unwrap_or(0)];
+                let args = &self.stack[(self.stack.len().checked_sub(1).unwrap_or(0) - args_count)
+                    ..self.stack.len().checked_sub(1).unwrap_or(0)];
 
                 self.stack.push(Rc::new(RefCell::new(f.clone().call(args))));
 
                 unsafe { self.advance_ip() }
-                false 
+                false
             }
             _ => panic!("Object {callee:?} is not callabble"),
         }
     }
 
-    fn call(&mut self, function: Rc::<Function>, args_count: usize) -> bool {
+    fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
-            println!("Expected {} but got {} arguments.", function.arity, args_count);
+            println!(
+                "Expected {} but got {} arguments.",
+                function.arity, args_count
+            );
 
             self.runtime_error();
         }
 
         let stack_len = self.stack.len();
-        let bytecode_ptr= &function.chunk.code[0] as *const OpCode;
+        let bytecode_ptr = &function.chunk.code[0] as *const OpCode;
 
         let frame = CallFrame {
             function,
@@ -513,14 +593,15 @@ impl Vm {
     }
 
     fn binary_op(&mut self, op: &str) -> VmResult<()> {
-        let b = Rc::clone(
-            &self.stack.pop()
-            .ok_or(VmError::new("Value b not loaded.", InterpretResult::RuntimeError))?
-        );
+        let b = Rc::clone(&self.stack.pop().ok_or(VmError::new(
+            "Value b not loaded.",
+            InterpretResult::RuntimeError,
+        ))?);
 
-        let a = Rc::clone(
-            &self.stack.pop().ok_or(VmError::new("Value a not loaded.", InterpretResult::RuntimeError))?
-        );
+        let a = Rc::clone(&self.stack.pop().ok_or(VmError::new(
+            "Value a not loaded.",
+            InterpretResult::RuntimeError,
+        ))?);
 
         let mut c = Value::default();
 
@@ -531,11 +612,17 @@ impl Vm {
             "+" => c.value = a.borrow().value.clone() + b.borrow().value.clone(),
             "*" => c.value = a.borrow().value.clone() * b.borrow().value.clone(),
             "/" => c.value = a.borrow().value.clone() / b.borrow().value.clone(),
-            ">" => { c.value = Primitive::Bool(a.borrow().value > b.borrow().value); c._type = Type::Bool },
-            "<" => { c.value = Primitive::Bool(a.borrow().value < b.borrow().value); c._type = Type::Bool },
+            ">" => {
+                c.value = Primitive::Bool(a.borrow().value > b.borrow().value);
+                c._type = Type::Bool
+            }
+            "<" => {
+                c.value = Primitive::Bool(a.borrow().value < b.borrow().value);
+                c._type = Type::Bool
+            }
             _ => panic!("Invalid binary operation."),
         }
-        
+
         self.stack.push(Rc::new(RefCell::new(c)));
 
         Ok(())

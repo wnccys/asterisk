@@ -9,7 +9,9 @@ impl FNV1aHasher {
     const FNV_PRIME: u64 = 0x100000001b3;
 
     pub fn new() -> Self {
-        FNV1aHasher { hash: Self::OFFSET_BASIS }
+        FNV1aHasher {
+            hash: Self::OFFSET_BASIS,
+        }
     }
 }
 

@@ -2,9 +2,8 @@ use std::rc::Rc;
 
 use crate::primitives::{primitive::Primitive, types::Type};
 
-
-pub mod print;
 pub mod hasher;
+pub mod print;
 
 /// Parses primitive to Type equivalent
 ///

@@ -14,17 +14,17 @@ pub struct Scope {
 }
 
 /// Represent a block scope
-/// 
+///
 impl Scope {
     /// Add new Local by hashing and inserting it
-    /// 
+    ///
     pub fn add_local(&mut self, lexeme: String, modifier: Modifier, total_locals: usize) {
         self.locals.insert(&lexeme, (total_locals, modifier));
         self.local_count += 1;
     }
 
     /// Return Local index to be used by stack if it exists
-    /// 
+    ///
     pub fn get_local(&self, lexeme: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
         self.locals.get(lexeme)
     }

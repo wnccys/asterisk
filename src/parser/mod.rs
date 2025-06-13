@@ -744,11 +744,13 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn error(&mut self, msg: &str) -> ! {
         let token = &self.current;
+        let mut curr_line = self.lexer.as_ref().unwrap().line;
+        if curr_line == 0 { curr_line = 1 };
 
         let complement = match token {
             Token::Eof => String::from(" at end."),
-            Token::Error(s) => format!("{} at line {}", s, self.lexer.as_ref().unwrap().line),
-            _ => format!("at line {}", self.lexer.as_ref().unwrap().line),
+            Token::Error(s) => format!("{} at line {}", s, curr_line),
+            _ => format!("at line {}", curr_line)
         };
 
         panic!(

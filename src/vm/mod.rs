@@ -628,8 +628,7 @@ impl Vm {
         Ok(())
     }
 
-    fn runtime_error(&self) {
-        println!("TODO");
+    fn runtime_error(&self) -> ! {
         for call_frame in self.frames.iter().rev() {
             println!("<{}>()", call_frame.function.name);
         }

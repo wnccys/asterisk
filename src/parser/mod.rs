@@ -754,7 +754,7 @@ impl<R: std::io::Read> Parser<R> {
         panic!(
             "{}",
             format!(
-                "{msg}, {complement} -> {}",
+                "{msg} | {complement} -> {}",
                 self.lexer.as_mut().unwrap().curr_tok()
             )
         );

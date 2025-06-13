@@ -210,7 +210,15 @@ impl<R: std::io::Read> Lexer<R> {
         let mut str: Vec<u8> = Vec::new();
 
         loop {
-            let ch = self.read_byte();
+            let mut ch = self.read_byte();
+
+            if ch == b'\\' {
+                // Skip escaped byte
+                self.read_byte();
+
+                ch = self.read_byte();
+            }
+        
             if ch == t {
                 break;
             }

@@ -157,9 +157,6 @@ impl<R: std::io::Read> Lexer<R> {
             _ if *n == b'x' && num == b'0' => self.number_hex(),
             _ => {
                 let mut result = u64::try_from(num - b'0').unwrap();
-                // if n.is_ascii_digit() {
-                //     result = result * 10 + ((n - b'0') as u64);
-                // }
 
                 loop {
                     if !(self.peek_byte().clone() as char).is_ascii_digit() {

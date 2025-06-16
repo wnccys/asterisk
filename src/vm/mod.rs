@@ -81,8 +81,6 @@ impl Vm {
         );
     }
 
-    /// Loop throught returned Bytecode vector (code vec) handling it's behavior.
-    ///
     fn run(&mut self) -> VmResult<()> {
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]

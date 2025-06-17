@@ -204,7 +204,7 @@ impl Vm {
                 OpCode::Print => {
                     let value = self.stack.pop().expect("Could not find value to print.");
 
-                    print_value(&value.borrow().value);
+                    println!("{}", &value.borrow().value);
                 }
                 OpCode::Nil => {
                     self.stack.push(Rc::new(RefCell::new(Value::default())));
@@ -235,20 +235,16 @@ impl Vm {
                         ],
                     );
 
-                    /* Type Check */
-                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!(
-                                "Cannot assign {:?} to {:?}",
-                                variable.borrow()._type,
-                                self.stack.last().unwrap().borrow()._type
-                            )
-                        }
+                    let var_type = &variable.borrow()._type;
 
-                        self.stack.pop();
+                    if *var_type == Type::UnInit {
+                        let mut v_borrow = variable.borrow_mut();
+                        v_borrow.modifier = modifier;
+                        v_borrow._type = t;
                     }
-
-                    variable.borrow_mut().modifier = modifier;
+                    else if *var_type != t {
+                        self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
+                    }
                 }
                 /*
                     Set new value to local variable.
@@ -256,26 +252,17 @@ impl Vm {
                 OpCode::SetLocal(var_index, modifier) => {
                     let variable = Rc::clone(&self.stack[var_index]);
 
-                    /* Type Check */
-                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if self.stack.last().unwrap().borrow()._type != variable.borrow()._type {
-                            panic!(
-                                "Cannot assign {:?} to {:?}",
-                                self.stack.last().unwrap().borrow()._type,
-                                variable.borrow()._type
-                            )
-                        }
-
-                        self.stack.pop();
-                    }
-
                     if modifier != Modifier::Mut {
-                        panic!("Cannot assign to immutable variable.")
+                        self.error("Cannot assign to immutable variable.".to_string())?
                     }
 
-                    let value = self.stack.pop().unwrap().take();
+                    let incoming_value = self.stack.pop().unwrap().take();
 
-                    variable.borrow_mut().value = value.value;
+                    if variable.borrow()._type != incoming_value._type {
+                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?;
+                    }
+
+                    variable.borrow_mut().value = incoming_value.value;
                 }
                 /*
                     Get value from value position and load it into the top of stack,
@@ -302,20 +289,6 @@ impl Vm {
                 OpCode::SetRefLocal(var_value_index) => {
                     let referenced_value = Rc::clone(&self.stack[var_value_index]);
 
-                    if self.stack.last().unwrap().borrow().value == Primitive::Void(()) {
-                        if let Type::Ref(r) = &self.stack.last().unwrap().borrow()._type {
-                            if **r != referenced_value.borrow()._type {
-                                panic!(
-                                    "Cannot assign {:?} to Ref({:?})",
-                                    self.stack.last().unwrap().borrow()._type,
-                                    referenced_value.borrow()._type
-                                );
-                            };
-                        };
-
-                        self.stack.pop();
-                    }
-
                     let _ref = Value {
                         value: Primitive::Ref(Rc::clone(&referenced_value)),
                         _type: Type::Ref(Rc::new((referenced_value).borrow()._type.clone())),
@@ -327,37 +300,16 @@ impl Vm {
                 /*
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
-                OpCode::DefineGlobal(var_name_index, modifier) => {
+                OpCode::DefineGlobal(var_name_index, modifier, t) => {
                     let var_name =
-                        &self.frames.last_mut().unwrap().function.chunk.constants[var_name_index];
+                        &self.frames.last().unwrap().function.chunk.constants[var_name_index];
 
-                    let mut variable = match self.stack.pop().unwrap().take() {
-                        /* This match only a dummy type specifier */
-                        Value {
-                            value: Primitive::Void(..),
-                            _type,
-                            ..
-                        } => {
-                            let value = self.stack.pop().unwrap().take();
-
-                            if value._type != _type {
-                                panic!("Cannot assign {:?} to {:?}", value._type, _type)
-                            }
-
-                            value
-                        }
-                        /* Inferred Type, so no match is needed */
-                        v => v,
-                    };
-                    variable.modifier = modifier;
+                    let mut var_value = self.stack.pop().unwrap().take();
+                    var_value.modifier = modifier;
+                    var_value._type = t;
 
                     /*  Only strings are allowed to be var names */
-                    match var_name {
-                        Primitive::String(name) => {
-                            self.globals.insert(&name, variable);
-                        }
-                        _ => panic!("Invalid global variable name."),
-                    }
+                    self.globals.insert(var_name.into(), var_value);
                 }
                 /*
                     Get address from get globals and set it in stack.
@@ -412,14 +364,14 @@ impl Vm {
                         panic!("Global variable is used before it's initialization.");
                     }
                 }
-                /* Let var type information available on stack, this is used in explicit variable declaration */
-                OpCode::SetType(t) => {
-                    let dummy_value = Value {
-                        _type: t,
-                        ..Default::default()
-                    };
-                    self.stack.push(Rc::new(RefCell::new(dummy_value)));
-                }
+                // /* Let var type information available on stack, this is used in explicit variable declaration */
+                // OpCode::SetType(t) => {
+                //     let dummy_value = Value {
+                //         _type: t,
+                //         ..Default::default()
+                //     };
+                //     self.stack.push(Rc::new(RefCell::new(dummy_value)));
+                // }
                 /*
                     Get var name from constants and craft a ref value based on globals' referenced Value
                 */

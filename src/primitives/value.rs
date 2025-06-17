@@ -2,7 +2,7 @@ use super::{
     primitive::Primitive,
     types::{Modifier, Type},
 };
-use std::ops::{Add, Div, Mul, Not};
+use std::{fmt::Display, ops::{Add, Div, Mul, Not}};
 
 /// All Asterisk Values definition.
 ///
@@ -11,6 +11,12 @@ pub struct Value {
     pub value: Primitive,
     pub _type: Type,
     pub modifier: Modifier,
+}
+
+impl Display for Value {
+    fn fmt(&self, fmt: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(fmt, "{}", self.value)
+    }
 }
 
 impl Default for Value {

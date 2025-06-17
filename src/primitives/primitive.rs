@@ -20,14 +20,27 @@ pub enum Primitive {
     Void(()),
 }
 
+impl<'a> From<&'a Primitive> for &'a String {
+    fn from(_p: &'a Primitive) -> &'a String {
+        match _p  {
+            Primitive::String(s) => s,
+            _ => panic!("Invalid Cast to &Primitive for String")
+        }
+    }
+} 
+
 impl Display for Primitive {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Primitive::Int(_) => write!(f, "Int"),
-            Primitive::Float(_) => write!(f, "Float"),
-            Primitive::Bool(_) => write!(f, "Bool"),
-            Primitive::String(_) => write!(f, "String"),
-            _ => panic!("This type does not implement the format trait."),
+            Primitive::Float(f) => write!(fmt, "{f:.1}"),
+            Primitive::Int(i) => write!(fmt, "{i}"),
+            Primitive::Bool(b) => write!(fmt, "{b}"),
+            Primitive::String(str) => write!(fmt, "{}", str),
+            Primitive::Void(t) => write!(fmt, "{t:?}"),
+            Primitive::Ref(value_ptr) => write!(fmt, "&{}", value_ptr.borrow().value),
+            Primitive::Function(f) => write!(fmt, "&fn<{}, {}>", f.arity, f.name),
+            Primitive::NativeFunction(f) => write!(fmt, "&native_fn<{:?}>", f),
+            _ => panic!("invalid value."),
         }
     }
 }

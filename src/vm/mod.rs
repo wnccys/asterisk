@@ -364,14 +364,6 @@ impl Vm {
                         panic!("Global variable is used before it's initialization.");
                     }
                 }
-                // /* Let var type information available on stack, this is used in explicit variable declaration */
-                // OpCode::SetType(t) => {
-                //     let dummy_value = Value {
-                //         _type: t,
-                //         ..Default::default()
-                //     };
-                //     self.stack.push(Rc::new(RefCell::new(dummy_value)));
-                // }
                 /*
                     Get var name from constants and craft a ref value based on globals' referenced Value
                 */

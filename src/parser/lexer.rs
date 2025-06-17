@@ -1,4 +1,4 @@
-use std::{io::Bytes, iter::Peekable, ops::ShlAssign};
+use std::{io::Bytes, iter::Peekable};
 
 use crate::primitives::types::Type;
 
@@ -230,7 +230,7 @@ impl<R: std::io::Read> Lexer<R> {
     fn number_hex(&mut self) -> Token {
         let mut hex: i64 = 0;
 
-        match (self.read_byte() - b'0') {
+        match self.read_byte() - b'0' {
             b'A'..b'F' | b'0'..b'9' =>  {
 
             }
@@ -321,6 +321,8 @@ impl<R: std::io::Read> Lexer<R> {
         match multi {
             true => {
                 while let Some(c) = self.next_byte() {
+                    if c == b'\n' { self.line += 1 };
+
                     if c == b'*' {
                         let d = self.read_byte();
 
@@ -333,6 +335,7 @@ impl<R: std::io::Read> Lexer<R> {
             false => {
                 while let Some(c) = self.next_byte() {
                     if c == b'\n' {
+                        self.line += 1;
                         break;
                     }
                 }
@@ -353,7 +356,7 @@ impl<R: std::io::Read> Lexer<R> {
             }
 
             /* \x1B[4m{}\x1B[0m */
-            word.push_str(&format!("{}\u{0334}", ch) as &str);
+            word.push_str(&format!("{}\u{0334}", ch as char) as &str);
         }
 
         word

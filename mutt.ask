@@ -1,0 +1,8 @@
+fn print_s(n: &Int) {
+    print n;
+}
+
+let a = 23;
+let b: &Int = &a;
+
+print_s(b);

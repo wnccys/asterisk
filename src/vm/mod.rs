@@ -16,7 +16,7 @@ use crate::primitives::{
 };
 use crate::utils::parse_type;
 #[allow(unused)]
-use crate::utils::print::{print_stack, print_value};
+use crate::utils::print::print_stack;
 use crate::vm::chunk::OpCode;
 use crate::vm::compiler::compile;
 use crate::{errors::vm::VmResult, primitives::native::duration};
@@ -51,7 +51,7 @@ impl Default for Vm {
 impl Vm {
     /// This function is the "compiler" itself, running chunk's Bytecodes.
     ///
-    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) -> VmResult<()> {
+    pub fn interpret<T: std::io::Read>(&mut self, source_code: T) {
         self.init_std_lib();
 
         let main = compile(source_code);
@@ -64,7 +64,10 @@ impl Vm {
             self.frames.last_mut().unwrap().function.chunk.constants
         );
 
-        self.run()
+        match self.run() {
+            Err(e) => panic!("{:?}", e),
+            _ => (),
+        }
     }
 
     fn init_std_lib(&mut self) {
@@ -81,7 +84,7 @@ impl Vm {
         );
     }
 
-    fn run(&mut self) -> VmResult<()> {
+    fn run(&mut self) -> VmResult {
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
@@ -102,7 +105,7 @@ impl Vm {
             match unsafe { self.frames.last().unwrap().ip.read() } {
                 OpCode::Return => {
                     let _return = self.stack.pop().ok_or(VmError::new(
-                        "Could not return from function",
+                        "Could not return from function".to_string(),
                         InterpretResult::CompilerError,
                     ))?;
 
@@ -140,7 +143,7 @@ impl Vm {
                             VmResult::Ok(())?
                         }
                         _ => VmResult::Err(VmError::new(
-                            "Could not negate value.",
+                            "Could not negate value.".to_string(),
                             InterpretResult::RuntimeError,
                         ))?,
                     }
@@ -222,7 +225,7 @@ impl Vm {
                     })));
                 }
                 /* Check Local Type */
-                OpCode::DefineLocal(var_index, modifier) => {
+                OpCode::DefineLocal(var_index, modifier, t) => {
                     let var_offset = self.frames.last().unwrap().arg_offset;
 
                     let variable = Rc::clone(
@@ -590,14 +593,14 @@ impl Vm {
         return true;
     }
 
-    fn binary_op(&mut self, op: &str) -> VmResult<()> {
+    fn binary_op(&mut self, op: &str) -> VmResult {
         let b = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value b not loaded.",
+            "Value b not loaded.".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 
         let a = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value a not loaded.",
+            "Value a not loaded.".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 
@@ -632,4 +635,11 @@ impl Vm {
         }
         panic!()
     }
+
+    fn error(&self, message: String) -> VmResult {
+        VmResult::Err(
+            VmError { message, _type: InterpretResult::CompilerError }
+        )
+    }
+
 }

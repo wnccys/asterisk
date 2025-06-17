@@ -82,7 +82,7 @@ impl<R: std::io::Read> Parser<R> {
         let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
         self.function(FunctionType::Fn, name);
-        self.define_variable(global_var.unwrap(), modifier);
+        self.define_variable(global_var.unwrap(), modifier, Type::Fn);
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
@@ -122,8 +122,7 @@ impl<R: std::io::Read> Parser<R> {
                 );
 
                 let t = parser.parse_var_type();
-                parser.emit_byte(OpCode::SetType(t));
-                parser.mark_initialized(local_name);
+                parser.mark_initialized(local_name, t);
 
                 if !parser.match_token(Token::Comma) {
                     break;
@@ -158,6 +157,7 @@ impl<R: std::io::Read> Parser<R> {
             _ => self.error("Expect variable name."),
         };
         let global = self.parse_variable(modifier, var_name.clone());
+        let mut _type = None;
 
         self.advance();
 
@@ -168,14 +168,14 @@ impl<R: std::io::Read> Parser<R> {
         // Check for typedef
         } else if self.match_token(Token::Colon) {
             // Lazy-evaluated var type
-            let t = self.parse_var_type();
+            _type = Some(self.parse_var_type());
 
             // Handle uninitialized but typed vars
             if self.match_token(Token::Equal) {
                 self.expression();
             }
 
-            self.emit_byte(OpCode::SetType(t));
+            // self.emit_byte(OpCode::SetType(t));
         } else {
             self.error("Uninitialized variables are not allowed.");
         }
@@ -183,11 +183,11 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::SemiColon, "Expect ';' after variable declaration.");
 
         if global.is_none() {
-            self.mark_initialized(var_name);
+            self.mark_initialized(var_name, _type.unwrap_or_default());
             return;
         }
 
-        self.define_variable(global.unwrap(), modifier);
+        self.define_variable(global.unwrap(), modifier, _type.unwrap_or_default());
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -266,7 +266,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Initialize Local Var by emitting DefineLocal
     ///
-    fn mark_initialized(&mut self, local_name: String) {
+    fn mark_initialized(&mut self, local_name: String, _type: Type) {
         let local_index = self
             .scopes
             .last_mut()
@@ -277,14 +277,15 @@ impl<R: std::io::Read> Parser<R> {
         self.emit_byte(OpCode::DefineLocal(
             local_index.borrow().0,
             local_index.borrow().1,
+            _type
         ));
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
     ///
-    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, _type: Type) {
+        self.emit_byte(OpCode::DefineGlobal(name_index, modifier, _type));
     }
 
     fn get_current(&mut self) -> Token {

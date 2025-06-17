@@ -1,15 +1,15 @@
 use std::{error, fmt};
 
-pub type VmResult<T> = Result<T, VmError>;
+pub type VmResult = Result<(), VmError>;
 
 #[derive(Debug)]
 pub struct VmError {
-    pub message: &'static str,
+    pub message: String,
     pub _type: InterpretResult,
 }
 
 impl VmError {
-    pub fn new(message: &'static str, _type: InterpretResult) -> Self {
+    pub fn new(message: String, _type: InterpretResult) -> Self {
         VmError { message, _type }
     }
 }

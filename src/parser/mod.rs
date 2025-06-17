@@ -1,18 +1,26 @@
-use std::{cell::RefCell, fmt::Write, rc::Rc, thread::{self, current}, time::Duration};
+pub mod lexer;
+pub mod ruler;
+pub mod scope;
 
-use ruler::{get_rule, Precedence};
-use lexer::{Lexer, Token};
-
-use crate::{
-    chunk::{Chunk, OpCode},
-    errors::parser_errors::ParserResult,
-    types::hash_table::{hash_key, HashTable},
-    utils::{parse_type, print::disassemble_chunk},
-    value::{Function, FunctionType, Modifier, Primitive, Type, Value},
+use std::{
+    rc::Rc,
+    thread::{self, current},
+    time::Duration,
 };
 
-pub mod ruler;
-pub mod lexer;
+use lexer::{Lexer, Token};
+use ruler::{get_rule, Precedence};
+
+use crate::{
+    parser::scope::Scope,
+    primitives::{
+        primitive::{Function, FunctionType, Primitive},
+        types::{Modifier, Type},
+        value::Value,
+    },
+    utils::print::disassemble_chunk,
+    vm::chunk::OpCode,
+};
 
 #[derive(Debug)]
 pub struct Parser<R: std::io::Read> {
@@ -22,62 +30,19 @@ pub struct Parser<R: std::io::Read> {
     pub current: Token,
     pub previous: Token,
     pub had_error: bool,
-    pub panic_mode: bool,
     pub scopes: Vec<Scope>,
 }
 
 impl<R: std::io::Read> Parser<R> {
-    pub fn new(
-        function: Function,
-        function_type: FunctionType,
-        lexer: Lexer<R>,
-    ) -> Self {
+    pub fn new(function: Function, function_type: FunctionType, lexer: Lexer<R>) -> Self {
         Parser {
             function,
             function_type,
             lexer: Some(lexer),
-            current: Token::Eof,
-            previous: Token::Eof,
+            current: Token::Nil,
+            previous: Token::Nil,
             had_error: false,
-            panic_mode: false,
             scopes: vec![],
-        }
-    }
-}
-
-/// General scope handler.
-///
-#[derive(Debug)]
-pub struct Scope {
-    /// Represents all local variables, resolved dynamically at runtime, without a Constant Bytecode.
-    ///
-    /// (Var position on locals [consequently on Stack], Modifier))
-    pub locals: HashTable<String, (usize, Modifier)>,
-    pub local_count: usize,
-}
-
-/// Represent a block scope
-/// 
-impl Scope {
-    /// Add new Local by hashing and inserting it
-    /// 
-    fn add_local(&mut self, lexeme: String, modifier: Modifier, total_locals: usize) {
-        self.locals.insert(&lexeme, (total_locals, modifier));
-        self.local_count += 1;
-    }
-
-    /// Return Local index to be used by stack if it exists
-    /// 
-    fn get_local(&self, lexeme: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
-        self.locals.get(lexeme)
-    }
-}
-
-impl<'a> Default for Scope {
-    fn default() -> Self {
-        Scope {
-            locals: HashTable::default(),
-            local_count: 0,
         }
     }
 }
@@ -102,30 +67,26 @@ impl<R: std::io::Read> Parser<R> {
             // Declaration Control Flow Fallback
             self.statement();
         }
-
-        if self.panic_mode {
-            self.syncronize();
-        }
     }
 
     /// Where the fun starts
-    /// 
+    ///
     fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
         self.advance();
 
         let name = match self.get_previous() {
             Token::Identifier(s) => s,
-            _ => panic!("Expect function name")
+            _ => self.error("Expect function name"),
         };
         let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
         self.function(FunctionType::Fn, name);
-        self.define_variable(global_var.unwrap(), modifier);
+        self.define_variable(global_var.unwrap(), modifier, Type::Fn);
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
-    /// 
+    ///
     fn function(&mut self, function_t: FunctionType, func_name: String) {
         let current = self.get_current();
         let previous = self.get_previous();
@@ -138,7 +99,6 @@ impl<R: std::io::Read> Parser<R> {
             current,
             previous,
             had_error: false,
-            panic_mode: false,
             scopes: vec![],
         };
 
@@ -151,18 +111,22 @@ impl<R: std::io::Read> Parser<R> {
                 parser.function.arity += 1;
                 let local_name = match parser.get_current() {
                     Token::Identifier(name) => name,
-                    _ => panic!("Could not parse arguments.")
+                    _ => self.error("Could not parse arguments."),
                 };
                 parser.advance();
                 parser.parse_variable(modifier, local_name.clone());
 
-                parser.consume(Token::Colon, "Expect : Type specification on function signature.");
+                parser.consume(
+                    Token::Colon,
+                    "Expect : Type specification on function signature.",
+                );
 
                 let t = parser.parse_var_type();
-                parser.emit_byte(OpCode::SetType(t));
-                parser.mark_initialized(local_name);
+                parser.mark_initialized(local_name, t);
 
-                if !parser.match_token(Token::Comma) { break }
+                if !parser.match_token(Token::Comma) {
+                    break;
+                }
             }
         }
         parser.consume(Token::RightParen, "Expect ')' after function parameters.");
@@ -171,7 +135,7 @@ impl<R: std::io::Read> Parser<R> {
         /* End-of-scope are automatically handled by block() */
 
         let function = Value {
-            value: Primitive::Function(Rc::new(parser.end_compiler().unwrap())),
+            value: Primitive::Function(Rc::new(parser.end_compiler())),
             _type: Type::Fn,
             modifier: Modifier::Const,
         };
@@ -190,9 +154,10 @@ impl<R: std::io::Read> Parser<R> {
         let modifier = self.parse_modifier();
         let var_name = match self.get_current() {
             Token::Identifier(s) => s,
-            _ => panic!("Expect variable name.")
+            _ => self.error("Expect variable name."),
         };
         let global = self.parse_variable(modifier, var_name.clone());
+        let mut _type = None;
 
         self.advance();
 
@@ -203,26 +168,26 @@ impl<R: std::io::Read> Parser<R> {
         // Check for typedef
         } else if self.match_token(Token::Colon) {
             // Lazy-evaluated var type
-            let t = self.parse_var_type();
+            _type = Some(self.parse_var_type());
 
             // Handle uninitialized but typed vars
             if self.match_token(Token::Equal) {
                 self.expression();
             }
 
-            self.emit_byte(OpCode::SetType(t));
+            // self.emit_byte(OpCode::SetType(t));
         } else {
-            panic!("Uninitialized variables are not allowed.");
+            self.error("Uninitialized variables are not allowed.");
         }
 
-        self.consume(
-            Token::SemiColon,
-            "Expect ';' after variable declaration.",
-        );
+        self.consume(Token::SemiColon, "Expect ';' after variable declaration.");
 
-        if global.is_none() { self.mark_initialized(var_name); return; }
+        if global.is_none() {
+            self.mark_initialized(var_name, _type.unwrap_or_default());
+            return;
+        }
 
-        self.define_variable(global.unwrap(), modifier);
+        self.define_variable(global.unwrap(), modifier, _type.unwrap_or_default());
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -235,7 +200,7 @@ impl<R: std::io::Read> Parser<R> {
                 Modifier::Mut
             }
             Token::Identifier(_) => Modifier::Const,
-            _ => panic!("Error parsing variable."),
+            _ => self.error("Error parsing variable."),
         }
     }
 
@@ -267,15 +232,22 @@ impl<R: std::io::Read> Parser<R> {
                 self.advance();
                 Type::Ref(Rc::new(self.parse_var_type()))
             }
-            Token::TypeDef(t) =>  { self.advance(); t },
-            _ => panic!("Invalid Var Type."),
+            Token::TypeDef(t) => {
+                self.advance();
+                t
+            }
+            _ => self.error("Invalid Var Type."),
         }
     }
 
     /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
     ///
     fn identifier_constant(&mut self, name: String) -> Option<usize> {
-        Some(self.function.chunk.write_constant(Primitive::String(name.into())))
+        Some(
+            self.function
+                .chunk
+                .write_constant(Primitive::String(name.into())),
+        )
     }
 
     /// Set previous Token as local variable, assign it to compiler.locals, increasing Compiler's local_count
@@ -286,12 +258,15 @@ impl<R: std::io::Read> Parser<R> {
             total_locals += i.local_count;
         }
 
-        self.scopes.last_mut().unwrap().add_local(name, modifier, total_locals);
+        self.scopes
+            .last_mut()
+            .unwrap()
+            .add_local(name, modifier, total_locals);
     }
 
     /// Initialize Local Var by emitting DefineLocal
-    /// 
-    fn mark_initialized(&mut self, local_name: String) {
+    ///
+    fn mark_initialized(&mut self, local_name: String, _type: Type) {
         let local_index = self
             .scopes
             .last_mut()
@@ -299,22 +274,26 @@ impl<R: std::io::Read> Parser<R> {
             .get_local(&local_name)
             .unwrap();
 
-        self.emit_byte(OpCode::DefineLocal(local_index.borrow().0, local_index.borrow().1));
+        self.emit_byte(OpCode::DefineLocal(
+            local_index.borrow().0,
+            local_index.borrow().1,
+            _type
+        ));
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
     ///
-    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier) {
-        self.emit_byte(OpCode::DefineGlobal(name_index, modifier));
+    pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, _type: Type) {
+        self.emit_byte(OpCode::DefineGlobal(name_index, modifier, _type));
     }
 
     fn get_current(&mut self) -> Token {
-        std::mem::replace(&mut self.current, Token::Eof)
+        std::mem::replace(&mut self.current, Token::Nil)
     }
 
     fn get_previous(&mut self) -> Token {
-        std::mem::replace(&mut self.previous, Token::Eof)
+        std::mem::replace(&mut self.previous, Token::Nil)
     }
 
     pub fn begin_scope(&mut self) {
@@ -325,8 +304,7 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn end_scope(&mut self) {
         /* Remove scope Locals when it ends */
-        while self.scopes.last().unwrap().local_count > 0
-        {
+        while self.scopes.last().unwrap().local_count > 0 {
             self.emit_byte(OpCode::Pop);
             self.scopes.last_mut().unwrap().local_count -= 1;
         }
@@ -365,27 +343,27 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    pub fn syncronize(&mut self) {
-        self.panic_mode = false;
+    // pub fn syncronize(&mut self) {
+    //     self.error_handler.panic_mode = false;
 
-        while self.current != Token::Eof {
-            if self.previous == Token::SemiColon {
-                match self.current {
-                    Token::Class
-                    | Token::Fun
-                    | Token::Var
-                    | Token::For
-                    | Token::If
-                    | Token::While
-                    | Token::Print
-                    | Token::Return => return,
-                    _ => (),
-                }
-            }
+    //     while self.current != Token::Eof {
+    //         if self.previous == Token::SemiColon {
+    //             match self.current {
+    //                 Token::Class
+    //                 | Token::Fun
+    //                 | Token::Var
+    //                 | Token::For
+    //                 | Token::If
+    //                 | Token::While
+    //                 | Token::Print
+    //                 | Token::Return => return,
+    //                 _ => (),
+    //             }
+    //         }
 
-            self.advance();
-        }
-    }
+    //         self.advance();
+    //     }
+    // }
 
     /// Parse further expression consuming semicolon on end.
     ///
@@ -398,12 +376,12 @@ impl<R: std::io::Read> Parser<R> {
     }
 
     /// The for loop statement handling
-    /// 
+    ///
     /// On every clause, we check if ; is present, what means the clause is omitted.
     /// First, it checks for the first clause, which is a var declaration or a expression which will be executed on every start of loop.
     /// After we state a loop jump, which is the jump made if the condition on (X; HERE; Z) is false, it must evaluate to a bool, or a compiler error on stack will be throw
-    /// Last we 
-    /// 
+    /// Last we
+    ///
     fn for_statement(&mut self) {
         self.begin_scope();
 
@@ -417,11 +395,11 @@ impl<R: std::io::Read> Parser<R> {
             self.expression_statement();
         }
 
-        /* 
+        /*
             This is the condition evaluation itself, this is where the loop begins, intructionally speaking xD
         */
         let mut loop_start = self.function.chunk.code.len() - 1;
-        /* 
+        /*
             -1 is a fallback value, meaning the loop must not be patched, or better saying, the loop will not break.
         */
         let mut exit_jump: i32 = -1;
@@ -434,10 +412,12 @@ impl<R: std::io::Read> Parser<R> {
             exit_jump = self.emit_jump(OpCode::JumpIfFalse(0)) as i32;
         }
         /* Pop only if middle cause (X; HERE: Y) is present */
-        if exit_jump != -1 { self.emit_byte(OpCode::Pop); }
+        if exit_jump != -1 {
+            self.emit_byte(OpCode::Pop);
+        }
 
-        /* 
-            As asterisk uses a single-pass compiler model, to run the increment clause we first execute the body, 
+        /*
+            As asterisk uses a single-pass compiler model, to run the increment clause we first execute the body,
             jumping to the increment instruction right after.
 
             Here body_jump set a jump flag bytecode, we next take the index of the current instruction (body jump)
@@ -447,7 +427,7 @@ impl<R: std::io::Read> Parser<R> {
             /* Set jump over body */
             let body_jump = self.emit_jump(OpCode::Jump(0));
             /* Execute increment - this is executed after body */
-            let increment_start = self.function.chunk.code.len() -1;
+            let increment_start = self.function.chunk.code.len() - 1;
             /* Increment expression */
             self.expression();
 
@@ -456,7 +436,7 @@ impl<R: std::io::Read> Parser<R> {
             /* This loop is the one which */
             self.emit_loop(loop_start);
             loop_start = increment_start;
-            /* 
+            /*
                 Jump to the body.
                 After this jump, the self.emit_loop(loop_start) come back to evaluate the increment instruction.
             */
@@ -481,30 +461,32 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::RightParen, "Expect ')' after condition");
 
         /*
-            Keep track of where then jump is located by checking chunk.code.len() 
+            Keep track of where then jump is located by checking chunk.code.len()
             This argument ByteCode is a placeholder, which will be lazy-populated by
             patch_jump function.
         */
         let then_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         /* Remove bool expression value used for verification from stack */
         self.emit_byte(OpCode::Pop);
-        /* Execute code in then branch so we know how many jumps we need */ 
+        /* Execute code in then branch so we know how many jumps we need */
         self.statement();
 
-        /* 
+        /*
             Set jump to else branch.
             Even if else is not set explicitly it is compiled, executing nothing.
         */
         let else_jump = self.emit_jump(OpCode::Jump(0));
 
-        /* 
+        /*
             Set correct calculated offset to earlier set then_jump.
             This is needed because jump doesn't know primarily how many instructions to jump
         */
         self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
 
-        if self.match_token(Token::Else) { self.statement(); }
+        if self.match_token(Token::Else) {
+            self.statement();
+        }
         self.patch_jump(else_jump, OpCode::Jump(0));
     }
 
@@ -530,7 +512,6 @@ impl<R: std::io::Read> Parser<R> {
         self.expression();
         self.consume(Token::RightParen, "Expect ')' after condition");
 
-
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
         self.statement();
@@ -552,14 +533,14 @@ impl<R: std::io::Read> Parser<R> {
         self.expression();
         self.emit_byte(OpCode::PartialEqual);
         let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-        /* 
-            Statements doesnt let dangling values on stack, so no pop is needed. 
+        /*
+            Statements doesnt let dangling values on stack, so no pop is needed.
             Finally, the value available on top is going to be the expression() result one.
         */
         self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
-        /* 
+        /*
             Executed by getting the original switch value, copying it and comparing it with the branch expression value.
             Basically, when a branch is true, it's value is propagated until the end of loop.
         */
@@ -578,7 +559,7 @@ impl<R: std::io::Read> Parser<R> {
 
             self.patch_jump(branch_jump, OpCode::JumpIfTrue(0));
             /* On final of loop, the expression value of branch is still available, once the pop is on next iteration */
-        };
+        }
 
         /* If a true value was found, it will be available on top of stack, so we check if it is false. */
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
@@ -615,7 +596,7 @@ impl<R: std::io::Read> Parser<R> {
             self.declaration();
         }
 
-        self.consume(Token::RightBrace, "Expected '}' end-of-block.");
+        self.consume(Token::RightBrace, "Expected '' end-of-block.");
     }
 
     /// Check if current Token matches argument Token.
@@ -661,7 +642,7 @@ impl<R: std::io::Read> Parser<R> {
     }
 
     /// This is the Ruler core itself, it orchestrate the expressions' values.
-    /// 
+    ///
     pub fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();
 
@@ -693,7 +674,7 @@ impl<R: std::io::Read> Parser<R> {
     /// Emit: param code
     ///
     pub fn emit_byte(&mut self, code: OpCode) {
-        self.function.chunk.write(code, self.lexer.as_ref().unwrap().line);
+        self.function.chunk.write(code);
     }
 
     /// Write value to constant vec and set it's bytecode.
@@ -707,33 +688,37 @@ impl<R: std::io::Read> Parser<R> {
     }
 
     /// Emit jump instruction and return it's index on chunk.code
-    /// 
+    ///
     pub fn emit_jump(&mut self, instruction: OpCode) -> usize {
         /* Instruction */
         self.emit_byte(instruction);
 
         /* Return instruction count */
-        return self.function.chunk.code.len() -1;
+        return self.function.chunk.code.len() - 1;
     }
 
     /// Loop is a jump * -1, it goes backward to where the flag was set (loop_start which generally are self.chunk.code.len() - 1)
-    /// 
+    ///
     fn emit_loop(&mut self, loop_start: usize) {
-        self.emit_byte(OpCode::Loop(self.function.chunk.code.len() - 1 - loop_start));
+        self.emit_byte(OpCode::Loop(
+            self.function.chunk.code.len() - 1 - loop_start,
+        ));
     }
 
     /// Calculate jump after evaluate conditional branch and set it to jump instruction.
-    /// 
+    ///
     fn patch_jump(&mut self, offset: usize, instruction: OpCode) {
         let jump = self.function.chunk.code.len() - offset;
 
-        if jump > usize::MAX { self.error("Max jump bytes reached.") }
+        if jump > usize::MAX {
+            self.error("Max jump bytes reached.")
+        }
 
         match instruction {
-            OpCode::JumpIfTrue(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfTrue(jump),
-            OpCode::JumpIfFalse(_) =>   self.function.chunk.code[offset] = OpCode::JumpIfFalse(jump),
-            OpCode::Jump(_) =>          self.function.chunk.code[offset] = OpCode::Jump(jump),
-            _ => panic!("Invalid jump intruction."),
+            OpCode::JumpIfTrue(_) => self.function.chunk.code[offset] = OpCode::JumpIfTrue(jump),
+            OpCode::JumpIfFalse(_) => self.function.chunk.code[offset] = OpCode::JumpIfFalse(jump),
+            OpCode::Jump(_) => self.function.chunk.code[offset] = OpCode::Jump(jump),
+            _ => self.error("Invalid jump intruction."),
         }
     }
 
@@ -744,7 +729,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Check for errors and disassemble chunk if compiler is in debug mode.
     ///
-    pub fn end_compiler(&mut self) -> Option<Function> {
+    pub fn end_compiler(&mut self) -> Function {
         self.emit_return();
 
         if !self.had_error {
@@ -753,26 +738,28 @@ impl<R: std::io::Read> Parser<R> {
             disassemble_chunk(&self.function.chunk, self.function.name.to_string());
         }
 
-        match self.had_error {
-            false => Some(self.function.clone()),
-            true => None,
-        }
+        std::mem::replace(&mut self.function, Function::default())
     }
 
     /// Panic on errors with panic_mode handling.
     ///
-    pub fn error(&self, msg: &str) {
-        if self.panic_mode {
-            return;
-        }
-
+    pub fn error(&mut self, msg: &str) -> ! {
         let token = &self.current;
-        match token {
-            Token::Eof => println!(" at end."),
-            Token::Error(_) => (),
-            _ => println!(" at line {}", self.lexer.as_ref().unwrap().line),
-        }
+        let mut curr_line = self.lexer.as_ref().unwrap().line;
+        if curr_line == 0 { curr_line = 1 };
 
-        println!("{}", msg);
+        let complement = match token {
+            Token::Eof => String::from(" at end."),
+            Token::Error(s) => format!("{} at line {}", s, curr_line),
+            _ => format!("at line {}", curr_line)
+        };
+
+        panic!(
+            "{}",
+            format!(
+                "{msg} | {complement} -> {}",
+                self.lexer.as_mut().unwrap().curr_tok()
+            )
+        );
     }
 }

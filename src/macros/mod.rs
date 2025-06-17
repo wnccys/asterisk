@@ -145,6 +145,46 @@ macro_rules! gen_values_operations {
                 self.value.partial_cmp(&other.value)
             }
         }
+
+        impl Not for Value {
+            type Output = Value;
+
+            fn not(self) -> Value {
+                match self {
+                    Value {
+                        value: Primitive::Int(value),
+                        modifier,
+                        _type,
+                    } =>
+                        Value {
+                            value: Primitive::Int(-value),
+                            modifier,
+                            _type,
+                        },
+                    Value {
+                        value: Primitive::Float(value),
+                        modifier,
+                        _type,
+                    } =>
+                        Value {
+                            value: Primitive::Float(-value),
+                            modifier,
+                            _type,
+                        },
+                    Value {
+                        value: Primitive::Bool(value),
+                        modifier,
+                        _type,
+                    } =>
+                        Value {
+                            value: Primitive::Bool(!value),
+                            modifier,
+                            _type,
+                    },
+                    _ => Value::default()
+                }
+            }
+        }
     }
 }
 

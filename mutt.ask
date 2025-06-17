@@ -1,9 +1,8 @@
-fn fib(n: Int) {
-  return n;
+fn print_s(n: &Int) {
+    print n;
 }
 
-print "start: ";
-let d = duration();
-print d;
-print "total: ";
-print d + duration();
+let a = 23;
+let b: &Int = &a;
+
+print_s(b);

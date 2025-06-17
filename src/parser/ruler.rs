@@ -181,6 +181,7 @@ impl<R: std::io::Read> ParseRule<R> {
         };
 
         match parser.scopes.len() {
+            /* global */
             0 => {
                 let var_index = parser.identifier_constant(name);
                 parser.emit_byte(OpCode::SetRefGlobal(var_index.unwrap()));

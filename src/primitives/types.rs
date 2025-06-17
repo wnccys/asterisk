@@ -10,7 +10,13 @@ pub enum Type {
     Fn,
     NativeFn,
     Ref(Rc<Type>),
+    UnInit,
     Void,
+}
+impl Default for Type {
+    fn default() -> Self {
+        Type::UnInit
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -3,9 +3,7 @@ pub mod ruler;
 pub mod scope;
 
 use std::{
-    rc::Rc,
-    thread::{self, current},
-    time::Duration,
+    rc::Rc, thread::{self, current}, time::Duration
 };
 
 use lexer::{Lexer, Token};
@@ -767,7 +765,7 @@ impl<R: std::io::Read> Parser<R> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
+    use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}};
 
     use super::*;
 
@@ -831,5 +829,41 @@ mod tests {
 
         assert_eq!(f.arity, 7);
         assert_eq!(f.name, "g");
+    }
+
+    #[test]
+    fn var_declaration_immut() {
+        let source = r"
+            let a = 32;
+            a = 2;
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        parser.advance();
+        parser.var_declaration();
+
+        // "a" and "32"
+        assert_eq!(parser.function.chunk.constants.len(), 2);
+        // No locals were added
+        assert_eq!(parser.scopes.len(), 0);
+
+        parser.statement();
+    }
+
+    #[test]
+    fn var_declaration_mut() {
+        let source = r"
+            let a = 32;
+            a = 2;
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        parser.advance();
+        parser.var_declaration();
+
+        // "a" and "32"
+        assert_eq!(parser.function.chunk.constants.len(), 2);
+        // No locals was added
+        assert_eq!(parser.scopes.len(), 0);
     }
 }

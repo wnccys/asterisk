@@ -763,3 +763,53 @@ impl<R: std::io::Read> Parser<R> {
         );
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::*;
+
+    fn mk_parser<R: std::io::Read>(source: R) -> Parser<R> {
+        let mut p = Parser::new(
+            Function::default(),
+            FunctionType::Script,
+            Lexer::new(source)
+        );
+        p.advance();
+        p
+    }
+
+    #[test]
+    fn fun_declaration_single_argument() {
+        let source = r"
+            fn f(n: Int) {}
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        parser.advance();
+        parser.fun_declaration();
+
+        // Extract function from current parser's chunk
+        let _fn = parser
+            .function
+            .chunk
+            .constants
+            .get(1).unwrap_or_else(|| panic!("Could not find function object"));
+
+        let f = match _fn { 
+            Primitive::Function(f) => f,
+            f => panic!("{}", format!("Invalid function object: {:?}", f))
+        };
+
+        assert_eq!(f.arity, 1);
+        assert_eq!(f.name, "f");
+    }
+
+    fn fun_declaration_multi_argument() {
+        let source = r"
+            fn fun (n: Int, m: String) {}
+        ";
+    }
+}

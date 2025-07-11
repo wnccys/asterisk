@@ -384,7 +384,7 @@ mod tests {
             Omitted: Nil and Error 
             Comment (//, /* */) are present on source, but it is skipped naturally by lexer
         */
-        let tokens_mock: [Token; 48] = [
+        let tokens: [Token; 48] = [
             Token::LeftParen,
             Token::RightParen,
             Token::LeftBrace,
@@ -450,7 +450,7 @@ mod tests {
                 std::io::Cursor::new(source)
             );
 
-        for t in tokens_mock.into_iter() {
+        for t in tokens.into_iter() {
             let l_tok = lex.next();
             if t != l_tok { panic!("Missmatched token: {t:?} with {l_tok:?}") }
         }

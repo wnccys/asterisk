@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+assert-panic = "1.0.1"
 
 [features]
 debug = []

@@ -371,9 +371,7 @@ impl<R: std::io::Read> Lexer<R> {
         word
     }
 
-    fn error(&mut self) {
-
-    }
+    fn error(&mut self) {}
 }
 
 #[cfg(test)]

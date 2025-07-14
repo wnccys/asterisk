@@ -58,40 +58,53 @@ pub mod variables {
 
     #[test]
     fn var_declaration_mut() {
-        let source = r"
-            let a = 32;
-            a = 2;
-        ";
+                let mut vm = Vm::default();
+        let sources: [&'static str; 2] = [
+            r"
+                let mut a = 32; // 1
+            ",
+            r"
+                a = 2; // 2
+            "
+        ];
 
-        let mut parser = mk_parser(Cursor::new(source));
+        let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
         parser.var_declaration();
 
         // "a" and "32"
         assert_eq!(parser.function.chunk.constants.len(), 2);
-        // No locals was added
+        // No locals were added
         assert_eq!(parser.scopes.len(), 0);
-    }
 
-    #[test]
-    fn var_declaration_immut_local() {
-        let source = r"
-            {
-                let a = 32;
-                a = 2;
-            }
-        ";
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let _ = vm.run();
 
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.begin_scope();
-        parser.block();
+        let var_value = match &vm.globals
+            .get(&"a".to_string())
+            .expect("Variable is not available on VM.")
+            .borrow().value {
+                Primitive::Int(i) => *i,
+                _ => panic!("Could not find variable by name.")
+            };
 
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        assert_eq!(parser.scopes.len(), 1);
+        assert_eq!(var_value, 32);
 
-        // parser.statement();
+        let mut parser = mk_parser(Cursor::new(sources[1]));
+        parser.statement();
+
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let _ = vm.run();
+
+        let var_value = match &vm.globals
+            .get(&"a".to_string())
+            .expect("Variable is not available on VM.")
+            .borrow().value {
+                Primitive::Int(i) => *i,
+                _ => panic!("Could not find variable by name.")
+            };
+
+        assert_eq!(var_value, 2);
     }
 
     #[test]

@@ -84,7 +84,7 @@ impl Vm {
         );
     }
 
-    fn run(&mut self) -> VmResult {
+    pub fn run(&mut self) -> VmResult {
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
@@ -235,16 +235,17 @@ impl Vm {
                         ],
                     );
 
-                    let var_type = &variable.borrow()._type;
+                    // Rc explicit drop 
+                    {
+                        let var_type = &variable.borrow()._type;
+                        if *var_type != t {
+                            self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
+                        }
+                    }
 
-                    if *var_type == Type::UnInit {
-                        let mut v_borrow = variable.borrow_mut();
-                        v_borrow.modifier = modifier;
-                        v_borrow._type = t;
-                    }
-                    else if *var_type != t {
-                        self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
-                    }
+                    let mut v_borrow = variable.borrow_mut();
+                    v_borrow.modifier = modifier;
+                    v_borrow._type = t;
                 }
                 /*
                     Set new value to local variable.
@@ -513,7 +514,7 @@ impl Vm {
         }
     }
 
-    fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
+    pub fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!(
                 "Expected {} but got {} arguments.",

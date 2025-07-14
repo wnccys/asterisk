@@ -23,17 +23,17 @@ use crate::{errors::vm::VmResult, primitives::native::duration};
 
 pub type Stack = Vec<Rc<RefCell<Value>>>;
 pub struct Vm {
-    frames: Vec<CallFrame>,
-    stack: Stack,
-    globals: HashTable<String, Value>,
-    strings: HashTable<String, String>,
+    pub frames: Vec<CallFrame>,
+    pub stack: Stack,
+    pub globals: HashTable<String, Value>,
+    pub strings: HashTable<String, String>,
 }
 
 #[derive(Debug)]
 pub struct CallFrame {
     pub function: Rc<Function>,
     pub ip: *const OpCode,
-    /* Init and final of frame stack scope range */
+    /* Init and final of frame stack variables scope range */
     pub arg_offset: usize,
 }
 

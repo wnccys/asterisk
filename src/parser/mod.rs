@@ -594,7 +594,7 @@ impl<R: std::io::Read> Parser<R> {
             self.declaration();
         }
 
-        self.consume(Token::RightBrace, "Expected '' end-of-block.");
+        self.consume(Token::RightBrace, "Expected '}' end-of-block.");
     }
 
     /// Check if current Token matches argument Token.
@@ -765,7 +765,7 @@ impl<R: std::io::Read> Parser<R> {
 
 #[cfg(test)]
 mod tests {
-    use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}};
+    use std::io::Cursor;
 
     use super::*;
 
@@ -878,13 +878,11 @@ mod tests {
 
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
-        parser.advance();
+        parser.begin_scope();
         parser.block();
-        // parser.var_declaration();
 
         // "a" and "32"
         assert_eq!(parser.function.chunk.constants.len(), 2);
-        // No locals were added
         assert_eq!(parser.scopes.len(), 1);
 
         // parser.statement();
@@ -901,14 +899,12 @@ mod tests {
 
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
-        parser.advance();
         parser.begin_scope();
         parser.block();
         // Block are not uninitialized
 
         // "a" and "32"
         assert_eq!(parser.function.chunk.constants.len(), 2);
-        // No locals was added
         assert_eq!(parser.scopes.len(), 1);
     }
 }

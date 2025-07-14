@@ -71,11 +71,27 @@ mod functions {
 
     #[test]
     fn fun_declaration_multi_argument() {
-        let source = r"
-            fn g(n: Int, m: String, p: &Int, g: &String, b: Bool, c: Float, d: &Float) {}
-        ";
+        let mut vm = Vm::default();
 
-        let mut parser = mk_parser(Cursor::new(source));
+        let sources: [&'static str; 2] = [
+            r"
+                fn f(n: Int, m: String, p: &Int, g: &String, b: Bool, c: Float, d: &Float) {
+                    n; m; p; g; b; c; d;
+                }
+            ",
+            r"
+                let n: Int = 32;
+                let m: String = 'str';
+                let b: Bool = true;
+                let c: Float = 1.0;
+                let p: &Int = &n;
+                let g: &String = &m;
+                let d: &Float = &c;
+
+                f(n, m, p, g, b, c, d);
+            "
+        ];
+        let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
         parser.fun_declaration();
 
@@ -84,14 +100,45 @@ mod functions {
             .function
             .chunk
             .constants
-            .get(1).unwrap_or_else(|| panic!("Could not find function object"));
+            .get(1)
+            .unwrap_or_else(|| panic!("Could not find function object."));
 
-        let f = match _fn { 
+        let inner_fn = match _fn {
             Primitive::Function(f) => f,
             f => panic!("{}", format!("Invalid function object: {:?}", f))
+        }.clone();
+
+        assert_eq!(inner_fn.arity, 7);
+        assert_eq!(inner_fn.name, "f");
+
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let _ = vm.run();
+
+        // Verify fn arity and resolved object (match parser)
+        match vm.globals.get(&inner_fn.name) {
+            Some(f) => {
+                match &Rc::clone(&f).borrow().value {
+                    Primitive::Function(f) => {
+                        if f.arity != inner_fn.arity {
+                            panic!("Invalid arity of VM function callable object.") 
+                        } 
+                    },
+                    _ => panic!("Invalid type for inner_fn.")
+                }
+            },
+            None => panic!("Function was not declared.")
         };
 
-        assert_eq!(f.arity, 7);
-        assert_eq!(f.name, "g");
+        // 2
+        let mut parser = mk_parser(Cursor::new(sources[1]));
+        for _ in 0..7 {
+            // var_declaration
+            parser.declaration();
+        }
+        // expression (call)
+        parser.declaration();
+
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let _ = vm.run();
     }
 }

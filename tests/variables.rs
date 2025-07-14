@@ -68,6 +68,7 @@ pub mod variables {
             "
         ];
 
+        // 1
         let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
         parser.var_declaration();
@@ -90,6 +91,7 @@ pub mod variables {
 
         assert_eq!(var_value, 32);
 
+        // 2
         let mut parser = mk_parser(Cursor::new(sources[1]));
         parser.statement();
 

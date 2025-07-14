@@ -350,7 +350,8 @@ impl Vm {
                     let mut to_be_inserted = self.stack.pop().unwrap().take();
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
-                    if variable.borrow()._type != to_be_inserted._type {
+                    if variable.borrow()._type != to_be_inserted._type 
+                        && variable.borrow()._type != Type::UnInit {
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
                             to_be_inserted._type,
@@ -359,6 +360,7 @@ impl Vm {
                     }
 
                     to_be_inserted.modifier = variable.borrow().modifier;
+                    to_be_inserted._type = variable.borrow()._type.clone();
 
                     if self.globals.insert(name, to_be_inserted) {
                         let _ = self.globals.delete(name);

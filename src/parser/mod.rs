@@ -69,7 +69,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Where the fun starts
     ///
-    fn fun_declaration(&mut self) {
+    pub fn fun_declaration(&mut self) {
         let modifier = Modifier::Const;
         self.advance();
 
@@ -148,7 +148,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     ///
-    fn var_declaration(&mut self) {
+    pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let var_name = match self.get_current() {
             Token::Identifier(s) => s,
@@ -759,152 +759,5 @@ impl<R: std::io::Read> Parser<R> {
                 self.lexer.as_mut().unwrap().curr_tok()
             )
         );
-    }
-}
-
-
-#[cfg(test)]
-mod tests {
-    use std::io::Cursor;
-
-    use super::*;
-
-    fn mk_parser<R: std::io::Read>(source: R) -> Parser<R> {
-        let mut p = Parser::new(
-            Function::default(),
-            FunctionType::Script,
-            Lexer::new(source)
-        );
-        p.advance();
-        p
-    }
-
-    #[test]
-    fn fun_declaration_single_argument() {
-        let source = r"
-            fn f(n: Int) {}
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.fun_declaration();
-
-        // Extract function from current parser's chunk
-        let _fn = parser
-            .function
-            .chunk
-            .constants
-            .get(1).unwrap_or_else(|| panic!("Could not find function object"));
-
-        let f = match _fn { 
-            Primitive::Function(f) => f,
-            f => panic!("{}", format!("Invalid function object: {:?}", f))
-        };
-
-        assert_eq!(f.arity, 1);
-        assert_eq!(f.name, "f");
-    }
-
-    #[test]
-    fn fun_declaration_multi_argument() {
-        let source = r"
-            fn g(n: Int, m: String, p: &Int, g: &String, b: Bool, c: Float, d: &Float) {}
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.fun_declaration();
-
-        // Extract function from current parser's chunk
-        let _fn = parser
-            .function
-            .chunk
-            .constants
-            .get(1).unwrap_or_else(|| panic!("Could not find function object"));
-
-        let f = match _fn { 
-            Primitive::Function(f) => f,
-            f => panic!("{}", format!("Invalid function object: {:?}", f))
-        };
-
-        assert_eq!(f.arity, 7);
-        assert_eq!(f.name, "g");
-    }
-
-    #[test]
-    fn var_declaration_immut() {
-        let source = r"
-            let a = 32;
-            a = 2;
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.var_declaration();
-
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        // No locals were added
-        assert_eq!(parser.scopes.len(), 0);
-
-        parser.statement();
-    }
-
-    #[test]
-    fn var_declaration_mut() {
-        let source = r"
-            let a = 32;
-            a = 2;
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.var_declaration();
-
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        // No locals was added
-        assert_eq!(parser.scopes.len(), 0);
-    }
-
-    #[test]
-    fn var_declaration_immut_local() {
-        let source = r"
-            {
-                let a = 32;
-                a = 2;
-            }
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.begin_scope();
-        parser.block();
-
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        assert_eq!(parser.scopes.len(), 1);
-
-        // parser.statement();
-    }
-
-    #[test]
-    fn var_declaration_mut_local() {
-        let source = r"
-            {
-                let mut a = 32;
-                a = 2;
-            }
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser.begin_scope();
-        parser.block();
-        // Block are not uninitialized
-
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        assert_eq!(parser.scopes.len(), 1);
     }
 }

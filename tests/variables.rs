@@ -155,7 +155,12 @@ pub mod variables {
         let result = catch_unwind(AssertUnwindSafe(|| {
             let _ = vm.run();
         }));
+        let var_value = match vm.stack[0].borrow().value {
+            Primitive::Int(i) => i,
+            _ => panic!("Invalid value on local slot.")
+        };
 
+        assert!(var_value == 2);
         assert!(result.is_ok());
     }
 }

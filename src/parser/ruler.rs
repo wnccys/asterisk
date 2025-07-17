@@ -313,7 +313,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
     match token_code {
         Token::LeftParen => ParseRule {
             prefix: ParseRule::grouping,
-
             infix: ParseRule::call,
             precedence: Precedence::Call,
         },

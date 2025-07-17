@@ -8,6 +8,7 @@ use std::time::Duration;
 
 use crate::errors::vm::{InterpretResult, VmError};
 use crate::objects::hash_table::HashTable;
+use crate::primitives::native::_typeof;
 use crate::primitives::primitive::NativeFn;
 use crate::primitives::{
     primitive::{Function, Primitive},
@@ -72,7 +73,7 @@ impl Vm {
 
     pub fn init_std_lib(&mut self) {
         self.globals.insert(
-            &"duration".to_string(),
+            &String::from("duration"),
             Value {
                 value: Primitive::NativeFunction(NativeFn {
                     arity: 0,
@@ -81,6 +82,18 @@ impl Vm {
                 _type: Type::NativeFn,
                 modifier: Modifier::Const,
             },
+        );
+
+        self.globals.insert(
+            &String::from("typeof"),
+            Value {
+                value: Primitive::NativeFunction(NativeFn {
+                    arity: 1,
+                    _fn: _typeof,
+                }),
+                _type: Type::NativeFn,
+                modifier: Modifier::Const,
+            }
         );
     }
 
@@ -505,7 +518,9 @@ impl Vm {
                 /* Pop function from stack so it remains clean */
                 self.stack.remove(self.stack.len() - 1 - args_count);
 
-                let args = &self.stack[(self.stack.len().checked_sub(1).unwrap_or(0) - args_count)
+                let args = &self.stack[
+                    (self.stack.len().checked_sub(1).unwrap_or(0)
+                    .checked_sub(args_count).unwrap_or(0))
                     ..self.stack.len().checked_sub(1).unwrap_or(0)];
 
                 self.stack.push(Rc::new(RefCell::new(f.clone().call(args))));

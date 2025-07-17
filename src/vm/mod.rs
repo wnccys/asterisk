@@ -70,7 +70,7 @@ impl Vm {
         }
     }
 
-    fn init_std_lib(&mut self) {
+    pub fn init_std_lib(&mut self) {
         self.globals.insert(
             &"duration".to_string(),
             Value {

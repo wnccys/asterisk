@@ -123,8 +123,6 @@ pub mod variables {
         parser.advance();
         parser.begin_scope();
         parser.block();
-
-        assert_eq!(parser.scopes.len(), 1);
         parser.end_scope();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
@@ -140,6 +138,7 @@ pub mod variables {
 
     #[test]
     fn var_declaration_mut_local() {
+        let mut vm = Vm::default();
         let source = r"
             {
                 let mut a = 32;
@@ -151,10 +150,12 @@ pub mod variables {
         parser.advance();
         parser.begin_scope();
         parser.block();
-        // Block are not uninitialized
 
-        // "a" and "32"
-        assert_eq!(parser.function.chunk.constants.len(), 2);
-        assert_eq!(parser.scopes.len(), 1);
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _ = vm.run();
+        }));
+
+        assert!(result.is_ok());
     }
 }

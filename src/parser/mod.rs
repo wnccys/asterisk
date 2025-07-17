@@ -579,8 +579,6 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Evaluate expression and consume ';' token.
     ///
-    /// Emit: OpCode::Pop
-    ///
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(Token::SemiColon, "Expect ';' after expression.");

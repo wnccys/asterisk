@@ -6,7 +6,7 @@ mod functions {
     use asterisk::{primitives::primitive::Primitive, vm::Vm};
 
     use super::*;
-    use std::{io::Cursor, rc::Rc};
+    use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
 
     #[test]
     fn fun_declaration_single_argument() {

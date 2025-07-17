@@ -238,7 +238,7 @@ impl Vm {
                     // Rc explicit drop 
                     {
                         let var_type = &variable.borrow()._type;
-                        if *var_type != t {
+                        if *var_type != t && t != Type::UnInit {
                             self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
                         }
                     }
@@ -259,8 +259,9 @@ impl Vm {
 
                     let incoming_value = self.stack.pop().unwrap().take();
 
-                    if variable.borrow()._type != incoming_value._type {
-                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?;
+                    if variable.borrow()._type != incoming_value._type 
+                        && variable.borrow()._type != Type::UnInit {
+                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?
                     }
 
                     variable.borrow_mut().value = incoming_value.value;

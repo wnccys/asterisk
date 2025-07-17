@@ -519,9 +519,9 @@ impl Vm {
                 self.stack.remove(self.stack.len() - 1 - args_count);
 
                 let args = &self.stack[
-                    (self.stack.len().checked_sub(1).unwrap_or(0)
-                    .checked_sub(args_count).unwrap_or(0))
-                    ..self.stack.len().checked_sub(1).unwrap_or(0)];
+                    (self.stack.len().checked_sub(args_count).unwrap_or(0))
+                    ..self.stack.len()
+                ];
 
                 self.stack.push(Rc::new(RefCell::new(f.clone().call(args))));
 

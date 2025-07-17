@@ -651,7 +651,7 @@ impl<R: std::io::Read> Parser<R> {
             self.advance();
 
             let infix_rule = get_rule(&self.previous).infix;
-            (infix_rule)(self, can_assign)
+            infix_rule(self, can_assign)
         }
     }
 

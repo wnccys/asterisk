@@ -19,3 +19,24 @@ pub fn duration(_args: &[Rc<RefCell<Value>>]) -> Value {
         modifier: Modifier::Const,
     }
 }
+
+pub fn _typeof(args: &[Rc<RefCell<Value>>]) -> Value {
+    let obj = args[0].borrow();
+
+    let t = match obj.value {
+        Primitive::String(_) => "String",
+        Primitive::Bool(_) => "Boolean",
+        Primitive::Int(_) => "Integer",
+        Primitive::Float(_) => "Float",
+        Primitive::Function(_) => "Function",
+        Primitive::NativeFunction(_) => "NativeFunction",
+        Primitive::Ref(_) => "Reference",
+        Primitive::Void(_) => "Void",
+    };
+
+    Value {
+        value: Primitive::String(t.to_string()),
+        _type: Type::String,
+        modifier: Modifier::Const,
+    }
+}

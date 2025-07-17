@@ -2,13 +2,13 @@ pub mod lexer;
 pub mod ruler;
 pub mod scope;
 
-use std::{
-    rc::Rc, thread::{self, current}, time::Duration
-};
+#[allow(unused)]
+use std::{ rc::Rc, thread::{self, current}, time::Duration};
 
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
+#[allow(unused)]
 use crate::{
     parser::scope::Scope,
     primitives::{

@@ -83,7 +83,7 @@ pub struct NativeFn {
 impl NativeFn {
     pub fn call(&mut self, args: &[Rc<RefCell<Value>>]) -> Value {
         if args.len() != self.arity {
-            panic!("Expect {} but got {} arguments.", args.len(), self.arity)
+            panic!("Expect {} but got {} arguments.", self.arity, args.len())
         }
 
         (self._fn)(args)

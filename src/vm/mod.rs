@@ -556,14 +556,14 @@ impl Vm {
         return true;
     }
 
-    fn binary_op(&mut self, op: &str) -> VmResult {
+    pub fn binary_op(&mut self, op: &str) -> VmResult {
         let b = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value b not loaded.".to_string(),
+            "Value 'b' not loaded. (a [op] b)".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 
         let a = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value a not loaded.".to_string(),
+            "Value 'a' not loaded. (a [op] b)".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 

@@ -175,4 +175,19 @@ mod functions {
 
         assert!(result.is_ok())
     }
+
+    fn fun_local_inner() {
+        let source = "
+            let x = \"global\";
+
+            fn outer() {
+                let x = \"inner\";
+                fn inner() {
+                    print x;
+                }
+                inner();
+            }
+            outer();
+        ";
+    }
 }

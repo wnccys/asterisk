@@ -65,4 +65,7 @@ mod scopes {
 
         assert!(result.is_ok());
     }
+
+    #[test]
+    fn scopes_closures() {}
 }

@@ -152,7 +152,8 @@ impl<R: std::io::Read> Parser<R> {
         self.previous = parser.previous;
         self.current = parser.current;
 
-        self.emit_constant(function);
+        let fn_idx = self.emit_constant(function);
+        self.emit_byte(OpCode::Closure(fn_idx));
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

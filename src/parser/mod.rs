@@ -12,7 +12,8 @@ use ruler::{get_rule, Precedence};
 use crate::{
     parser::scope::Scope,
     primitives::{
-        primitive::{Function, FunctionType, Primitive},
+        functions::{Function, FunctionType},
+        primitive::{Primitive},
         types::{Modifier, Type},
         value::Value,
     },

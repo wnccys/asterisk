@@ -46,3 +46,8 @@ impl Display for Primitive {
         }
     }
 }
+
+pub struct UpValue {
+    pub index: usize,
+    pub is_local: bool,
+}

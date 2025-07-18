@@ -688,10 +688,11 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Emit: OpCode::Constant
     ///
-    pub fn emit_constant(&mut self, value: Value) {
+    pub fn emit_constant(&mut self, value: Value) -> usize {
         let const_index = self.function.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
+        const_index
     }
 
     /// Emit jump instruction and return it's index on chunk.code

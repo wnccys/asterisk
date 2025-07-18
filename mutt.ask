@@ -1,8 +1,14 @@
-fn print_s(n: &Int) {
-    print n;
+// let x = "global";
+
+fn outer() {
+    let x = "x";
+    fn inner() {
+        print x;
+    }
+    
+    return inner;
 }
 
-let a = 23;
-let b: &Int = &a;
-
-print_s(b);
+let a = outer();
+use crate::primitives;
+print a();

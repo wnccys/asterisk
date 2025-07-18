@@ -224,9 +224,7 @@ impl<R: std::io::Read> ParseRule<R> {
             for scope in scopes.iter().rev() {
                 local = scope.get_local(&var_name);
 
-                if local.is_some() {
-                    break;
-                }
+                if local.is_some() { break; }
             }
 
             /* Global variables inside scope handling */

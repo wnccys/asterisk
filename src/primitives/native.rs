@@ -32,6 +32,8 @@ pub fn _typeof(args: &[Rc<RefCell<Value>>]) -> Value {
         Primitive::NativeFunction(_) => "NativeFunction",
         Primitive::Ref(_) => "Reference",
         Primitive::Void(_) => "Void",
+        Primitive::Closure { .. } => "Closure",
+        _ => "Invalid Type",
     };
 
     Value {

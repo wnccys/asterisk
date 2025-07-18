@@ -35,6 +35,9 @@ pub enum OpCode {
     Jump(usize),
     Loop(usize),
     Call(usize),
+    Closure(usize),
+    GetUpValue(usize),
+    SetUpValue(usize),
 }
 
 #[derive(Debug, Default, Clone)]

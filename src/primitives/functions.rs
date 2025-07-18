@@ -7,7 +7,8 @@ pub struct Function {
     pub arity: usize,
     pub chunk: Chunk,
     pub name: String,
-    pub upvalue_count: usize,
+    // Upvalue coutn
+    pub upv_count: usize,
 }
 
 #[derive(Debug, PartialEq)]
@@ -21,7 +22,7 @@ impl Function {
         Function {
             arity: 0,
             chunk: Chunk::default(),
-            upvalue_count: 0,
+            upv_count: 0,
             name,
         }
     }

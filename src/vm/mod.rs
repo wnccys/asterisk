@@ -470,6 +470,16 @@ impl Vm {
 
                     continue;
                 }
+                OpCode::Closure(fn_idx) => {
+                    let _fn = &self.frames.last().unwrap().function.chunk.constants[fn_idx];
+
+                    let _fn = match _fn {
+                        Primitive::Function(f) => f,
+                        _ => panic!("Could not get correct Fn object.")
+                    };
+
+                    self.stack.push(Rc::new(RefCell::new(Self::enclosure(Rc::clone(_fn)))));
+                }
             };
 
             unsafe { self.advance_ip() }
@@ -491,15 +501,15 @@ impl Vm {
         );
         let value = callee.borrow();
 
-        match *value {
+        match &*value {
             Value {
-                value: Primitive::Function(ref f),
+                value: Primitive::Closure{ _fn, .. },
                 ..
             } => {
-                return self.call(f.clone(), args_count);
+                return self.call(Rc::clone(_fn), args_count);
             }
             Value {
-                value: Primitive::NativeFunction(ref f),
+                value: Primitive::NativeFunction(f),
                 ..
             } => {
                 /* Pop function from stack so it remains clean */
@@ -541,6 +551,14 @@ impl Vm {
         self.frames.push(frame);
 
         return true;
+    }
+
+    fn enclosure(_fn: Rc<Function>) -> Value {
+        Value {
+            value: Primitive::Closure { _fn, _s: None },
+            _type: Type::Closure,
+            modifier: Modifier::Const,
+        }
     }
 
     pub fn binary_op(&mut self, op: &str) -> VmResult {

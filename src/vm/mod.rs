@@ -34,7 +34,7 @@ pub struct Vm {
 pub struct CallFrame {
     pub function: Rc<Function>,
     pub ip: *const OpCode,
-    /* Init and final of frame stack variables scope range */
+    /* Init of frame function arg variables scope range */
     pub arg_offset: usize,
 }
 

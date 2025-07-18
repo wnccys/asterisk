@@ -28,7 +28,7 @@ mod ops {
 
         let result = match vm.stack.pop().unwrap().borrow().value {
             Primitive::Int(i) => i,
-            _ => panic!("")
+            _ => panic!("Invalid output result.")
         };
 
         assert_eq!(result, 4);

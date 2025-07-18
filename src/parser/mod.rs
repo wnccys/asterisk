@@ -24,6 +24,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Parser<R: std::io::Read> {
     pub function: Function,
+    pub upvalues: Vec<UpValue>,
     pub function_type: FunctionType,
     pub lexer: Option<Lexer<R>>,
     pub current: Token,

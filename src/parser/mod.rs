@@ -79,8 +79,16 @@ impl<R: std::io::Read> Parser<R> {
         };
         let global_var = self.parse_variable(modifier, name.clone());
         /* Let function as value available on top of stack */
-        self.function(FunctionType::Fn, name);
-        self.define_variable(global_var.unwrap(), modifier, Type::Fn);
+        match global_var {
+            Some(idx) => {
+                self.function(FunctionType::Fn, name);
+                self.define_variable(idx, modifier, Type::Fn);
+            }
+            None => {
+                self.function(FunctionType::Fn, name.clone());
+                self.mark_initialized(name, Type::Fn);
+            }
+        }
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.

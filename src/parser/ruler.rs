@@ -1,8 +1,9 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use crate::parser::scope::Scope;
 use crate::parser::Parser;
-use crate::primitives::primitive::Primitive;
+use crate::primitives::primitive::{Primitive, UpValue};
 use crate::primitives::types::{Modifier, Type};
 use crate::primitives::value::Value;
 use crate::vm::chunk::OpCode;
@@ -219,13 +220,8 @@ impl<R: std::io::Read> ParseRule<R> {
 
         if scopes.len() > 0 {
             let mut local: Option<Rc<RefCell<(usize, Modifier)>>> = None;
-
             /* Pass check on all scopes */
-            for scope in scopes.iter().rev() {
-                local = scope.get_local(&var_name);
-
-                if local.is_some() { break; }
-            }
+            let local = resolve_local();
 
             /* Global variables inside scope handling */
             if local.is_none() {
@@ -239,6 +235,9 @@ impl<R: std::io::Read> ParseRule<R> {
                 get_op = OpCode::GetLocal(local.borrow().0);
                 set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
             }
+        } else if let Some(up_idx) = Self::resolve_upvalue(parser, &var_name) {
+            get_op = OpCode::GetUpValue(up_idx);
+            set_op = OpCode::SetUpValue(up_idx);
         } else {
             let var_index = parser.identifier_constant(var_name);
 
@@ -252,6 +251,37 @@ impl<R: std::io::Read> ParseRule<R> {
         } else {
             parser.emit_byte(get_op);
         }
+    }
+
+    fn resolve_local(scopes: &Vec<Scope>, var_name: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        let mut local = None;
+
+        for scope in scopes.iter().rev() {
+            local = scope.get_local(var_name);
+
+            if local.is_some() { break; }
+        }
+
+        local
+    }
+
+    fn resolve_upvalue(parser: &mut Parser<R>, name: &String) -> Option<usize> {
+        if parser.scopes.len() > 0 { return None; }
+
+        let local = resolve_local();
+        if local != -1 {
+            return Some(Self::add_upvalue(parser, local, true));
+        }
+
+        None
+    }
+
+    fn add_upvalue(parser: &mut Parser<R>, index: usize, is_local: bool) -> usize {
+        let upvalue_count = parser.function.upv_count;
+        let upvalue = UpValue { index, is_local };
+
+        parser.function.upv_count += 1;
+        return parser.function.upv_count;
     }
 
     /// Jump if first condition of expression is false, verifying the second for a possible jump.

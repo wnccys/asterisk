@@ -9,9 +9,10 @@ use std::time::Duration;
 use crate::errors::vm::{InterpretResult, VmError};
 use crate::objects::hash_table::HashTable;
 use crate::primitives::native::_typeof;
-use crate::primitives::primitive::NativeFn;
+use crate::primitives::functions::NativeFn;
+use crate::primitives::primitive::Primitive;
 use crate::primitives::{
-    primitive::{Function, Primitive},
+    functions::Function,
     types::{Modifier, Type},
     value::Value,
 };

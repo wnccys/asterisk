@@ -141,4 +141,38 @@ mod functions {
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
     }
+
+    #[test]
+    fn fun_recursive() {
+        let mut vm = Vm::default();
+        let source = r"
+            fn fib(n: Int) {
+                if (n < 2) { return n; }
+
+                return fib(n - 1) + fib(n - 2);
+            }
+
+            let r = fib(10);
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        parser.advance();
+        parser.fun_declaration();
+        parser.advance();
+        parser.var_declaration();
+
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _ = vm.run();
+
+            let r = match vm.globals.get(&String::from("r")).expect("Invalid variable.").borrow().value {
+                Primitive::Int(i) => i,
+                _ => panic!("Invalid variable return type.")
+            };
+
+            assert_eq!(r, 55);
+        }));
+
+        assert!(result.is_ok())
+    }
 }

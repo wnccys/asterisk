@@ -478,20 +478,6 @@ impl Vm {
         Ok(())
     }
 
-    unsafe fn advance_ip(&mut self) {
-        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
-    }
-
-    unsafe fn jump_ip(&mut self, offset: isize) {
-        unsafe {
-            self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset)
-        };
-    }
-
-    unsafe fn putback_ip(&mut self, offset: usize) {
-        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset) };
-    }
-
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
         let callee = Rc::clone(
@@ -598,6 +584,20 @@ impl Vm {
             println!("<{}>()", call_frame.function.name);
         }
         panic!()
+    }
+
+    unsafe fn advance_ip(&mut self) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+    }
+
+    unsafe fn jump_ip(&mut self, offset: isize) {
+        unsafe {
+            self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset)
+        };
+    }
+
+    unsafe fn putback_ip(&mut self, offset: usize) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset) };
     }
 
     fn error(&self, message: String) -> VmResult {

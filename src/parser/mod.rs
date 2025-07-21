@@ -2,6 +2,7 @@ pub mod lexer;
 pub mod ruler;
 pub mod scope;
 
+use std::cell::RefCell;
 #[allow(unused)]
 use std::{ rc::Rc, thread::{self, current}, time::Duration};
 
@@ -331,6 +332,33 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
         }
 
         self.scopes.pop();
+    }
+
+    pub fn resolve_local(&self, var_name: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        let mut local = None;
+
+        for scope in self.scopes.iter().rev() {
+            local = scope.get_local(var_name);
+
+            if local.is_some() { break; }
+        }
+
+        local
+    }
+
+    pub fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
+        if self.up_context.is_none() { return None; };
+    }
+
+    pub fn add_upvalue(&mut self, index: usize, is_local: bool) -> Option<usize> {
+        if self.upvalues.iter().find(
+            |up| up.index == index && up.is_local == is_local
+        ).is_some() { return None; }
+
+        let upvalue = UpValue { index, is_local };
+        self.upvalues.push(upvalue);
+        self.function.upv_count += 1;
+        return Some(self.function.upv_count);
     }
 
     /// Statement manager function

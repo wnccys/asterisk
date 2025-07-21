@@ -24,11 +24,11 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Parser<'a, R: std::io::Read> {
+pub struct Parser<R: std::io::Read> {
     pub function: Function,
     pub upvalues: Vec<UpValue>,
     pub function_type: FunctionType,
-    pub up_context: Option<&'a Parser<'a, R>>,
+    pub up_context: Option<*mut Parser<R>>,
     pub lexer: Option<Lexer<R>>,
     pub current: Token,
     pub previous: Token,
@@ -36,7 +36,7 @@ pub struct Parser<'a, R: std::io::Read> {
     pub scopes: Vec<Scope>,
 }
 
-impl<'a, R: std::io::Read> Parser<'a, R> {
+impl<R: std::io::Read> Parser<R> {
     pub fn new(function: Function, function_type: FunctionType, lexer: Lexer<R>) -> Self {
         Parser {
             function,
@@ -52,7 +52,7 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
     }
 }
 
-impl<'a, R: std::io::Read> Parser<'a, R> {
+impl<R: std::io::Read> Parser<R> {
     /// Declaration Flow Order
     /// → classDecl
     ///    | funDecl
@@ -109,7 +109,7 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
             let mut parser: Parser<R> = Parser {
                 function: Function::new(func_name),
                 lexer: self.lexer.take(),
-                up_context: Some(&self),
+                up_context: Some(self),
                 function_type: function_t,
                 // lexer: self.lexer.take(),
                 upvalues: vec![],

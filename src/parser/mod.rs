@@ -8,6 +8,7 @@ use std::{ rc::Rc, thread::{self, current}, time::Duration};
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
+use crate::primitives::primitive::UpValue;
 #[allow(unused)]
 use crate::{
     parser::scope::Scope,
@@ -22,10 +23,11 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Parser<R: std::io::Read> {
+pub struct Parser<'a, R: std::io::Read> {
     pub function: Function,
     pub upvalues: Vec<UpValue>,
     pub function_type: FunctionType,
+    pub up_context: Option<&'a Parser<'a, R>>,
     pub lexer: Option<Lexer<R>>,
     pub current: Token,
     pub previous: Token,
@@ -33,12 +35,14 @@ pub struct Parser<R: std::io::Read> {
     pub scopes: Vec<Scope>,
 }
 
-impl<R: std::io::Read> Parser<R> {
+impl<'a, R: std::io::Read> Parser<'a, R> {
     pub fn new(function: Function, function_type: FunctionType, lexer: Lexer<R>) -> Self {
         Parser {
             function,
             function_type,
+            up_context: None,
             lexer: Some(lexer),
+            upvalues: vec![],
             current: Token::Nil,
             previous: Token::Nil,
             had_error: false,
@@ -47,7 +51,7 @@ impl<R: std::io::Read> Parser<R> {
     }
 }
 
-impl<R: std::io::Read> Parser<R> {
+impl<'a, R: std::io::Read> Parser<'a, R> {
     /// Declaration Flow Order
     /// → classDecl
     ///    | funDecl

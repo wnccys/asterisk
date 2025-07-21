@@ -346,19 +346,43 @@ impl<R: std::io::Read> Parser<R> {
         local
     }
 
-    pub fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
+    pub unsafe fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
         if self.up_context.is_none() { return None; };
+
+        let local = self.up_context.unwrap().read().resolve_local(name);
+        if local.is_some() {
+            return Some(
+                    self
+                    .up_context
+                    .unwrap()
+                    .read()
+                    .add_upvalue(local.unwrap().borrow().0, true)
+                );
+        };
+
+        let upvalue = 
+            self 
+            .up_context
+            .unwrap()
+            .read()
+            .resolve_upvalue(name);
+
+        if upvalue.is_some() {
+            return Some(self.add_upvalue(local.unwrap().borrow().0, false));
+        }
+
+        None
     }
 
-    pub fn add_upvalue(&mut self, index: usize, is_local: bool) -> Option<usize> {
+    pub fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
         if self.upvalues.iter().find(
             |up| up.index == index && up.is_local == is_local
-        ).is_some() { return None; }
+        ).is_some() { return index; }
 
         let upvalue = UpValue { index, is_local };
         self.upvalues.push(upvalue);
         self.function.upv_count += 1;
-        return Some(self.function.upv_count);
+        return self.function.upv_count;
     }
 
     /// Statement manager function

@@ -224,7 +224,7 @@ impl<R: std::io::Read> ParseRule<R> {
 
                 get_op = OpCode::GetGlobal(var_index.unwrap());
                 set_op = OpCode::SetGlobal(var_index.unwrap());
-            } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
+            } else if let Some(up_idx) = unsafe { parser.resolve_upvalue(&var_name) } {
                 get_op = OpCode::GetUpValue(up_idx);
                 set_op = OpCode::SetUpValue(up_idx);
             } else {

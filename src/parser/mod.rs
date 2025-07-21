@@ -100,64 +100,72 @@ impl<'a, R: std::io::Read> Parser<'a, R> {
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     ///
     fn function(&mut self, function_t: FunctionType, func_name: String) {
-        let current = self.get_current();
-        let previous = self.get_previous();
-        /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
-        let mut parser: Parser<R> = Parser {
-            function: Function::new(func_name),
-            function_type: function_t,
-            lexer: self.lexer.take(),
-            /* Temporally moves token_stream to inner parser */
-            current,
-            previous,
-            had_error: false,
-            scopes: vec![],
-        };
+        // 'i' stands for inner
+        let (i_function, i_lexer, i_previous, i_current) = {
+            let current = self.get_current();
+            let previous = self.get_previous();
+            /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
+            let mut parser: Parser<R> = Parser {
+                function: Function::new(func_name),
+                lexer: self.lexer.take(),
+                up_context: Some(&self),
+                function_type: function_t,
+                // lexer: self.lexer.take(),
+                upvalues: vec![],
+                /* Temporally moves token_stream to inner parser */
+                current,
+                previous,
+                had_error: false,
+                scopes: vec![],
+            };
 
-        parser.begin_scope();
-        parser.consume(Token::LeftParen, "Expect '(' after function name.");
-        /* TODO Initialize parameters */
-        if !parser.check(Token::RightParen) {
-            let modifier = Modifier::Const;
-            loop {
-                parser.function.arity += 1;
-                let local_name = match parser.get_current() {
-                    Token::Identifier(name) => name,
-                    _ => self.error("Could not parse arguments."),
-                };
-                parser.advance();
-                parser.parse_variable(modifier, local_name.clone());
+            parser.begin_scope();
+            parser.consume(Token::LeftParen, "Expect '(' after function name.");
+            /* TODO Initialize parameters */
+            if !parser.check(Token::RightParen) {
+                let modifier = Modifier::Const;
+                loop {
+                    parser.function.arity += 1;
+                    let local_name = match parser.get_current() {
+                        Token::Identifier(name) => name,
+                        _ => self.error("Could not parse arguments."),
+                    };
+                    parser.advance();
+                    parser.parse_variable(modifier, local_name.clone());
 
-                parser.consume(
-                    Token::Colon,
-                    "Expect : Type specification on function signature.",
-                );
+                    parser.consume(
+                        Token::Colon,
+                        "Expect : Type specification on function signature.",
+                    );
 
-                let t = parser.parse_var_type();
-                parser.mark_initialized(local_name, t);
+                    let t = parser.parse_var_type();
+                    parser.mark_initialized(local_name, t);
 
-                if !parser.match_token(Token::Comma) {
-                    break;
+                    if !parser.match_token(Token::Comma) {
+                        break;
+                    }
                 }
             }
-        }
-        parser.consume(Token::RightParen, "Expect ')' after function parameters.");
-        parser.consume(Token::LeftBrace, "Expect '{' after function name.");
-        parser.block();
-        /* End-of-scope are automatically handled by block() */
+            parser.consume(Token::RightParen, "Expect ')' after function parameters.");
+            parser.consume(Token::LeftBrace, "Expect '{' after function name.");
+            parser.block();
+            /* End-of-scope are automatically handled by block() */
 
-        let function = Value {
-            value: Primitive::Function(Rc::new(parser.end_compiler())),
-            _type: Type::Fn,
-            modifier: Modifier::Const,
+            let function = Value {
+                value: Primitive::Function(Rc::new(parser.end_compiler())),
+                _type: Type::Fn,
+                modifier: Modifier::Const,
+            };
+
+            (function, parser.lexer.take(), parser.previous, parser.current)
         };
 
         /* Re-gain ownership over Lexer and it's Tokens */
-        self.lexer = parser.lexer.take();
-        self.previous = parser.previous;
-        self.current = parser.current;
+        self.lexer = i_lexer;
+        self.previous = i_previous;
+        self.current = i_current;
 
-        let fn_idx = self.emit_constant(function);
+        let fn_idx = self.emit_constant(i_function);
         self.emit_byte(OpCode::Closure(fn_idx));
     }
 

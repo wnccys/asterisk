@@ -47,6 +47,7 @@ impl Display for Primitive {
     }
 }
 
+#[derive(Debug)]
 pub struct UpValue {
     pub index: usize,
     pub is_local: bool,

@@ -168,6 +168,11 @@ impl<R: std::io::Read> Parser<R> {
 
         let fn_idx = self.emit_constant(i_function);
         self.emit_byte(OpCode::Closure(fn_idx));
+
+        self.upvalues.iter().for_each(|upv| {
+            self.emit_byte();
+            self.emit_byte();
+        });
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

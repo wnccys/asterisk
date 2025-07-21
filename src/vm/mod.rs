@@ -480,7 +480,8 @@ impl Vm {
 
                     self.stack.push(Rc::new(RefCell::new(Self::enclosure(Rc::clone(_fn)))));
                 }
-            };
+            }
+
 
             unsafe { self.advance_ip() }
         }
@@ -555,7 +556,7 @@ impl Vm {
 
     fn enclosure(_fn: Rc<Function>) -> Value {
         Value {
-            value: Primitive::Closure { _fn, _s: None },
+            value: Primitive::Closure { _fn, upvalues: vec![] },
             _type: Type::Closure,
             modifier: Modifier::Const,
         }

@@ -1,9 +1,5 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
-use crate::parser::scope::Scope;
 use crate::parser::Parser;
-use crate::primitives::primitive::{Primitive, UpValue};
+use crate::primitives::primitive::{Primitive};
 use crate::primitives::types::{Modifier, Type};
 use crate::primitives::value::Value;
 use crate::vm::chunk::OpCode;

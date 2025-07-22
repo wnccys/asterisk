@@ -106,7 +106,7 @@ impl<R: std::io::Read> Parser<R> {
     ///
     fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
         // 'i' stands for inner
-        let (i_function, i_lexer, i_previous, i_current, mut __self) = {
+        let (i_function, i_lexer, i_previous, i_current, mut _self) = {
             let current = self.get_current();
             let previous = self.get_previous();
             /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
@@ -165,17 +165,15 @@ impl<R: std::io::Read> Parser<R> {
             (function, parser.lexer.take(), parser.previous, parser.current, parser.up_context.take().unwrap())
         };
 
-        {
-        /* Re-gain ownership over Lexer and it's Tokens */
-            __self.lexer = i_lexer;
-            __self.previous = i_previous;
-            __self.current = i_current;
+    /* Re-gain ownership over Lexer and it's Tokens */
+        _self.lexer = i_lexer;
+        _self.previous = i_previous;
+        _self.current = i_current;
 
-            let fn_idx = __self.emit_constant(i_function);
-            __self.emit_byte(OpCode::Closure(fn_idx));
-        }
+        let fn_idx = _self.emit_constant(i_function);
+        _self.emit_byte(OpCode::Closure(fn_idx));
 
-        *__self
+        *_self
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

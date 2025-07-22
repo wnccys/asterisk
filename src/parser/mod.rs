@@ -78,7 +78,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Where the fun starts
     ///
-    pub fn fun_declaration(&mut self) {
+    pub fn fun_declaration(mut self: Parser<R>) -> Parser<R> {
         let modifier = Modifier::Const;
         self.advance();
 
@@ -90,28 +90,30 @@ impl<R: std::io::Read> Parser<R> {
         /* Let function as value available on top of stack */
         match global_var {
             Some(idx) => {
-                self.function(FunctionType::Fn, name);
+                self = self.function(FunctionType::Fn, name);
                 self.define_variable(idx, modifier, Type::Fn);
+                return self;
             }
             None => {
-                self.function(FunctionType::Fn, name.clone());
-                self.mark_initialized(name, Type::Fn);
+                let mut __self = Self::function(self, FunctionType::Fn, name.clone());
+                __self.mark_initialized(name, Type::Fn);
+                return __self;
             }
         }
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     ///
-    fn function(&mut self, function_t: FunctionType, func_name: String) {
+    fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
         // 'i' stands for inner
-        let (i_function, i_lexer, i_previous, i_current) = {
+        let (i_function, i_lexer, i_previous, i_current, mut __self) = {
             let current = self.get_current();
             let previous = self.get_previous();
             /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
             let mut parser: Parser<R> = Parser {
                 function: Function::new(func_name),
                 lexer: self.lexer.take(),
-                up_context: Some(self),
+                up_context: Some(Box::new(self)),
                 function_type: function_t,
                 // lexer: self.lexer.take(),
                 upvalues: vec![],
@@ -131,7 +133,7 @@ impl<R: std::io::Read> Parser<R> {
                     parser.function.arity += 1;
                     let local_name = match parser.get_current() {
                         Token::Identifier(name) => name,
-                        _ => self.error("Could not parse arguments."),
+                        _ => parser.error("Could not parse arguments."),
                     };
                     parser.advance();
                     parser.parse_variable(modifier, local_name.clone());
@@ -151,7 +153,7 @@ impl<R: std::io::Read> Parser<R> {
             }
             parser.consume(Token::RightParen, "Expect ')' after function parameters.");
             parser.consume(Token::LeftBrace, "Expect '{' after function name.");
-            parser.block();
+            parser = parser.block();
             /* End-of-scope are automatically handled by block() */
 
             let function = Value {
@@ -160,21 +162,20 @@ impl<R: std::io::Read> Parser<R> {
                 modifier: Modifier::Const,
             };
 
-            (function, parser.lexer.take(), parser.previous, parser.current)
+            (function, parser.lexer.take(), parser.previous, parser.current, parser.up_context.take().unwrap())
         };
 
+        {
         /* Re-gain ownership over Lexer and it's Tokens */
-        self.lexer = i_lexer;
-        self.previous = i_previous;
-        self.current = i_current;
+            __self.lexer = i_lexer;
+            __self.previous = i_previous;
+            __self.current = i_current;
 
-        let fn_idx = self.emit_constant(i_function);
-        self.emit_byte(OpCode::Closure(fn_idx));
+            let fn_idx = __self.emit_constant(i_function);
+            __self.emit_byte(OpCode::Closure(fn_idx));
+        }
 
-        self.upvalues.iter().for_each(|upv| {
-            self.emit_byte();
-            self.emit_byte();
-        });
+        *__self
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.

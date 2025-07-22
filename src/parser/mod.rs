@@ -28,7 +28,7 @@ pub struct Parser<R: std::io::Read> {
     pub function: Function,
     pub upvalues: Vec<UpValue>,
     pub function_type: FunctionType,
-    pub up_context: Option<*mut Parser<R>>,
+    pub up_context: Option<Box<Parser<R>>>,
     pub lexer: Option<Lexer<R>>,
     pub current: Token,
     pub previous: Token,

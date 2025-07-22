@@ -467,7 +467,7 @@ impl<R: std::io::Read> Parser<R> {
     /// After we state a loop jump, which is the jump made if the condition on (X; HERE; Z) is false, it must evaluate to a bool, or a compiler error on stack will be throw
     /// Last we
     ///
-    fn for_statement(&mut self) {
+    fn for_statement(mut self: Parser<R>) -> Parser<R> {
         self.begin_scope();
 
         /* Match (HERE; Y; Z) */
@@ -529,7 +529,7 @@ impl<R: std::io::Read> Parser<R> {
         }
 
         self.consume(Token::LeftBrace, "Expect '{' start-of-block.");
-        self.block();
+        self = self.block();
         self.emit_loop(loop_start);
 
         if exit_jump != -1 {
@@ -538,9 +538,11 @@ impl<R: std::io::Read> Parser<R> {
         }
 
         self.end_scope();
+
+        self
     }
 
-    fn if_statement(&mut self) {
+    fn if_statement(mut self: Parser<R>) -> Parser<R> {
         self.consume(Token::LeftParen, "Expect '(' after 'if'");
         self.expression();
         self.consume(Token::RightParen, "Expect ')' after condition");
@@ -554,25 +556,30 @@ impl<R: std::io::Read> Parser<R> {
         /* Remove bool expression value used for verification from stack */
         self.emit_byte(OpCode::Pop);
         /* Execute code in then branch so we know how many jumps we need */
-        self.statement();
+        let mut _self = Self::statement(self);
 
         /*
             Set jump to else branch.
             Even if else is not set explicitly it is compiled, executing nothing.
         */
-        let else_jump = self.emit_jump(OpCode::Jump(0));
+        let else_jump = _self.emit_jump(OpCode::Jump(0));
 
         /*
             Set correct calculated offset to earlier set then_jump.
             This is needed because jump doesn't know primarily how many instructions to jump
         */
-        self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
-        self.emit_byte(OpCode::Pop);
+        _self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
+        _self.emit_byte(OpCode::Pop);
 
-        if self.match_token(Token::Else) {
-            self.statement();
+        if _self.match_token(Token::Else) {
+            let mut __self =Self::statement(_self);
+            __self.patch_jump(else_jump, OpCode::Jump(0));
+
+            return __self;
         }
-        self.patch_jump(else_jump, OpCode::Jump(0));
+        _self.patch_jump(else_jump, OpCode::Jump(0));
+
+        _self
     }
 
     fn return_statement(&mut self) {
@@ -589,7 +596,7 @@ impl<R: std::io::Read> Parser<R> {
         };
     }
 
-    fn while_statement(&mut self) {
+    fn while_statement(mut self: Parser<R>) -> Parser<R> {
         /* The Bytecode index jump needs to go backward to restart loop */
         let loop_start = self.function.chunk.code.len() - 1;
 
@@ -599,13 +606,16 @@ impl<R: std::io::Read> Parser<R> {
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
-        self.statement();
+
+        self = self.statement();
         self.emit_loop(loop_start);
         self.patch_jump(exit_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
+        
+        self
     }
 
-    fn switch_statement(&mut self) {
+    fn switch_statement(mut self: Parser<R>) -> Parser<R> {
         self.begin_scope();
 
         self.consume(Token::LeftParen, "Expect '(' after switch clause.");
@@ -622,7 +632,7 @@ impl<R: std::io::Read> Parser<R> {
             Statements doesnt let dangling values on stack, so no pop is needed.
             Finally, the value available on top is going to be the expression() result one.
         */
-        self.statement();
+        self = self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
         /*
@@ -639,7 +649,7 @@ impl<R: std::io::Read> Parser<R> {
             self.expression();
             self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-            self.statement();
+            self = self.statement();
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
             self.patch_jump(branch_jump, OpCode::JumpIfTrue(0));
@@ -650,7 +660,7 @@ impl<R: std::io::Read> Parser<R> {
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
         if self.match_token(Token::Default) {
-            self.statement();
+            self = self.statement();
         }
 
         self.patch_jump(default_jump, OpCode::JumpIfTrue(0));
@@ -662,6 +672,8 @@ impl<R: std::io::Read> Parser<R> {
 
         self.consume(Token::RightBrace, "Expect '}' on end-of-block.");
         self.end_scope();
+
+        self
     }
 
     /// Evaluate expression and consume ';' token.
@@ -674,12 +686,14 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
     ///
-    pub fn block(&mut self) {
+    pub fn block(mut self: Parser<R>) -> Parser<R> {
         while !self.check(Token::RightBrace) && !self.check(Token::Eof) {
-            self.declaration();
+            self = self.declaration();
         }
 
         self.consume(Token::RightBrace, "Expected '}' end-of-block.");
+
+        self
     }
 
     /// Check if current Token matches argument Token.

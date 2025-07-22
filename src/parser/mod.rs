@@ -406,24 +406,26 @@ impl<R: std::io::Read> Parser<R> {
     ///    | whileStmt
     ///    | block ;
     ///
-    pub fn statement(&mut self) {
+    pub fn statement(mut self: Parser<R>) -> Parser<R> {
         if self.match_token(Token::Print) {
             self.print_statement();
         } else if self.match_token(Token::For) {
-            self.for_statement();
+            return self.for_statement();
         } else if self.match_token(Token::If) {
-            self.if_statement();
+            return self.if_statement()
         } else if self.match_token(Token::Return) {
             self.return_statement();
         } else if self.match_token(Token::While) {
-            self.while_statement();
+            return self.while_statement();
         } else if self.match_token(Token::Switch) {
-            self.switch_statement();
+            return self.switch_statement();
         } else if self.check(Token::LeftBrace) {
-            self.declaration();
+            return self.declaration();
         } else {
             self.expression_statement();
         }
+
+        self
     }
 
     // pub fn syncronize(&mut self) {

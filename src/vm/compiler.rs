@@ -13,7 +13,7 @@ pub fn compile<T: std::io::Read>(source_code: T) -> Function {
     parser.advance();
 
     while parser.current != Token::Eof {
-        parser.declaration();
+        parser = parser.declaration();
     }
 
     parser.end_compiler()

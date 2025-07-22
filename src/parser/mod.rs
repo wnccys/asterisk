@@ -342,6 +342,8 @@ impl<R: std::io::Read> Parser<R> {
         self.scopes.pop();
     }
 
+    /// Iterates over all parser scope's searching for local variable, returning it's (index, Mod)
+    /// 
     pub fn resolve_local(&self, var_name: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
         let mut local = None;
 

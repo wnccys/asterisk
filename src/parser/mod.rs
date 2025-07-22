@@ -59,19 +59,21 @@ impl<R: std::io::Read> Parser<R> {
     ///    | varDecl
     ///    | statement
     ///
-    pub fn declaration(&mut self) {
+    pub fn declaration(mut self: Parser<R>) -> Parser<R> {
         if self.match_token(Token::Fun) {
-            self.fun_declaration();
+            self = self.fun_declaration();
         } else if self.match_token(Token::Var) {
             self.var_declaration();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
-            self.block();
+            self = self.block();
             self.end_scope();
         } else {
             // Declaration Control Flow Fallback
-            self.statement();
+            return self.statement()
         }
+
+        self
     }
 
     /// Where the fun starts

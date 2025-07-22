@@ -1,7 +1,7 @@
 use crate::parser::lexer::*;
 use crate::parser::Parser;
-use crate::primitives::primitive::Function;
-use crate::primitives::primitive::FunctionType;
+use crate::primitives::functions::Function;
+use crate::primitives::functions::FunctionType;
 
 pub fn compile<T: std::io::Read>(source_code: T) -> Function {
     let lex = Lexer::new(source_code);

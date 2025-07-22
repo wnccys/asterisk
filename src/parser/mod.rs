@@ -359,22 +359,28 @@ impl<R: std::io::Read> Parser<R> {
     pub unsafe fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
         if self.up_context.is_none() { return None; };
 
-        let local = self.up_context.unwrap().read().resolve_local(name);
+        let local = 
+            self
+            .up_context
+            .as_mut()
+            .unwrap()
+            .resolve_local(name);
+
         if local.is_some() {
             return Some(
                     self
                     .up_context
+                    .as_mut()
                     .unwrap()
-                    .read()
                     .add_upvalue(local.unwrap().borrow().0, true)
                 );
         };
 
-        let upvalue = 
+        let upvalue =
             self 
             .up_context
+            .as_mut()
             .unwrap()
-            .read()
             .resolve_upvalue(name);
 
         if upvalue.is_some() {
@@ -392,6 +398,7 @@ impl<R: std::io::Read> Parser<R> {
         let upvalue = UpValue { index, is_local };
         self.upvalues.push(upvalue);
         self.function.upv_count += 1;
+
         return self.function.upv_count;
     }
 

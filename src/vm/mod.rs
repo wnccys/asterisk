@@ -232,11 +232,15 @@ impl Vm {
                         self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
                     let _type = parse_type(&constant);
 
-                    self.stack.push(Rc::new(RefCell::new(Value {
-                        value: constant,
-                        modifier: Modifier::Unassigned,
-                        _type,
-                    })));
+                    self.stack.push(
+                        Rc::new(RefCell::new(
+                            Value {
+                                value: constant,
+                                modifier: Modifier::Unassigned,
+                                _type,
+                            }
+                        ))
+                    );
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier, t) => {

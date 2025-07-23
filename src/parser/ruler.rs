@@ -219,20 +219,23 @@ impl<R: std::io::Read> ParseRule<R> {
             let local = parser.resolve_local(&var_name);
 
             /* Global variables inside scope handling */
-            if local.is_none() {
-                let var_index = parser.identifier_constant(var_name);
-
-                get_op = OpCode::GetGlobal(var_index.unwrap());
-                set_op = OpCode::SetGlobal(var_index.unwrap());
-            } else if let Some(up_idx) = unsafe { parser.resolve_upvalue(&var_name) } {
-                get_op = OpCode::GetUpValue(up_idx);
-                set_op = OpCode::SetUpValue(up_idx);
-            } else {
+            if local.is_some() {
                 let local = local.unwrap();
 
                 get_op = OpCode::GetLocal(local.borrow().0);
                 set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
+            } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
+                get_op = OpCode::GetUpValue(up_idx);
+                set_op = OpCode::SetUpValue(up_idx);
+            } else {
+                let var_index = parser.identifier_constant(var_name);
+
+                get_op = OpCode::GetGlobal(var_index.unwrap());
+                set_op = OpCode::SetGlobal(var_index.unwrap());
             }
+        } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
+            get_op = OpCode::GetUpValue(up_idx);
+            set_op = OpCode::SetUpValue(up_idx);
         } else {
             let var_index = parser.identifier_constant(var_name);
 

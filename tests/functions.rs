@@ -33,7 +33,7 @@ mod functions {
             .unwrap_or_else(|| panic!("Could not find function object."));
 
         let inner_fn = match _fn {
-            Primitive::Function(f) => f,
+            Primitive::Closure {_fn, ..} => _fn,
             f => panic!("{}", format!("Invalid function object: {:?}", f))
         }.clone();
 
@@ -104,7 +104,7 @@ mod functions {
             .unwrap_or_else(|| panic!("Could not find function object."));
 
         let inner_fn = match _fn {
-            Primitive::Function(f) => f,
+            Primitive::Closure {_fn, ..} => _fn,
             f => panic!("{}", format!("Invalid function object: {:?}", f))
         }.clone();
 
@@ -118,8 +118,8 @@ mod functions {
         match vm.globals.get(&inner_fn.name) {
             Some(f) => {
                 match &Rc::clone(&f).borrow().value {
-                    Primitive::Function(f) => {
-                        if f.arity != inner_fn.arity {
+                    Primitive::Closure {_fn, ..} => {
+                        if _fn.arity != inner_fn.arity {
                             panic!("Invalid arity of VM function callable object.") 
                         } 
                     },

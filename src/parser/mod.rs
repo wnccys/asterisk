@@ -123,7 +123,6 @@ impl<R: std::io::Read> Parser<R> {
 
             parser.begin_scope();
             parser.consume(Token::LeftParen, "Expect '(' after function name.");
-            /* TODO Initialize parameters */
             if !parser.check(Token::RightParen) {
                 let modifier = Modifier::Const;
                 loop {
@@ -208,8 +207,7 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::SemiColon, "Expect ';' after variable declaration.");
 
         if global.is_none() {
-            self.mark_initialized(var_name, _type.unwrap_or_default());
-            return;
+            return self.mark_initialized(var_name, _type.unwrap_or_default());
         }
 
         self.define_variable(global.unwrap(), modifier, _type.unwrap_or_default());

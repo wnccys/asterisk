@@ -6,12 +6,12 @@ use std::{
     rc::Rc,
 };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HashTable<K, V> {
     entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
 }
 
-impl<K: Clone, V> Default for HashTable<K, V> {
+impl<K: Clone + std::fmt::Debug, V> Default for HashTable<K, V> {
     fn default() -> Self {
         Self {
             entries: vec![None; 4],
@@ -19,7 +19,7 @@ impl<K: Clone, V> Default for HashTable<K, V> {
     }
 }
 
-impl<K, V: Default> HashTable<K, V>
+impl<K: std::fmt::Debug, V: Default + std::fmt::Debug> HashTable<K, V>
 where
     K: Hash + Clone + PartialEq + Display,
 {
@@ -42,6 +42,7 @@ where
         } else {
             *entry.as_ref().unwrap().1.borrow_mut() = value;
         }
+
 
         /* If key already exists, return false (no entry was added) and assign new value to bucket */
         return is_new;
@@ -112,11 +113,16 @@ where
     }
 
     fn check_cap(&mut self) {
-        /* Check if num_elements > num_buckets
+        /* Check if num_elements (Some) > num_buckets
          *
          * + 1 because it checks for future entry (assume it is a new one)
          */
-        if (self.entries.len() + 1) as f64
+        if (
+            self
+            .entries
+            .iter()
+            .filter(|e| e.is_some())
+            .count() + 1) as f64
             > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR)
         {
             self.resize();

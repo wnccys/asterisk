@@ -475,14 +475,32 @@ impl Vm {
                     continue;
                 }
                 OpCode::Closure(fn_idx) => {
-                    let _fn = &self.frames.last().unwrap().function.chunk.constants[fn_idx];
-
-                    let _fn = match _fn {
+                    let _fn = match self.stack.pop().unwrap().take().value {
                         Primitive::Function(f) => f,
-                        _ => panic!("Could not get correct Fn object.")
+                        _ => panic!("Could not find fn to enclosure"),
                     };
 
-                    self.stack.push(Rc::new(RefCell::new(Self::enclosure(Rc::clone(_fn)))));
+
+                    self.stack.push(Rc::new(RefCell::new(Self::enclosure(_fn))));
+                }
+                OpCode::SetUpValue(var_idx) => {
+                    let variable = Rc::clone(&self.stack[var_idx]);
+
+                    if variable.borrow().modifier != Modifier::Mut {
+                        self.error("Cannot assign to immutable variable.".to_string())?
+                    }
+
+                    let incoming_value = self.stack.pop().expect("Could not find value to assign.").take();
+
+                    if variable.borrow()._type != incoming_value._type
+                        && variable.borrow()._type != Type::UnInit {
+                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?
+                    }
+
+                    variable.borrow_mut().value = incoming_value.value;
+                }
+                OpCode::GetUpValue(var_idx) => {
+                    self.stack.push(Rc::clone(&self.stack[var_idx]));
                 }
             }
 

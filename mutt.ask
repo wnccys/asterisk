@@ -10,5 +10,4 @@ fn outer() {
 }
 
 let a = outer();
-use crate::primitives;
 print a();

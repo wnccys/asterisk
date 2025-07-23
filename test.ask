@@ -1,12 +1,22 @@
-fn fib(n: Int) {
-    if (n < 2) { return n; }
+fn outer() {
+    let mut x = 2;
+    let y = 3;
+    let z = true;
 
-    return fib(n - 1) + fib(n - 2);
+    fn inner() {
+        x = x + 1;
+
+        print x;
+    }
+
+    fn f() {
+        x = x + 1;
+
+        print x;
+    }
+    
+    inner();
+    f();
 }
 
-let a = 0b0001;
-let b = 0x550401923091;
-let c = 33;
-let d = 32.5;
-
-print fib(10);
+outer();

@@ -530,6 +530,8 @@ impl Vm {
         }
     }
 
+    /// Check fn arity, adjust and set (by pushing to frames) a new CallFrame with correct arg_offset.
+    /// 
     pub fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!(

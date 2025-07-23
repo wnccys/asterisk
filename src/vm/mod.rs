@@ -402,7 +402,7 @@ impl Vm {
                     let referenced_value = self
                         .globals
                         .get(&referenced_name)
-                        .unwrap_or_else(|| panic!("Invalid referenced value."));
+                        .expect("Invalid referenced value.");
                     let referenced_type = referenced_value.borrow()._type.clone();
 
                     let _ref = Value {

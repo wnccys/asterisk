@@ -1,4 +1,4 @@
-use asterisk::{parser::{lexer::Lexer, Parser}, primitives::primitive::{Function, FunctionType}};
+use asterisk::{parser::{lexer::Lexer, Parser}, primitives::functions::{Function, FunctionType}};
 
 /// Crafts a default parser given a source
 /// 

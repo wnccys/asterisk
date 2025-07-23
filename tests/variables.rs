@@ -43,7 +43,7 @@ pub mod variables {
         assert_eq!(var_value, 32);
 
         let mut parser = mk_parser(Cursor::new(sources[1]));
-        parser.statement();
+        parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
 
@@ -93,7 +93,7 @@ pub mod variables {
 
         // 2
         let mut parser = mk_parser(Cursor::new(sources[1]));
-        parser.statement();
+        parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
@@ -122,7 +122,7 @@ pub mod variables {
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
         parser.begin_scope();
-        parser.block();
+        parser = parser.block();
         parser.end_scope();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
@@ -149,7 +149,7 @@ pub mod variables {
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
         parser.begin_scope();
-        parser.block();
+        parser = parser.block();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let result = catch_unwind(AssertUnwindSafe(|| {

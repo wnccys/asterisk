@@ -22,7 +22,7 @@ mod functions {
         ];
         let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
-        parser.fun_declaration();
+        parser = parser.fun_declaration();
 
         // Extract function from current parser's chunk
         let _fn = parser
@@ -61,9 +61,9 @@ mod functions {
         // 2
         let mut parser = mk_parser(Cursor::new(sources[1]));
         // var_declaration
-        parser.declaration();
+        parser = parser.declaration();
         // expression (call)
-        parser.declaration();
+        parser = parser.declaration();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
@@ -93,7 +93,7 @@ mod functions {
         ];
         let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
-        parser.fun_declaration();
+        parser = parser.fun_declaration();
 
         // Extract function from current parser's chunk
         let _fn = parser
@@ -133,10 +133,10 @@ mod functions {
         let mut parser = mk_parser(Cursor::new(sources[1]));
         for _ in 0..7 {
             // var_declaration
-            parser.declaration();
+            parser = parser.declaration();
         }
         // expression (call)
-        parser.declaration();
+        parser = parser.declaration();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
@@ -157,7 +157,7 @@ mod functions {
 
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
-        parser.fun_declaration();
+        parser = parser.fun_declaration();
         parser.advance();
         parser.var_declaration();
 

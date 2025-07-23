@@ -18,7 +18,7 @@ mod native {
         ";
 
         let mut parser = mk_parser(Cursor::new(source));
-        parser.statement();
+        parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let result = catch_unwind(AssertUnwindSafe(||{
@@ -43,7 +43,7 @@ mod native {
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
         parser.var_declaration();
-        parser.statement();
+        parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let result = catch_unwind(AssertUnwindSafe(|| {
@@ -68,7 +68,7 @@ mod native {
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
         parser.var_declaration();
-        parser.statement();
+        parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let result = catch_unwind(AssertUnwindSafe(|| {

@@ -349,7 +349,7 @@ impl<R: std::io::Read> Parser<R> {
         local
     }
 
-    pub unsafe fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
+    pub fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
         if self.up_context.is_none() { return None; };
 
         let local = 
@@ -392,7 +392,7 @@ impl<R: std::io::Read> Parser<R> {
         self.upvalues.push(upvalue);
         self.function.upv_count += 1;
 
-        return self.function.upv_count;
+        index // self.function.upv_count;
     }
 
     /// Statement manager function

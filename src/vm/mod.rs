@@ -514,22 +514,30 @@ impl Vm {
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
         let callee = Rc::clone(
-            &self.stack[self
+            &self.stack[
+                self
                 .stack
                 .len()
                 .checked_sub(1)
                 .unwrap_or(0)
                 .checked_sub(args_count)
-                .unwrap_or(0)],
+                .unwrap_or(0)
+            ],
         );
         let value = callee.borrow();
 
         match &*value {
             Value {
-                value: Primitive::Closure{ _fn, .. },
+                value: Primitive::Closure { _fn, .. },
                 ..
             } => {
                 return self.call(Rc::clone(_fn), args_count);
+            }
+            Value {
+                value: Primitive::Function(f),
+                ..
+            } => {
+                return self.call(Rc::clone(f), args_count);
             }
             Value {
                 value: Primitive::NativeFunction(f),
@@ -548,7 +556,7 @@ impl Vm {
                 unsafe { self.advance_ip() }
                 false
             }
-            _ => panic!("Object {callee:?} is not callabble"),
+            _ => panic!("Object {callee:#?} is not callabble"),
         }
     }
 

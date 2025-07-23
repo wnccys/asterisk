@@ -3,8 +3,10 @@ use common::{mk_parser};
 
 #[cfg(test)]
 mod scopes {
+    use asterisk::vm::Vm;
+
     use super::*;
-    use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}};
+    use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
 
     #[test]
     fn scopes_single() {
@@ -28,6 +30,7 @@ mod scopes {
                 parser.end_scope();
         }));
 
+        assert_eq!(parser.scopes.len(), 0);
         assert!(result.is_ok());
     }
 
@@ -63,9 +66,62 @@ mod scopes {
                 parser.end_scope();
         }));
 
+        assert_eq!(parser.scopes.len(), 0);
         assert!(result.is_ok());
     }
 
     #[test]
-    fn scopes_closures() {}
+    fn scopes_closures_single() {
+        let mut vm = Vm::default();
+        let source = "
+            fn outer() {
+                let mut x = 2;
+
+                fn inner() {
+                    x = x + 1;
+
+                    print x;
+                }
+                
+                inner();
+            }
+
+            outer();
+        ";
+        let mut parser = mk_parser(Cursor::new(source));
+        parser.advance();
+        parser = parser.fun_declaration();
+        assert_eq!(parser.scopes.len(), 0);
+
+        parser = parser.statement();
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        let _ = vm.run();
+    }
+
+    fn scopes_closures_multi() {
+        let source = "
+            fn outer() {
+                let mut x = 2;
+
+                fn inner() {
+                    x = x + 1;
+
+                    print x;
+                }
+
+                fn f() {
+                    x = x + 1;
+
+                    print x;
+                }
+                
+                inner();
+                f();
+            }
+
+            outer();
+        ";
+
+        let parser = mk_parser(Cursor::new(source));
+    }
 }

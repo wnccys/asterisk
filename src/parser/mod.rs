@@ -92,7 +92,7 @@ impl<R: std::io::Read> Parser<R> {
 
         /* Let function as value available on top of stack */
         match global_var {
-            Some(idx) => self.define_variable(idx, modifier, Type::Closure),
+            Some(idx) => self.define_variable(idx, modifier, Type::Fn),
             None => self.mark_initialized(name, Type::Closure),
         }
 

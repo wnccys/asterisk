@@ -1,6 +1,7 @@
 # <div align="center"> Asterisk <img src="./doc/asterisk.png" width=50 alt="astr-img"></img></div>
-Asterisk is very experimental scripting-language with a basic abstraction of Rust's Ownership Rules, allowing user's to manipulate these rules to it's scripting.
-It's Implementation is based on <strong><a href="https://craftinginterpreters.com/">Crafting Interpreters</a></strong> By Robert Nystrom,
+Asterisk is a very experimental scripting-language with a basic abstraction of Rust's Ownership Rules, allowing user's to manipulate these rules to it's scripting.
+It's implementation is based on <strong><a href="https://craftinginterpreters.com/">Crafting Interpreters</a></strong>.
+
 <strong>Read More: <a href="https://hungry-air-4cc.notion.site/asterisk-9f7c790a9e914b6699bb9da3221f9d6d">The Asterisk Blog</a></strong>
 
 ## Usage

@@ -120,7 +120,6 @@ where
         if (self.entries.iter().filter(|e| e.is_some()).count() + 1) as f64
             > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR)
         {
-            // dbg!("==== RESIZE ");
             self.resize();
         }
     }
@@ -144,8 +143,6 @@ where
                 new_entries[t_idx] = Some((k, v));
             }
         }
-
-        // dbg!(&new_entries);
 
         self.entries = new_entries;
     }

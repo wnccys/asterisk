@@ -103,7 +103,13 @@ impl<R: std::io::Read> Parser<R> {
     ///
     fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
         // 'i' stands for inner
-        let (i_function, i_lexer, i_previous, i_current, mut _self) = {
+        let (
+            i_function, 
+            i_lexer, 
+            i_previous, 
+            i_current, 
+            mut _self
+        ) = {
             let current = self.get_current();
             let previous = self.get_previous();
             /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
@@ -167,7 +173,10 @@ impl<R: std::io::Read> Parser<R> {
         _self.current = i_current;
 
         let fn_idx = _self.emit_constant(i_function);
-        _self.emit_byte(OpCode::Closure(fn_idx));
+
+        if _self.scopes.len() > 0 {
+            _self.emit_byte(OpCode::Closure(fn_idx));
+        }
 
         *_self
     }

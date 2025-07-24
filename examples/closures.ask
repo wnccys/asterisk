@@ -1,0 +1,22 @@
+fn outer() {
+    let mut x = 2;
+    let y = 3;
+    let z = true;
+
+    fn inner() {
+        x = x + 1;
+
+        print x;
+    }
+
+    fn f() {
+        x = x + 1;
+
+        print x;
+    }
+    
+    inner();
+    f();
+}
+
+outer();

@@ -8,9 +8,11 @@ use std::time::Duration;
 
 use crate::errors::vm::{InterpretResult, VmError};
 use crate::objects::hash_table::HashTable;
-use crate::primitives::primitive::NativeFn;
+use crate::primitives::native::_typeof;
+use crate::primitives::functions::NativeFn;
+use crate::primitives::primitive::Primitive;
 use crate::primitives::{
-    primitive::{Function, Primitive},
+    functions::Function,
     types::{Modifier, Type},
     value::Value,
 };
@@ -23,17 +25,17 @@ use crate::{errors::vm::VmResult, primitives::native::duration};
 
 pub type Stack = Vec<Rc<RefCell<Value>>>;
 pub struct Vm {
-    frames: Vec<CallFrame>,
-    stack: Stack,
-    globals: HashTable<String, Value>,
-    strings: HashTable<String, String>,
+    pub frames: Vec<CallFrame>,
+    pub stack: Stack,
+    pub globals: HashTable<String, Value>,
+    pub strings: HashTable<String, String>,
 }
 
 #[derive(Debug)]
 pub struct CallFrame {
     pub function: Rc<Function>,
     pub ip: *const OpCode,
-    /* Init and final of frame stack scope range */
+    /* Init of frame function arg variables scope range */
     pub arg_offset: usize,
 }
 
@@ -70,9 +72,9 @@ impl Vm {
         }
     }
 
-    fn init_std_lib(&mut self) {
+    pub fn init_std_lib(&mut self) {
         self.globals.insert(
-            &"duration".to_string(),
+            &String::from("duration"),
             Value {
                 value: Primitive::NativeFunction(NativeFn {
                     arity: 0,
@@ -82,9 +84,21 @@ impl Vm {
                 modifier: Modifier::Const,
             },
         );
+
+        self.globals.insert(
+            &String::from("typeof"),
+            Value {
+                value: Primitive::NativeFunction(NativeFn {
+                    arity: 1,
+                    _fn: _typeof,
+                }),
+                _type: Type::NativeFn,
+                modifier: Modifier::Const,
+            }
+        );
     }
 
-    fn run(&mut self) -> VmResult {
+    pub fn run(&mut self) -> VmResult {
         while self.frames.len() > 0 {
             #[cfg(feature = "debug")]
             {
@@ -218,11 +232,15 @@ impl Vm {
                         self.frames.last_mut().unwrap().function.chunk.constants[var_index].clone();
                     let _type = parse_type(&constant);
 
-                    self.stack.push(Rc::new(RefCell::new(Value {
-                        value: constant,
-                        modifier: Modifier::Unassigned,
-                        _type,
-                    })));
+                    self.stack.push(
+                        Rc::new(RefCell::new(
+                            Value {
+                                value: constant,
+                                modifier: Modifier::Unassigned,
+                                _type,
+                            }
+                        ))
+                    );
                 }
                 /* Check Local Type */
                 OpCode::DefineLocal(var_index, modifier, t) => {
@@ -235,16 +253,17 @@ impl Vm {
                         ],
                     );
 
-                    let var_type = &variable.borrow()._type;
+                    // Rc explicit drop 
+                    {
+                        let var_type = &variable.borrow()._type;
+                        if *var_type != t && t != Type::UnInit {
+                            self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
+                        }
+                    }
 
-                    if *var_type == Type::UnInit {
-                        let mut v_borrow = variable.borrow_mut();
-                        v_borrow.modifier = modifier;
-                        v_borrow._type = t;
-                    }
-                    else if *var_type != t {
-                        self.error(format!("Cannot assign {:?} to {:?}", t, variable.borrow()._type))?
-                    }
+                    let mut v_borrow = variable.borrow_mut();
+                    v_borrow.modifier = modifier;
+                    v_borrow._type = t;
                 }
                 /*
                     Set new value to local variable.
@@ -258,8 +277,9 @@ impl Vm {
 
                     let incoming_value = self.stack.pop().unwrap().take();
 
-                    if variable.borrow()._type != incoming_value._type {
-                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?;
+                    if variable.borrow()._type != incoming_value._type 
+                        && variable.borrow()._type != Type::UnInit {
+                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?
                     }
 
                     variable.borrow_mut().value = incoming_value.value;
@@ -349,7 +369,8 @@ impl Vm {
                     let mut to_be_inserted = self.stack.pop().unwrap().take();
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
-                    if variable.borrow()._type != to_be_inserted._type {
+                    if variable.borrow()._type != to_be_inserted._type 
+                        && variable.borrow()._type != Type::UnInit {
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
                             to_be_inserted._type,
@@ -358,6 +379,7 @@ impl Vm {
                     }
 
                     to_be_inserted.modifier = variable.borrow().modifier;
+                    to_be_inserted._type = variable.borrow()._type.clone();
 
                     if self.globals.insert(name, to_be_inserted) {
                         let _ = self.globals.delete(name);
@@ -380,7 +402,7 @@ impl Vm {
                     let referenced_value = self
                         .globals
                         .get(&referenced_name)
-                        .unwrap_or_else(|| panic!("Invalid referenced value."));
+                        .expect("Invalid referenced value.");
                     let referenced_type = referenced_value.borrow()._type.clone();
 
                     let _ref = Value {
@@ -452,7 +474,36 @@ impl Vm {
 
                     continue;
                 }
-            };
+                OpCode::Closure(fn_idx) => {
+                    let _fn = match self.stack.pop().unwrap().take().value {
+                        Primitive::Function(f) => f,
+                        _ => panic!("Could not find fn to enclosure"),
+                    };
+
+
+                    self.stack.push(Rc::new(RefCell::new(Self::enclosure(_fn))));
+                }
+                OpCode::SetUpValue(var_idx) => {
+                    let variable = Rc::clone(&self.stack[var_idx]);
+
+                    if variable.borrow().modifier != Modifier::Mut {
+                        self.error("Cannot assign to immutable variable.".to_string())?
+                    }
+
+                    let incoming_value = self.stack.pop().expect("Could not find value to assign.").take();
+
+                    if variable.borrow()._type != incoming_value._type
+                        && variable.borrow()._type != Type::UnInit {
+                        self.error(format!("Cannot assign {:?} to {:?}", incoming_value._type, variable.borrow()._type))?
+                    }
+
+                    variable.borrow_mut().value = incoming_value.value;
+                }
+                OpCode::GetUpValue(var_idx) => {
+                    self.stack.push(Rc::clone(&self.stack[var_idx]));
+                }
+            }
+
 
             unsafe { self.advance_ip() }
         }
@@ -460,60 +511,58 @@ impl Vm {
         Ok(())
     }
 
-    unsafe fn advance_ip(&mut self) {
-        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
-    }
-
-    unsafe fn jump_ip(&mut self, offset: isize) {
-        unsafe {
-            self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset)
-        };
-    }
-
-    unsafe fn putback_ip(&mut self, offset: usize) {
-        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset) };
-    }
-
     fn call_value(&mut self, args_count: usize) -> bool {
         /* The function calling the code */
         let callee = Rc::clone(
-            &self.stack[self
+            &self.stack[
+                self
                 .stack
                 .len()
                 .checked_sub(1)
                 .unwrap_or(0)
                 .checked_sub(args_count)
-                .unwrap_or(0)],
+                .unwrap_or(0)
+            ],
         );
         let value = callee.borrow();
 
-        match *value {
+        match &*value {
             Value {
-                value: Primitive::Function(ref f),
+                value: Primitive::Closure { _fn, .. },
                 ..
             } => {
-                return self.call(f.clone(), args_count);
+                return self.call(Rc::clone(_fn), args_count);
             }
             Value {
-                value: Primitive::NativeFunction(ref f),
+                value: Primitive::Function(f),
+                ..
+            } => {
+                return self.call(Rc::clone(f), args_count);
+            }
+            Value {
+                value: Primitive::NativeFunction(f),
                 ..
             } => {
                 /* Pop function from stack so it remains clean */
                 self.stack.remove(self.stack.len() - 1 - args_count);
 
-                let args = &self.stack[(self.stack.len().checked_sub(1).unwrap_or(0) - args_count)
-                    ..self.stack.len().checked_sub(1).unwrap_or(0)];
+                let args = &self.stack[
+                    (self.stack.len().checked_sub(args_count).unwrap_or(0))
+                    ..self.stack.len()
+                ];
 
                 self.stack.push(Rc::new(RefCell::new(f.clone().call(args))));
 
                 unsafe { self.advance_ip() }
                 false
             }
-            _ => panic!("Object {callee:?} is not callabble"),
+            _ => panic!("Object {callee:#?} is not callabble"),
         }
     }
 
-    fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
+    /// Check fn arity, adjust and set (by pushing to frames) a new CallFrame with correct arg_offset.
+    /// 
+    pub fn call(&mut self, function: Rc<Function>, args_count: usize) -> bool {
         if function.arity != args_count {
             println!(
                 "Expected {} but got {} arguments.",
@@ -537,14 +586,22 @@ impl Vm {
         return true;
     }
 
-    fn binary_op(&mut self, op: &str) -> VmResult {
+    fn enclosure(_fn: Rc<Function>) -> Value {
+        Value {
+            value: Primitive::Closure { _fn, upvalues: vec![] },
+            _type: Type::Closure,
+            modifier: Modifier::Const,
+        }
+    }
+
+    pub fn binary_op(&mut self, op: &str) -> VmResult {
         let b = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value b not loaded.".to_string(),
+            "Value 'b' not loaded. (a [op] b)".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 
         let a = Rc::clone(&self.stack.pop().ok_or(VmError::new(
-            "Value a not loaded.".to_string(),
+            "Value 'a' not loaded. (a [op] b)".to_string(),
             InterpretResult::RuntimeError,
         ))?);
 
@@ -578,6 +635,20 @@ impl Vm {
             println!("<{}>()", call_frame.function.name);
         }
         panic!()
+    }
+
+    unsafe fn advance_ip(&mut self) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(1) };
+    }
+
+    unsafe fn jump_ip(&mut self, offset: isize) {
+        unsafe {
+            self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.offset(offset)
+        };
+    }
+
+    unsafe fn putback_ip(&mut self, offset: usize) {
+        unsafe { self.frames.last_mut().unwrap().ip = self.frames.last().unwrap().ip.sub(offset) };
     }
 
     fn error(&self, message: String) -> VmResult {

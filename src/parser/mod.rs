@@ -2,19 +2,20 @@ pub mod lexer;
 pub mod ruler;
 pub mod scope;
 
-use std::{
-    rc::Rc,
-    thread::{self, current},
-    time::Duration,
-};
+use std::cell::RefCell;
+#[allow(unused)]
+use std::{ rc::Rc, thread::{self, current}, time::Duration};
 
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
+use crate::primitives::primitive::UpValue;
+#[allow(unused)]
 use crate::{
     parser::scope::Scope,
     primitives::{
-        primitive::{Function, FunctionType, Primitive},
+        functions::{Function, FunctionType},
+        primitive::{Primitive},
         types::{Modifier, Type},
         value::Value,
     },
@@ -25,7 +26,9 @@ use crate::{
 #[derive(Debug)]
 pub struct Parser<R: std::io::Read> {
     pub function: Function,
+    pub upvalues: Vec<UpValue>,
     pub function_type: FunctionType,
+    pub up_context: Option<Box<Parser<R>>>,
     pub lexer: Option<Lexer<R>>,
     pub current: Token,
     pub previous: Token,
@@ -38,7 +41,9 @@ impl<R: std::io::Read> Parser<R> {
         Parser {
             function,
             function_type,
+            up_context: None,
             lexer: Some(lexer),
+            upvalues: vec![],
             current: Token::Nil,
             previous: Token::Nil,
             had_error: false,
@@ -54,24 +59,26 @@ impl<R: std::io::Read> Parser<R> {
     ///    | varDecl
     ///    | statement
     ///
-    pub fn declaration(&mut self) {
+    pub fn declaration(mut self: Parser<R>) -> Parser<R> {
         if self.match_token(Token::Fun) {
-            self.fun_declaration();
+            self = self.fun_declaration();
         } else if self.match_token(Token::Var) {
             self.var_declaration();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
-            self.block();
+            self = self.block();
             self.end_scope();
         } else {
             // Declaration Control Flow Fallback
-            self.statement();
+            return self.statement()
         }
+
+        self
     }
 
     /// Where the fun starts
     ///
-    fn fun_declaration(&mut self) {
+    pub fn fun_declaration(mut self: Parser<R>) -> Parser<R> {
         let modifier = Modifier::Const;
         self.advance();
 
@@ -80,77 +87,103 @@ impl<R: std::io::Read> Parser<R> {
             _ => self.error("Expect function name"),
         };
         let global_var = self.parse_variable(modifier, name.clone());
+
+        self = self.function(FunctionType::Fn, name.clone());
+
         /* Let function as value available on top of stack */
-        self.function(FunctionType::Fn, name);
-        self.define_variable(global_var.unwrap(), modifier, Type::Fn);
+        match global_var {
+            Some(idx) => self.define_variable(idx, modifier, Type::Fn),
+            None => self.mark_initialized(name, Type::Closure),
+        }
+
+        self
     }
 
     /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
     ///
-    fn function(&mut self, function_t: FunctionType, func_name: String) {
-        let current = self.get_current();
-        let previous = self.get_previous();
-        /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
-        let mut parser: Parser<R> = Parser {
-            function: Function::new(func_name),
-            function_type: function_t,
-            lexer: self.lexer.take(),
-            /* Temporally moves token_stream to inner parser */
-            current,
-            previous,
-            had_error: false,
-            scopes: vec![],
-        };
+    fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
+        // 'i' stands for inner
+        let (
+            i_function, 
+            i_lexer, 
+            i_previous, 
+            i_current, 
+            mut _self
+        ) = {
+            let current = self.get_current();
+            let previous = self.get_previous();
+            /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
+            let mut parser: Parser<R> = Parser {
+                function: Function::new(func_name),
+                lexer: self.lexer.take(),
+                up_context: Some(Box::new(self)),
+                function_type: function_t,
+                // lexer: self.lexer.take(),
+                upvalues: vec![],
+                /* Temporally moves token_stream to inner parser */
+                current,
+                previous,
+                had_error: false,
+                scopes: vec![],
+            };
 
-        parser.begin_scope();
-        parser.consume(Token::LeftParen, "Expect '(' after function name.");
-        /* TODO Initialize parameters */
-        if !parser.check(Token::RightParen) {
-            let modifier = Modifier::Const;
-            loop {
-                parser.function.arity += 1;
-                let local_name = match parser.get_current() {
-                    Token::Identifier(name) => name,
-                    _ => self.error("Could not parse arguments."),
-                };
-                parser.advance();
-                parser.parse_variable(modifier, local_name.clone());
+            parser.begin_scope();
+            parser.consume(Token::LeftParen, "Expect '(' after function name.");
+            if !parser.check(Token::RightParen) {
+                let modifier = Modifier::Const;
+                loop {
+                    parser.function.arity += 1;
+                    let local_name = match parser.get_current() {
+                        Token::Identifier(name) => name,
+                        _ => parser.error("Could not parse arguments."),
+                    };
+                    parser.advance();
+                    parser.parse_variable(modifier, local_name.clone());
 
-                parser.consume(
-                    Token::Colon,
-                    "Expect : Type specification on function signature.",
-                );
+                    parser.consume(
+                        Token::Colon,
+                        "Expect : Type specification on function signature.",
+                    );
 
-                let t = parser.parse_var_type();
-                parser.mark_initialized(local_name, t);
+                    let t = parser.parse_var_type();
+                    parser.mark_initialized(local_name, t);
 
-                if !parser.match_token(Token::Comma) {
-                    break;
+                    if !parser.match_token(Token::Comma) {
+                        break;
+                    }
                 }
             }
-        }
-        parser.consume(Token::RightParen, "Expect ')' after function parameters.");
-        parser.consume(Token::LeftBrace, "Expect '{' after function name.");
-        parser.block();
-        /* End-of-scope are automatically handled by block() */
+            parser.consume(Token::RightParen, "Expect ')' after function parameters.");
+            parser.consume(Token::LeftBrace, "Expect '{' after function name.");
+            parser = parser.block();
+            /* End-of-scope are automatically handled by block() */
 
-        let function = Value {
-            value: Primitive::Function(Rc::new(parser.end_compiler())),
-            _type: Type::Fn,
-            modifier: Modifier::Const,
+            let function = Value {
+                value: Primitive::Function(Rc::new(parser.end_compiler())),
+                _type: Type::Fn,
+                modifier: Modifier::Const,
+            };
+
+            (function, parser.lexer.take(), parser.previous, parser.current, parser.up_context.take().unwrap())
         };
 
-        /* Re-gain ownership over Lexer and it's Tokens */
-        self.lexer = parser.lexer.take();
-        self.previous = parser.previous;
-        self.current = parser.current;
+    /* Re-gain ownership over Lexer and it's Tokens */
+        _self.lexer = i_lexer;
+        _self.previous = i_previous;
+        _self.current = i_current;
 
-        self.emit_constant(function);
+        let fn_idx = _self.emit_constant(i_function);
+
+        if _self.scopes.len() > 0 {
+            _self.emit_byte(OpCode::Closure(fn_idx));
+        }
+
+        *_self
     }
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     ///
-    fn var_declaration(&mut self) {
+    pub fn var_declaration(&mut self) {
         let modifier = self.parse_modifier();
         let var_name = match self.get_current() {
             Token::Identifier(s) => s,
@@ -183,8 +216,7 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::SemiColon, "Expect ';' after variable declaration.");
 
         if global.is_none() {
-            self.mark_initialized(var_name, _type.unwrap_or_default());
-            return;
+            return self.mark_initialized(var_name, _type.unwrap_or_default());
         }
 
         self.define_variable(global.unwrap(), modifier, _type.unwrap_or_default());
@@ -312,6 +344,66 @@ impl<R: std::io::Read> Parser<R> {
         self.scopes.pop();
     }
 
+    /// Iterates over all parser scope's searching for local variable, returning it's (index, Mod)
+    /// 
+    pub fn resolve_local(&self, var_name: &String) -> Option<Rc<RefCell<(usize, Modifier)>>> {
+        let mut local = None;
+
+        for scope in self.scopes.iter().rev() {
+            local = scope.get_local(var_name);
+
+            if local.is_some() { break; }
+        }
+
+        local
+    }
+
+    pub fn resolve_upvalue(&mut self, name: &String) -> Option<usize> {
+        if self.up_context.is_none() { return None; };
+
+        let local = 
+            self
+            .up_context
+            .as_mut()
+            .unwrap()
+            .resolve_local(name);
+
+        if local.is_some() {
+            return Some(
+                    self
+                    .up_context
+                    .as_mut()
+                    .unwrap()
+                    .add_upvalue(local.unwrap().borrow().0, true)
+                );
+        };
+
+        let upvalue =
+            self 
+            .up_context
+            .as_mut()
+            .unwrap()
+            .resolve_upvalue(name);
+
+        if upvalue.is_some() {
+            return Some(self.add_upvalue(local.unwrap().borrow().0, false));
+        }
+
+        None
+    }
+
+    pub fn add_upvalue(&mut self, index: usize, is_local: bool) -> usize {
+        if self.upvalues.iter().find(
+            |up| up.index == index && up.is_local == is_local
+        ).is_some() { return index; }
+
+        let upvalue = UpValue { index, is_local };
+        self.upvalues.push(upvalue);
+        self.function.upv_count += 1;
+
+        index // self.function.upv_count;
+    }
+
     /// Statement manager function
     ///
     /// Statement Flow Order
@@ -323,24 +415,26 @@ impl<R: std::io::Read> Parser<R> {
     ///    | whileStmt
     ///    | block ;
     ///
-    pub fn statement(&mut self) {
+    pub fn statement(mut self: Parser<R>) -> Parser<R> {
         if self.match_token(Token::Print) {
             self.print_statement();
         } else if self.match_token(Token::For) {
-            self.for_statement();
+            return self.for_statement();
         } else if self.match_token(Token::If) {
-            self.if_statement();
+            return self.if_statement()
         } else if self.match_token(Token::Return) {
             self.return_statement();
         } else if self.match_token(Token::While) {
-            self.while_statement();
+            return self.while_statement();
         } else if self.match_token(Token::Switch) {
-            self.switch_statement();
+            return self.switch_statement();
         } else if self.check(Token::LeftBrace) {
-            self.declaration();
+            return self.declaration();
         } else {
             self.expression_statement();
         }
+
+        self
     }
 
     // pub fn syncronize(&mut self) {
@@ -382,7 +476,7 @@ impl<R: std::io::Read> Parser<R> {
     /// After we state a loop jump, which is the jump made if the condition on (X; HERE; Z) is false, it must evaluate to a bool, or a compiler error on stack will be throw
     /// Last we
     ///
-    fn for_statement(&mut self) {
+    fn for_statement(mut self: Parser<R>) -> Parser<R> {
         self.begin_scope();
 
         /* Match (HERE; Y; Z) */
@@ -444,7 +538,7 @@ impl<R: std::io::Read> Parser<R> {
         }
 
         self.consume(Token::LeftBrace, "Expect '{' start-of-block.");
-        self.block();
+        self = self.block();
         self.emit_loop(loop_start);
 
         if exit_jump != -1 {
@@ -453,9 +547,11 @@ impl<R: std::io::Read> Parser<R> {
         }
 
         self.end_scope();
+
+        self
     }
 
-    fn if_statement(&mut self) {
+    fn if_statement(mut self: Parser<R>) -> Parser<R> {
         self.consume(Token::LeftParen, "Expect '(' after 'if'");
         self.expression();
         self.consume(Token::RightParen, "Expect ')' after condition");
@@ -469,25 +565,30 @@ impl<R: std::io::Read> Parser<R> {
         /* Remove bool expression value used for verification from stack */
         self.emit_byte(OpCode::Pop);
         /* Execute code in then branch so we know how many jumps we need */
-        self.statement();
+        let mut _self = Self::statement(self);
 
         /*
             Set jump to else branch.
             Even if else is not set explicitly it is compiled, executing nothing.
         */
-        let else_jump = self.emit_jump(OpCode::Jump(0));
+        let else_jump = _self.emit_jump(OpCode::Jump(0));
 
         /*
             Set correct calculated offset to earlier set then_jump.
             This is needed because jump doesn't know primarily how many instructions to jump
         */
-        self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
-        self.emit_byte(OpCode::Pop);
+        _self.patch_jump(then_jump, OpCode::JumpIfFalse(0));
+        _self.emit_byte(OpCode::Pop);
 
-        if self.match_token(Token::Else) {
-            self.statement();
+        if _self.match_token(Token::Else) {
+            let mut __self =Self::statement(_self);
+            __self.patch_jump(else_jump, OpCode::Jump(0));
+
+            return __self;
         }
-        self.patch_jump(else_jump, OpCode::Jump(0));
+        _self.patch_jump(else_jump, OpCode::Jump(0));
+
+        _self
     }
 
     fn return_statement(&mut self) {
@@ -504,7 +605,7 @@ impl<R: std::io::Read> Parser<R> {
         };
     }
 
-    fn while_statement(&mut self) {
+    fn while_statement(mut self: Parser<R>) -> Parser<R> {
         /* The Bytecode index jump needs to go backward to restart loop */
         let loop_start = self.function.chunk.code.len() - 1;
 
@@ -514,13 +615,16 @@ impl<R: std::io::Read> Parser<R> {
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
-        self.statement();
+
+        self = self.statement();
         self.emit_loop(loop_start);
         self.patch_jump(exit_jump, OpCode::JumpIfFalse(0));
         self.emit_byte(OpCode::Pop);
+        
+        self
     }
 
-    fn switch_statement(&mut self) {
+    fn switch_statement(mut self: Parser<R>) -> Parser<R> {
         self.begin_scope();
 
         self.consume(Token::LeftParen, "Expect '(' after switch clause.");
@@ -537,7 +641,7 @@ impl<R: std::io::Read> Parser<R> {
             Statements doesnt let dangling values on stack, so no pop is needed.
             Finally, the value available on top is going to be the expression() result one.
         */
-        self.statement();
+        self = self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
         /*
@@ -554,7 +658,7 @@ impl<R: std::io::Read> Parser<R> {
             self.expression();
             self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
-            self.statement();
+            self = self.statement();
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
             self.patch_jump(branch_jump, OpCode::JumpIfTrue(0));
@@ -565,7 +669,7 @@ impl<R: std::io::Read> Parser<R> {
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
         if self.match_token(Token::Default) {
-            self.statement();
+            self = self.statement();
         }
 
         self.patch_jump(default_jump, OpCode::JumpIfTrue(0));
@@ -577,11 +681,11 @@ impl<R: std::io::Read> Parser<R> {
 
         self.consume(Token::RightBrace, "Expect '}' on end-of-block.");
         self.end_scope();
+
+        self
     }
 
     /// Evaluate expression and consume ';' token.
-    ///
-    /// Emit: OpCode::Pop
     ///
     pub fn expression_statement(&mut self) {
         self.expression();
@@ -591,12 +695,14 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
     ///
-    pub fn block(&mut self) {
+    pub fn block(mut self: Parser<R>) -> Parser<R> {
         while !self.check(Token::RightBrace) && !self.check(Token::Eof) {
-            self.declaration();
+            self = self.declaration();
         }
 
-        self.consume(Token::RightBrace, "Expected '' end-of-block.");
+        self.consume(Token::RightBrace, "Expected '}' end-of-block.");
+
+        self
     }
 
     /// Check if current Token matches argument Token.
@@ -655,7 +761,7 @@ impl<R: std::io::Read> Parser<R> {
             self.advance();
 
             let infix_rule = get_rule(&self.previous).infix;
-            (infix_rule)(self, can_assign)
+            infix_rule(self, can_assign)
         }
     }
 
@@ -681,10 +787,11 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Emit: OpCode::Constant
     ///
-    pub fn emit_constant(&mut self, value: Value) {
+    pub fn emit_constant(&mut self, value: Value) -> usize {
         let const_index = self.function.chunk.write_constant(value.to_owned().value);
 
         self.emit_byte(OpCode::Constant(const_index));
+        const_index
     }
 
     /// Emit jump instruction and return it's index on chunk.code

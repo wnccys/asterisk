@@ -1,8 +1,5 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use crate::parser::Parser;
-use crate::primitives::primitive::Primitive;
+use crate::primitives::primitive::{Primitive};
 use crate::primitives::types::{Modifier, Type};
 use crate::primitives::value::Value;
 use crate::vm::chunk::OpCode;
@@ -218,29 +215,27 @@ impl<R: std::io::Read> ParseRule<R> {
         let scopes = &mut parser.scopes;
 
         if scopes.len() > 0 {
-            let mut local: Option<Rc<RefCell<(usize, Modifier)>>> = None;
-
             /* Pass check on all scopes */
-            for scope in scopes.iter().rev() {
-                local = scope.get_local(&var_name);
-
-                if local.is_some() {
-                    break;
-                }
-            }
+            let local = parser.resolve_local(&var_name);
 
             /* Global variables inside scope handling */
-            if local.is_none() {
-                let var_index = parser.identifier_constant(var_name);
-
-                get_op = OpCode::GetGlobal(var_index.unwrap());
-                set_op = OpCode::SetGlobal(var_index.unwrap());
-            } else {
+            if local.is_some() {
                 let local = local.unwrap();
 
                 get_op = OpCode::GetLocal(local.borrow().0);
                 set_op = OpCode::SetLocal(local.borrow().0, local.borrow().1);
+            } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
+                get_op = OpCode::GetUpValue(up_idx);
+                set_op = OpCode::SetUpValue(up_idx);
+            } else {
+                let var_index = parser.identifier_constant(var_name);
+
+                get_op = OpCode::GetGlobal(var_index.unwrap());
+                set_op = OpCode::SetGlobal(var_index.unwrap());
             }
+        } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
+            get_op = OpCode::GetUpValue(up_idx);
+            set_op = OpCode::SetUpValue(up_idx);
         } else {
             let var_index = parser.identifier_constant(var_name);
 
@@ -313,7 +308,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
     match token_code {
         Token::LeftParen => ParseRule {
             prefix: ParseRule::grouping,
-
             infix: ParseRule::call,
             precedence: Precedence::Call,
         },

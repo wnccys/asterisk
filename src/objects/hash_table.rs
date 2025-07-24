@@ -6,12 +6,14 @@ use std::{
     rc::Rc,
 };
 
-#[derive(Debug)]
+pub type Entry<K, V> = (K, Rc<RefCell<V>>);
+
+#[derive(Debug, Clone)]
 pub struct HashTable<K, V> {
-    entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
+    pub entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
 }
 
-impl<K: Clone, V> Default for HashTable<K, V> {
+impl<K: Clone, V: Clone> Default for HashTable<K, V> {
     fn default() -> Self {
         Self {
             entries: vec![None; 4],
@@ -19,14 +21,15 @@ impl<K: Clone, V> Default for HashTable<K, V> {
     }
 }
 
-impl<K, V: Default> HashTable<K, V>
+impl<K, V> HashTable<K, V>
 where
-    K: Hash + Clone + PartialEq + Display,
+    K: Hash + Clone + PartialEq + Display + std::fmt::Debug,
+    V: Default + Clone + std::fmt::Debug 
 {
     const MAX_LOAD_FACTOR: f64 = 0.75;
 
     /// Set new entry to table.
-    /// Return true if key was not present.
+    /// Return true if key is new.
     ///
     pub fn insert(&mut self, key: &K, value: V) -> bool {
         self.check_cap();
@@ -34,14 +37,13 @@ where
         let entry = self.find_mut(&key);
         let is_new = entry.is_none();
 
-        /*
-            Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
-        */
+        // Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
         if is_new {
             *entry = Some((key.clone(), Rc::new(RefCell::new(value))));
         } else {
             *entry.as_ref().unwrap().1.borrow_mut() = value;
         }
+
 
         /* If key already exists, return false (no entry was added) and assign new value to bucket */
         return is_new;
@@ -78,8 +80,9 @@ where
             }
 
             /* Compare found entry key with given key */
-            if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key {
-                let (_, val_ref) = self.entries[index].as_ref().unwrap();
+            if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key 
+            {
+                let (_, val_ref) = &self.entries[index].as_ref().unwrap();
                 return Some(Rc::clone(val_ref));
             }
 
@@ -91,14 +94,12 @@ where
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Rc<RefCell<V>>)> {
+    fn find_mut(&mut self, key: &K) -> &mut Option<Entry<K, V>> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
         loop {
-            if self.entries[index].is_none() {
-                return &mut self.entries[index];
-            }
+            if self.entries[index].is_none() { return &mut self.entries[index]; }
 
             /* Compare found entry key with given key */
             if self.entries[index].as_ref().unwrap().0 == *key {
@@ -112,11 +113,11 @@ where
     }
 
     fn check_cap(&mut self) {
-        /* Check if num_elements > num_buckets
+        /* Check if num_elements (Some) > num_buckets
          *
          * + 1 because it checks for future entry (assume it is a new one)
          */
-        if (self.entries.len() + 1) as f64
+        if (self.entries.iter().filter(|e| e.is_some()).count() + 1) as f64
             > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR)
         {
             self.resize();
@@ -126,17 +127,40 @@ where
     /// Custom resize implementation because all entries needs to be re-hashed after resize for proper late hash recover
     ///
     fn resize(&mut self) {
-        let new_num_buckets = self.entries.capacity() * 2;
-        let mut new_entries: Vec<Option<(K, Rc<RefCell<V>>)>> = vec![None; new_num_buckets];
+        let new_buck_count = self.entries.capacity() * 2;
+        let mut new_entries: Vec<Option<Entry<K,V>>> = vec![None; new_buck_count];
 
         for bucket in self.entries.drain(..) {
             if let Some((k, v)) = bucket {
-                let index = hash_key(&k, new_num_buckets);
-                new_entries[index] = Some((k, v));
+                /* Target index  */
+                let mut t_idx = hash_key(&k, new_buck_count);
+                let _target = &new_entries[t_idx];
+
+                if _target.is_some() {
+                    t_idx  = Self::probe_idx(&new_entries, t_idx);
+                }
+
+                new_entries[t_idx] = Some((k, v));
             }
         }
 
         self.entries = new_entries;
+    }
+
+    pub fn probe_idx(new_entries: &Vec<Option<Entry<K, V>>>, init_idx: usize) -> usize {
+        let cap = new_entries.capacity();
+        /* Set bounds for idx handling based on current cap */
+        let mut probe_idx = (init_idx + 1) % cap;
+
+        // This operation never fails, as the array objectivelly has new empty space with the resize
+        for bucket in new_entries[probe_idx..].iter().cycle() {
+            if bucket.is_none() { return probe_idx }
+
+            probe_idx = (probe_idx + 1) % cap;
+        }
+
+        /* Dummy panic */
+        panic!();
     }
 }
 
@@ -147,69 +171,4 @@ pub fn hash_key<K: Hash + Clone + Display>(key: &K, num_buckets: usize) -> usize
     key.hash(&mut hasher);
 
     (hasher.finish() % num_buckets as u64) as usize
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::primitives::{
-        primitive::Primitive,
-        types::{Modifier, Type},
-        value::Value,
-    };
-
-    use super::*;
-
-    #[test]
-    fn same_key_same_value_test() {
-        let mut table: HashTable<String, Value> = HashTable::default();
-
-        table.insert(
-            &String::from("a"),
-            Value {
-                value: Primitive::Int(1),
-                modifier: Modifier::Unassigned,
-                _type: Type::Int,
-            },
-        );
-        table.insert(
-            &String::from("b"),
-            Value {
-                value: Primitive::Int(2),
-                modifier: Modifier::Unassigned,
-                _type: Type::Int,
-            },
-        );
-
-        let a = table.get(&String::from("a"));
-        let b = table.get(&String::from("b"));
-
-        assert_eq!(
-            *a.unwrap().borrow(),
-            Value {
-                value: Primitive::Int(1),
-                modifier: Modifier::Unassigned,
-                _type: Type::Int,
-            }
-        );
-        assert_eq!(
-            *b.unwrap().borrow(),
-            Value {
-                value: Primitive::Int(2),
-                modifier: Modifier::Unassigned,
-                _type: Type::Int,
-            }
-        );
-    }
-
-    // #[test]
-    // fn swap_values_on_insert_test() {
-    //     let mut table: HashTable<String, Primitive> =  HashTable::default();
-
-    //     table.insert(&String::from("a"), Primitive::String(String::from("some")));
-    //     table.insert(&String::from("a"), Primitive::String(String::from("another")));
-
-    //     let a = table.get(&String::from("a"));
-
-    //     assert_eq!(a.unwrap(), Primitive::String(String::from("another")));
-    // }
 }

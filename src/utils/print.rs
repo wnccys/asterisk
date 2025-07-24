@@ -1,6 +1,7 @@
 use crate::vm::chunk::Chunk;
 use crate::vm::Stack;
 
+#[allow(unused)]
 pub fn disassemble_chunk(chunk: &Chunk, name: String) {
     println!("===%=== {} ===%===", name);
 

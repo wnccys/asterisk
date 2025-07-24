@@ -9,6 +9,7 @@ pub enum Type {
     String,
     Fn,
     NativeFn,
+    Closure,
     Ref(Rc<Type>),
     UnInit,
     Void,

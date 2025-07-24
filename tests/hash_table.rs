@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod hash_table {
-    use asterisk::{objects::hash_table::HashTable, primitives::{primitive::Primitive, value::Value}};
+    use std::{cell::RefCell, rc::Rc};
+
+    use asterisk::{objects::hash_table::{Entry, HashTable}, primitives::{primitive::Primitive, value::Value}};
 
     #[test]
     fn insert_get_single() {
@@ -188,4 +190,16 @@ mod hash_table {
 
     #[test]
     fn __insert_get_multi() {}
+
+    #[test]
+    fn probe_idx() {
+        let mut entries: Vec<Option<Entry<String, i32>>> = vec![None; 4];
+        assert_eq!(HashTable::<String, i32>::probe_idx(&entries, 0), 1);
+
+        entries[0] = Some((String::from("n"), Rc::new(RefCell::new(2))));
+        assert_eq!(HashTable::<String, i32>::probe_idx(&entries, 0), 1);
+
+        entries[2] = Some((String::from("m"), Rc::new(RefCell::new(3))));
+        assert_eq!(HashTable::<String, i32>::probe_idx(&entries, 0), 1);
+    }
 }

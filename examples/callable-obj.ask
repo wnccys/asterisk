@@ -4,6 +4,8 @@ fn outer() {
     let x = "x";
     fn inner() {
         print x;
+        
+        return x;
     }
     
     return inner;

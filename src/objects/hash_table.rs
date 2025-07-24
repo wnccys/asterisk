@@ -6,9 +6,11 @@ use std::{
     rc::Rc,
 };
 
+pub type Entry<K, V> = (K, Rc<RefCell<V>>);
+
 #[derive(Debug, Clone)]
 pub struct HashTable<K, V> {
-    entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
+    pub entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
 }
 
 impl<K: Clone + std::fmt::Debug, V> Default for HashTable<K, V> {

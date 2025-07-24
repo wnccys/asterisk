@@ -128,17 +128,42 @@ where
     /// Custom resize implementation because all entries needs to be re-hashed after resize for proper late hash recover
     ///
     fn resize(&mut self) {
-        let new_num_buckets = self.entries.capacity() * 2;
-        let mut new_entries: Vec<Option<(K, Rc<RefCell<V>>)>> = vec![None; new_num_buckets];
+        let new_buck_count = self.entries.capacity() * 2;
+        let mut new_entries: Vec<Option<Entry<K,V>>> = vec![None; new_buck_count];
 
         for bucket in self.entries.drain(..) {
             if let Some((k, v)) = bucket {
-                let index = hash_key(&k, new_num_buckets);
-                new_entries[index] = Some((k, v));
+                /* Target index  */
+                let mut t_idx = hash_key(&k, new_buck_count);
+                let _target = &new_entries[t_idx];
+
+                if _target.is_some() {
+                    t_idx  = Self::probe_idx(&new_entries, t_idx);
+                }
+
+                new_entries[t_idx] = Some((k, v));
             }
         }
 
+        // dbg!(&new_entries);
+
         self.entries = new_entries;
+    }
+
+    pub fn probe_idx(new_entries: &Vec<Option<Entry<K, V>>>, init_idx: usize) -> usize {
+        let cap = new_entries.capacity();
+        /* Set bounds for idx handling based on current cap */
+        let mut probe_idx = (init_idx + 1) % cap;
+
+        // This operation never fails, as the array objectivelly has new empty space with the resize
+        for bucket in new_entries.iter().cycle() {
+            if bucket.is_none() { return probe_idx }
+
+            probe_idx = (probe_idx + 1) % cap;
+        }
+
+        /* Dummy panic */
+        panic!();
     }
 }
 

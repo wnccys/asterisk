@@ -153,7 +153,7 @@ where
         let mut probe_idx = (init_idx + 1) % cap;
 
         // This operation never fails, as the array objectivelly has new empty space with the resize
-        for bucket in new_entries.iter().cycle() {
+        for bucket in new_entries[probe_idx..].iter().cycle() {
             if bucket.is_none() { return probe_idx }
 
             probe_idx = (probe_idx + 1) % cap;

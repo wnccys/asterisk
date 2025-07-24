@@ -16,7 +16,8 @@ fn outer() {
     }
     
     inner();
-    f();
+    return f;
 }
 
-outer();
+let f = outer();
+f();

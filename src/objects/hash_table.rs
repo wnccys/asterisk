@@ -80,8 +80,9 @@ where
             }
 
             /* Compare found entry key with given key */
-            if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key {
-                let (_, val_ref) = self.entries[index].as_ref().unwrap();
+            if self.entries.get(index).unwrap().as_ref().unwrap().0 == *key 
+            {
+                let (_, val_ref) = &self.entries[index].as_ref().unwrap();
                 return Some(Rc::clone(val_ref));
             }
 
@@ -93,14 +94,12 @@ where
 
     /// Checks with tombstone compatibility if value is present using cap arithmetic
     ///
-    fn find_mut(&mut self, key: &K) -> &mut Option<(K, Rc<RefCell<V>>)> {
+    fn find_mut(&mut self, key: &K) -> &mut Option<Entry<K, V>> {
         let current_cap = self.entries.capacity();
         let mut index = hash_key(key, self.entries.capacity());
 
         loop {
-            if self.entries[index].is_none() {
-                return &mut self.entries[index];
-            }
+            if self.entries[index].is_none() { return &mut self.entries[index]; }
 
             /* Compare found entry key with given key */
             if self.entries[index].as_ref().unwrap().0 == *key {

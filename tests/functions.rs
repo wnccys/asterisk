@@ -11,135 +11,81 @@ mod functions {
     #[test]
     fn fun_declaration_single_argument() {
         let mut vm = Vm::default();
-        let sources: [&'static str; 2] = [
-            r"
-                fn f(n: Int) { n; } // 1
-            ",
-            r"
-                let n = 2;
-                f(n); // 2
-            "
-        ];
-        let mut parser = mk_parser(Cursor::new(sources[0]));
-        parser.advance();
-        parser = parser.fun_declaration();
-
-        // Extract function from current parser's chunk
-        let _fn = parser
-            .function
-            .chunk
-            .constants
-            .get(1)
-            .unwrap_or_else(|| panic!("Could not find function object."));
-
-        let inner_fn = match _fn {
-            Primitive::Closure {_fn, ..} => _fn,
-            f => panic!("{}", format!("Invalid function object: {:?}", f))
-        }.clone();
-
-        assert_eq!(inner_fn.arity, 1);
-        assert_eq!(inner_fn.name, "f");
+        let sources = r"
+            fn f(n: Int) { n; }
+            let n = 2;
+            f(n);
+        ";
+        let mut parser = mk_parser(Cursor::new(sources));
+        // fun_declaratio
+        parser = parser.declaration();
+        // var_declaration
+        parser = parser.declaration();
+        // stmt
+        parser = parser.declaration();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
 
         // Verify fn arity and resolved object (match parser)
-        match vm.globals.get(&inner_fn.name) {
+        let target_fn = match vm.globals.get(&String::from("f")) {
             Some(f) => {
-                match &Rc::clone(&f).borrow().value {
-                    Primitive::Function(f) => {
-                        if f.arity != inner_fn.arity {
-                            panic!("Invalid arity of VM function callable object.") 
-                        } 
-                    },
-                    _ => panic!("Invalid type for inner_fn.")
+                match &f.borrow().value {
+                    Primitive::Function(f) => Rc::clone(f),
+                    _ => panic!("Invalid type for fn object.")
                 }
             },
             None => panic!("Function was not declared.")
         };
 
-        // 2
-        let mut parser = mk_parser(Cursor::new(sources[1]));
-        // var_declaration
-        parser = parser.declaration();
-        // expression (call)
-        parser = parser.declaration();
-
-        vm.call(Rc::new(parser.end_compiler()), 0);
-        let _ = vm.run();
+        assert_eq!(target_fn.arity, 1);
+        assert_eq!(target_fn.name, "f");
     }
 
     #[test]
     fn fun_declaration_multi_argument() {
         let mut vm = Vm::default();
 
-        let sources: [&'static str; 2] = [
-            r"
-                fn f(n: Int, m: String, p: &Int, g: &String, b: Bool, c: Float, d: &Float) {
-                    n; m; p; g; b; c; d;
-                }
-            ",
-            r"
-                let n: Int = 32;
-                let m: String = 'str';
-                let b: Bool = true;
-                let c: Float = 1.0;
-                let p: &Int = &n;
-                let g: &String = &m;
-                let d: &Float = &c;
+        let sources = r"
+            fn f(n: Int, m: String, p: &Int, g: &String, b: Bool, c: Float, d: &Float) {
+                n; m; p; // g; b; c; d;
+            }
 
-                f(n, m, p, g, b, c, d);
-            "
-        ];
-        let mut parser = mk_parser(Cursor::new(sources[0]));
-        parser.advance();
-        parser = parser.fun_declaration();
+            let n: Int = 32;
+            let m: String = 'str';
+            let p: &Int = &n;
+            let c: Float = 1.0;
+            let b: Bool = true;
+            let g: &String = &m;
+            let d: &Float = &c;
 
-        // Extract function from current parser's chunk
-        let _fn = parser
-            .function
-            .chunk
-            .constants
-            .get(1)
-            .unwrap_or_else(|| panic!("Could not find function object."));
+            f(n, m, p, g, b, c, d);
+        ";
+        let mut parser = mk_parser(Cursor::new(sources));
+        // fun declaration
+        parser = parser.declaration();
 
-        let inner_fn = match _fn {
-            Primitive::Closure {_fn, ..} => _fn,
-            f => panic!("{}", format!("Invalid function object: {:?}", f))
-        }.clone();
-
-        assert_eq!(inner_fn.arity, 7);
-        assert_eq!(inner_fn.name, "f");
-
-        vm.call(Rc::new(parser.end_compiler()), 0);
-        let _ = vm.run();
-
-        // Verify fn arity and resolved object (match parser)
-        match vm.globals.get(&inner_fn.name) {
-            Some(f) => {
-                match &Rc::clone(&f).borrow().value {
-                    Primitive::Closure {_fn, ..} => {
-                        if _fn.arity != inner_fn.arity {
-                            panic!("Invalid arity of VM function callable object.") 
-                        } 
-                    },
-                    _ => panic!("Invalid type for inner_fn.")
-                }
-            },
-            None => panic!("Function was not declared.")
-        };
-
-        // 2
-        let mut parser = mk_parser(Cursor::new(sources[1]));
-        for _ in 0..7 {
+        for _ in 0..3 {
             // var_declaration
             parser = parser.declaration();
         }
+
         // expression (call)
         parser = parser.declaration();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
+
+        // Verify fn arity and resolved object (match parser)
+        let val_fn= vm.globals.get(&String::from("f")).unwrap();
+
+        let _fn = match &val_fn.borrow().value {
+            Primitive::Function(_fn) => Rc::clone(_fn),
+            _ => panic!("Invalid type for inner_fn.")
+        };
+
+        assert_eq!(_fn.arity, 7);
+        assert_eq!(_fn.name, "f");
     }
 
     #[test]

@@ -76,7 +76,6 @@ mod functions {
         vm.call(Rc::new(parser.end_compiler()), 0);
         let _ = vm.run();
 
-        // Verify fn arity and resolved object (match parser)
         let val_fn= vm.globals.get(&String::from("f")).unwrap();
 
         let _fn = match &val_fn.borrow().value {
@@ -102,19 +101,25 @@ mod functions {
         ";
 
         let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser = parser.fun_declaration();
-        parser.advance();
-        parser.var_declaration();
+        // fun declaration
+        parser = parser.declaration();
+        // var declaration
+        parser = parser.declaration();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
+
+        // Check for correct fn return
         let result = catch_unwind(AssertUnwindSafe(|| {
             let _ = vm.run();
 
-            let r = match vm.globals.get(&String::from("r")).expect("Invalid variable.").borrow().value {
-                Primitive::Int(i) => i,
-                _ => panic!("Invalid variable return type.")
-            };
+            let r = match vm
+                .globals
+                .get(&String::from("r"))
+                .expect("Invalid variable.")
+                .borrow().value {
+                    Primitive::Int(i) => i,
+                    _ => panic!("Invalid variable return type.")
+                };
 
             assert_eq!(r, 55);
         }));
@@ -123,17 +128,29 @@ mod functions {
     }
 
     fn fun_local_inner() {
+        let mut vm = Vm::default();
         let source = "
-            let x = \"global\";
+            let x = 'global';
 
             fn outer() {
-                let x = \"inner\";
+                let x = 'outside';
+
                 fn inner() {
-                    print x;
+                    x = 'inner';
                 }
+
                 inner();
             }
+
             outer();
         ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        // fn
+        parser = parser.declaration();
+        // stmt
+        parser.declaration();
+
+
     }
 }

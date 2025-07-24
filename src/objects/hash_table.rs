@@ -117,14 +117,10 @@ where
          *
          * + 1 because it checks for future entry (assume it is a new one)
          */
-        if (
-            self
-            .entries
-            .iter()
-            .filter(|e| e.is_some())
-            .count() + 1) as f64
+        if (self.entries.iter().filter(|e| e.is_some()).count() + 1) as f64
             > (self.entries.capacity() as f64 * Self::MAX_LOAD_FACTOR)
         {
+            // dbg!("==== RESIZE ");
             self.resize();
         }
     }

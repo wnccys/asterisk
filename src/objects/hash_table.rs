@@ -13,7 +13,7 @@ pub struct HashTable<K, V> {
     pub entries: Vec<Option<(K, Rc<RefCell<V>>)>>,
 }
 
-impl<K: Clone + std::fmt::Debug, V> Default for HashTable<K, V> {
+impl<K: Clone, V: Clone> Default for HashTable<K, V> {
     fn default() -> Self {
         Self {
             entries: vec![None; 4],
@@ -21,14 +21,15 @@ impl<K: Clone + std::fmt::Debug, V> Default for HashTable<K, V> {
     }
 }
 
-impl<K: std::fmt::Debug, V: Default + std::fmt::Debug> HashTable<K, V>
+impl<K, V> HashTable<K, V>
 where
-    K: Hash + Clone + PartialEq + Display,
+    K: Hash + Clone + PartialEq + Display + std::fmt::Debug,
+    V: Default + Clone + std::fmt::Debug 
 {
     const MAX_LOAD_FACTOR: f64 = 0.75;
 
     /// Set new entry to table.
-    /// Return true if key was not present.
+    /// Return true if key is new.
     ///
     pub fn insert(&mut self, key: &K, value: V) -> bool {
         self.check_cap();
@@ -36,9 +37,7 @@ where
         let entry = self.find_mut(&key);
         let is_new = entry.is_none();
 
-        /*
-            Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
-        */
+        // Create new bucket with associated Rc if new; Otherside internally mut already set RefCell.
         if is_new {
             *entry = Some((key.clone(), Rc::new(RefCell::new(value))));
         } else {

@@ -4,7 +4,7 @@ pub mod scope;
 
 use std::cell::RefCell;
 #[allow(unused)]
-use std::{ rc::Rc, thread::{self, current}, time::Duration};
+use std::{rc::Rc, thread::{self, current}, time::Duration};
 
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
@@ -78,6 +78,8 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Where the fun starts
     ///
+    /// Define functions / closures
+    /// 
     pub fn fun_declaration(mut self: Parser<R>) -> Parser<R> {
         let modifier = Modifier::Const;
         self.advance();
@@ -99,26 +101,27 @@ impl<R: std::io::Read> Parser<R> {
         self
     }
 
-    /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
+    /// Basically, on every function call we create a new parser, 
+    /// which on a standalone way parse the token and return an 'standarized' function object which 
+    /// will be used later by VM packed in call stacks.
     ///
     fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
         // 'i' stands for inner
         let (
-            i_function, 
-            i_lexer, 
-            i_previous, 
-            i_current, 
+            i_function,
+            i_lexer,
+            i_previous,
+            i_current,
             mut _self
         ) = {
             let current = self.get_current();
             let previous = self.get_previous();
-            /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
+            /* New parser creation, it basically changes actual parser with a new one */
             let mut parser: Parser<R> = Parser {
                 function: Function::new(func_name),
                 lexer: self.lexer.take(),
                 up_context: Some(Box::new(self)),
                 function_type: function_t,
-                // lexer: self.lexer.take(),
                 upvalues: vec![],
                 /* Temporally moves token_stream to inner parser */
                 current,
@@ -140,9 +143,10 @@ impl<R: std::io::Read> Parser<R> {
                     parser.advance();
                     parser.parse_variable(modifier, local_name.clone());
 
+                    /* Type defs: (a: x, b: y, c: z) */
                     parser.consume(
                         Token::Colon,
-                        "Expect : Type specification on function signature.",
+                        "Expect: Type specification on function signature.",
                     );
 
                     let t = parser.parse_var_type();
@@ -164,16 +168,23 @@ impl<R: std::io::Read> Parser<R> {
                 modifier: Modifier::Const,
             };
 
-            (function, parser.lexer.take(), parser.previous, parser.current, parser.up_context.take().unwrap())
+            (
+                function,
+                parser.lexer.take(),
+                parser.previous,
+                parser.current,
+                parser.up_context.take().unwrap()
+            )
         };
 
-    /* Re-gain ownership over Lexer and it's Tokens */
+    /* Re-assign ownership over Lexer and it's Tokens to parent Parser */
         _self.lexer = i_lexer;
         _self.previous = i_previous;
         _self.current = i_current;
 
         let fn_idx = _self.emit_constant(i_function);
 
+    /* Differs between fn and closure */
         if _self.scopes.len() > 0 {
             _self.emit_byte(OpCode::Closure(fn_idx));
         }

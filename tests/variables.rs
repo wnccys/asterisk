@@ -58,7 +58,7 @@ pub mod variables {
 
     #[test]
     fn var_declaration_mut() {
-                let mut vm = Vm::default();
+        let mut vm = Vm::default();
         let sources: [&'static str; 2] = [
             r"
                 let mut a = 32; // 1

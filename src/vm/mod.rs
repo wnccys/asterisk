@@ -263,7 +263,6 @@ impl Vm {
 
                     let mut v_borrow = variable.borrow_mut();
                     v_borrow.modifier = modifier;
-                    v_borrow._type = t;
                 }
                 /*
                     Set new value to local variable.
@@ -321,17 +320,28 @@ impl Vm {
                     Get variable name from constants and value from top of stack assigning it to globals HashMap
                 */
                 OpCode::DefineGlobal(var_name_index, modifier, t) => {
-                    let var_name =
-                        &self.frames.last().unwrap().function.chunk.constants[var_name_index];
+                    let var_name = &self
+                        .frames
+                        .last()
+                        .unwrap()
+                        .function
+                        .chunk
+                        .constants[var_name_index];
 
-                    let mut var_value = self.stack.pop().unwrap().take();
+                    let mut var_value = self
+                        .stack
+                        .pop()
+                        .unwrap()
+                        .borrow()
+                        .clone();
+
                     var_value.modifier = modifier;
 
                     if t != Type::UnInit && var_value._type != t {
                         self.error(format!("Cannot assign {:?} to {:?}", var_value._type, t))?
                     }
 
-                    /*  Only strings are allowed to be var names */
+                    /*  Only strings are allowed to be var names, into() ensure this */
                     self.globals.insert(var_name.into(), var_value);
                 }
                 /*
@@ -339,8 +349,13 @@ impl Vm {
                     This means every value referencing this value is referencing the value itself, not a copy on stack as globals and stack are exchangeable.
                 */
                 OpCode::GetGlobal(var_index) => {
-                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants
-                        [var_index]
+                    let name = match &self
+                        .frames
+                        .last_mut()
+                        .unwrap()
+                        .function
+                        .chunk
+                        .constants[var_index] 
                     {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
@@ -357,8 +372,13 @@ impl Vm {
                     Re-assign to already set global variable.
                 */
                 OpCode::SetGlobal(name_index) => {
-                    let name = match &self.frames.last_mut().unwrap().function.chunk.constants
-                        [name_index]
+                    let name = match &self
+                        .frames
+                        .last_mut()
+                        .unwrap()
+                        .function
+                        .chunk
+                        .constants[name_index]
                     {
                         Primitive::String(name) => name,
                         _ => panic!("Invalid global variable name."),
@@ -373,7 +393,8 @@ impl Vm {
 
                     /* Check if type of dangling value are equal the to-be-assigned variable */
                     if variable.borrow()._type != to_be_inserted._type 
-                        && variable.borrow()._type != Type::UnInit {
+                        && variable.borrow()._type != Type::UnInit
+                    {
                         panic!(
                             "Error: Cannot assign {:?} to {:?} ",
                             to_be_inserted._type,
@@ -515,7 +536,7 @@ impl Vm {
     }
 
     fn call_value(&mut self, args_count: usize) -> bool {
-        /* The function calling the code */
+        /* The function being called */
         let callee = Rc::clone(
             &self.stack[
                 self
@@ -589,6 +610,8 @@ impl Vm {
         return true;
     }
 
+    /// Turns a function into a closure
+    /// 
     fn enclosure(_fn: Rc<Function>) -> Value {
         Value {
             value: Primitive::Closure { _fn, upvalues: vec![] },
@@ -597,6 +620,8 @@ impl Vm {
         }
     }
 
+    /// + - / * value operations
+    /// 
     pub fn binary_op(&mut self, op: &str) -> VmResult {
         let b = Rc::clone(&self.stack.pop().ok_or(VmError::new(
             "Value 'b' not loaded. (a [op] b)".to_string(),
@@ -633,6 +658,8 @@ impl Vm {
         Ok(())
     }
 
+    /// Stack-trace error display
+    /// 
     fn runtime_error(&self) -> ! {
         for call_frame in self.frames.iter().rev() {
             println!("<{}>()", call_frame.function.name);

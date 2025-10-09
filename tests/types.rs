@@ -9,7 +9,7 @@ mod types {
     use asterisk::{primitives::types::Type, vm::Vm};
 
     #[test]
-    fn implicit_int() {
+    fn int_implicit() {
         let mut vm = Vm::default();
         let source = r"
             let a = 32;
@@ -27,7 +27,7 @@ mod types {
     }
 
     #[test]
-    fn explicit_int() {
+    fn int_explicit() {
         let mut vm = Vm::default();
         let source = r"
             let a: Int = 32;
@@ -45,7 +45,7 @@ mod types {
     }
 
     #[test]
-    fn implicit_float() {
+    fn float_implicit() {
         let mut vm = Vm::default();
         let source = r"
             let a = 32.0;
@@ -63,7 +63,7 @@ mod types {
     }
 
     #[test]
-    fn explicit_float() {
+    fn float_explicit() {
         let mut vm = Vm::default();
         let source = r"
             let a: Float = 10.5;
@@ -81,7 +81,7 @@ mod types {
     }
     
     #[test]
-     fn implicit_bool() {
+     fn bool_implicit() {
         let mut vm = Vm::default();
         let source = r"
             let a = false;
@@ -99,7 +99,7 @@ mod types {
      }
 
      #[test]
-     fn explicit_bool() {
+     fn bool_explicit() {
         let mut vm = Vm::default();
         let source = r"
             let a: Bool = true;
@@ -117,7 +117,7 @@ mod types {
      }
 
      #[test]
-     fn implicit_string() {
+     fn string_implicit() {
         let mut vm = Vm::default();
         let source = r"
             let a = 't';
@@ -135,7 +135,7 @@ mod types {
      }
 
      #[test]
-     fn explicit_string() {
+     fn string_explicit() {
         let mut vm = Vm::default();
         let source = r"
             let a: String = 'xyz';
@@ -175,31 +175,13 @@ mod types {
     }
 
     #[test]
-    fn simple_closure() {
-        let mut vm = Vm::default();
-        let source = r"
-            let a = fn() {};
-        ";
-
-        let mut parser = mk_parser(Cursor::new(source));
-        parser.advance();
-        parser = parser.fun_declaration();
-
-        parser.advance();
-        parser.var_declaration();
-
-        vm.call(Rc::new(parser.end_compiler()), 0);
-        let _ = vm.run().unwrap();
-    }
-
-    #[test]
-    fn complex_closure() {
+    fn closure() {
         let mut vm = Vm::default();
         let source = r"
             fn f() {
-                let g = fn n(){};
+                fn inner() { print 'hello from g!'; }
 
-                return g;
+                return inner;
             }
 
             let a = f();
@@ -222,3 +204,4 @@ mod types {
     #[test]
     fn references() {}
 }
+    

@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
-/* Primitives are variable assigned data, Type are the check for this data to be valid throught the runtime */
-#[derive(Debug, Clone, PartialEq)]
+/* Primitives are variable assigned data, Type are the contract for this data to be valid throught the runtime */
+#[derive(Default, Debug, Clone, PartialEq)]
 pub enum Type {
     Float,
     Int,
@@ -11,13 +11,9 @@ pub enum Type {
     NativeFn,
     Closure,
     Ref(Rc<Type>),
+    #[default]
     UnInit,
     Void,
-}
-impl Default for Type {
-    fn default() -> Self {
-        Type::UnInit
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

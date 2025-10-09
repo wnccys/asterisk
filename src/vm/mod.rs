@@ -326,7 +326,10 @@ impl Vm {
 
                     let mut var_value = self.stack.pop().unwrap().take();
                     var_value.modifier = modifier;
-                    var_value._type = t;
+
+                    if t != Type::UnInit && var_value._type != t {
+                        self.error(format!("Cannot assign {:?} to {:?}", var_value._type, t))?
+                    }
 
                     /*  Only strings are allowed to be var names */
                     self.globals.insert(var_name.into(), var_value);

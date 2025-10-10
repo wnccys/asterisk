@@ -72,14 +72,11 @@ mod tokens {
             super this true let while // /* */ \0
         ";
 
-        let mut lex = 
-            Lexer::new(
-                std::io::Cursor::new(source)
-            );
+        let mut lex = Lexer::new(std::io::Cursor::new(source));
 
         for t in tokens.into_iter() {
             let l_tok = lex.next();
-            if t != l_tok { panic!("Missmatched token: {t:?} with {l_tok:?}") }
+            assert_eq!(t, l_tok);
         }
     }
 }

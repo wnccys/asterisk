@@ -5,7 +5,7 @@ mod native {
     use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
 
     #[test]
-    fn call_no_args() {
+    fn call_no_args_stack_len_check() {
         let mut vm = Vm::default();
         vm.init_std_lib();
 
@@ -27,7 +27,7 @@ mod native {
     }
 
     #[test]
-    fn call_with_args() {
+    fn call_with_args_stack_len_check() {
         let mut vm = Vm::default();
         vm.init_std_lib();
 
@@ -52,7 +52,7 @@ mod native {
     }
 
     #[test]
-    fn call_with_args_multi() {
+    fn call_with_args_multi_stack_len_check() {
         let mut vm = Vm::default();
         vm.init_std_lib();
 

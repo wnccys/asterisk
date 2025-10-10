@@ -41,6 +41,5 @@ mod closures {
         let c = vm.globals.get(&"c".to_string()).unwrap();
         assert_eq!(c.borrow()._type, Type::Int);
         assert_eq!(c.borrow().value.to_string(), "3");
-
     }
 }

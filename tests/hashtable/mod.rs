@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod hash_table {
     use std::{cell::RefCell, rc::Rc};
-
     use asterisk::{objects::hash_table::{Entry, HashTable}, primitives::{primitive::Primitive, value::Value}};
 
     #[test]

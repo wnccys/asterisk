@@ -1,12 +1,9 @@
-mod common;
-use common::mk_parser;
-
 #[cfg(test)]
 mod types {
     use std::{io::Cursor, rc::Rc};
-    use super::*;
-
     use asterisk::{primitives::types::Type, vm::Vm};
+
+    use crate::common::mk_parser;
 
     #[test]
     fn int_implicit() {

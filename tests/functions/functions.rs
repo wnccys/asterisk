@@ -1,12 +1,9 @@
-mod common;
-use common::{mk_parser};
-
 #[cfg(test)]
 mod functions {
     use asterisk::{primitives::{primitive::Primitive, types::Type}, vm::Vm};
-
-    use super::*;
     use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
+
+    use crate::common::mk_parser;
 
     #[test]
     fn fun_declaration_single_argument() {

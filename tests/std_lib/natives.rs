@@ -1,11 +1,7 @@
-mod common;
-use common::{mk_parser};
-
 #[cfg(test)]
 mod native {
     use asterisk::vm::Vm;
-
-    use super::*;
+    use crate::common::mk_parser;
     use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
 
     #[test]

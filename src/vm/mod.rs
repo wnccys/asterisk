@@ -554,6 +554,60 @@ impl Vm {
                     self.globals.insert(&struct_name, _struct);
                 }
             }
+            OpCode::CreateInstance(arg_count) => {
+                let stack_len = self.stack.len();
+
+                // The base struct
+                let blueprint = &self.stack[(self.stack.len() - 1) - arg_count];
+                // Tupled values (field_name[String], value[Value]),+[...]
+                let tupled_values = self.stack[(stack_len - arg_count) .. stack_len].iter().take(arg_count);
+
+                // The values to be mapped based on blueprint field_indices
+                let mut values: Vec<Value> = vec![Value::default(); arg_count];
+
+                for _tuple in tupled_values {
+                    let wrapped_tuple = _tuple.take();
+
+                    // Here, tuple (.items) is expect to be a vec! with 2 slots where [Value.value::String, Value.value::Value]
+                    let tuple = match wrapped_tuple.value {
+                        Primitive::Tuple(t) => t,
+                        t => panic!("Tried to destruct Tuple found {t:?}")
+                    };
+
+                    let primitive_blueprint = &blueprint.borrow().value;
+
+                    let _struct = match primitive_blueprint {
+                        Primitive::Struct(ref stct) => {
+                            stct
+                        }
+                        _ => panic!("Invalid blueprint object.")
+                    };
+
+                    let field_name = match &tuple.items[0] {
+                        Value { value: Primitive::String(name), .. } => name.clone(),
+                        _ => panic!("Could not find struct name.")
+                    };
+
+                    let field_info = _struct
+                        .field_indices
+                        .get(&field_name)
+                        .expect("Use of undeclared field.");
+
+                    // Type-Check
+                    if field_info.0 != tuple.items[1]._type {
+                        panic!("Cannot assign {:?} to {:?}.", field_info.0, tuple.items[1]._type)
+                    }
+
+                    values[field_info.1] = tuple.items[1].clone();
+                }
+
+                let instance = Instance {
+                    _struct: Rc::clone(blueprint),
+                    values
+                };
+
+                self.stack.push(Rc::new(RefCell::new(instance.into())));
+            }
             OpCode::Tuple(size) => {
                 let mut tuple_values: Vec<Value> = vec![Value::default(); size];
 

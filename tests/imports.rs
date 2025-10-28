@@ -8,5 +8,6 @@ mod ops;
 mod refs;
 mod scopes;
 mod std_lib;
+mod structs;
 mod types;
 mod variables;

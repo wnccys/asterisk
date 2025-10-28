@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::primitives::functions::{Function, NativeFn};
+use crate::primitives::{functions::{Function, NativeFn}, structs::{Instance, Struct}, tuple::Tuple};
 
 use super::value::Value;
 
@@ -14,8 +14,11 @@ pub enum Primitive {
     Int(i64),
     Bool(bool),
     String(String),
-    Function(Rc<Function>),
+    Struct(Struct),
+    Instance(Instance),
+    Tuple(Tuple),
     NativeFunction(NativeFn),
+    Function(Rc<Function>),
     Closure {
         _fn: Rc<Function>,
         upvalues: Vec<Rc<RefCell<Value>>> 

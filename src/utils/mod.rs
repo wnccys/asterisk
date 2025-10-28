@@ -15,6 +15,7 @@ pub fn parse_type(p: &Primitive) -> Type {
         Primitive::Bool(_) => Type::Bool,
         Primitive::Ref(t) => Type::Ref(Rc::new(t.borrow()._type.clone())),
         Primitive::Function(_) => Type::Fn,
+        Primitive::Struct(_) => Type::Struct,
         _ => panic!("Error parsing type."),
     }
 }

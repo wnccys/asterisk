@@ -7,6 +7,8 @@ pub enum Type {
     Int,
     Bool,
     String,
+    Struct,
+    Tuple,
     Fn,
     NativeFn,
     Closure,

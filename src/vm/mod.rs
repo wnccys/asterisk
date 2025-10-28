@@ -116,6 +116,13 @@ impl Vm {
             #[cfg(feature = "delay-exec")]
             std::thread::sleep(Duration::from_secs(1));
 
+            self.exec_code()?;
+        }
+
+        Ok(())
+    }
+
+    pub fn exec_code(&mut self) -> VmResult {
             match unsafe { self.frames.last().unwrap().ip.read() } {
                 OpCode::Return => {
                     let _return = self.stack.pop().ok_or(VmError::new(

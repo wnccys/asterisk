@@ -265,7 +265,7 @@ impl<R: std::io::Read> Parser<R> {
         return None;
     }
 
-    /// Try to extract current type from TypeDef Token.
+    /// Try to extract current type from TypeDef Token recursivelly.
     ///
     /// Executed when explicit type definition is set with :
     ///
@@ -283,7 +283,7 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
+    /// Receive variable's name and emit it's Identifier as String to constants vector.
     ///
     fn identifier_constant(&mut self, name: String) -> Option<usize> {
         Some(
@@ -301,13 +301,15 @@ impl<R: std::io::Read> Parser<R> {
             total_locals += i.local_count;
         }
 
+        // Add var to last scope, as the file is read from top to bottom
         self.scopes
             .last_mut()
             .unwrap()
             .add_local(name, modifier, total_locals);
     }
 
-    /// Initialize Local Var by emitting DefineLocal
+    /// Initialize Local Var by emitting DefineLocal, 
+    /// it basically 'reserves' a slot on stack before the value is even in there.
     ///
     fn mark_initialized(&mut self, local_name: String, _type: Type) {
         let local_index = self
@@ -317,6 +319,7 @@ impl<R: std::io::Read> Parser<R> {
             .get_local(&local_name)
             .unwrap();
 
+        // (idx on stack, Modifier, Type)
         self.emit_byte(OpCode::DefineLocal(
             local_index.borrow().0,
             local_index.borrow().1,
@@ -325,7 +328,6 @@ impl<R: std::io::Read> Parser<R> {
     }
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
-    ///
     ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, _type: Type) {
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier, _type));

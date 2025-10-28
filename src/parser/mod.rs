@@ -2,14 +2,14 @@ pub mod lexer;
 pub mod ruler;
 pub mod scope;
 
-use std::cell::RefCell;
+use std::{cell::RefCell};
 #[allow(unused)]
 use std::{rc::Rc, thread::{self, current}, time::Duration};
 
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
-use crate::primitives::primitive::UpValue;
+use crate::primitives::{primitive::UpValue, structs::Struct};
 #[allow(unused)]
 use crate::{
     parser::scope::Scope,
@@ -331,6 +331,69 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, _type: Type) {
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier, _type));
+    }
+
+    /// Build struct blueprint by parsing name and it's types
+    /// 
+    pub fn define_struct(&mut self) {
+        let name = match self.get_current() {
+            Token::Identifier(s) => s,
+            _ => self.error("Expect struct name."),
+        };
+
+        let mut field_count = 0;
+        let mut field_indices = std::collections::HashMap::<String, (Type, usize)>::new();
+
+        self.advance();
+        self.consume(Token::LeftBrace, "Expect '{'.");
+
+        // Struct fields parsing
+        while !self.check(Token::RightBrace) {
+            // Identifier
+            let tok = self.get_current();
+
+            // :
+            self.advance();
+            self.consume(Token::Colon, "Expect ':'.");
+
+            let _type = match self.get_current() {
+                Token::TypeDef(t) => t,
+                _ => self.error("Expect field type."),
+            };
+
+            // : or }
+            self.advance();
+
+            match tok {
+                Token::Identifier(id) => {
+                    field_indices.insert(id, (_type, field_count.clone()));
+                    field_count += 1;
+                }
+                _ => self.error("Invalid token when defining struct."),
+            }
+
+            if !self.check(Token::RightBrace) {
+                self.consume(Token::Comma, "Expect ',' after field definition.");
+            }
+        }
+
+        self.consume(Token::RightBrace, "Expect '}' after struct fields.");
+
+        let _struct = Struct {
+            name: name.clone(),
+            field_count,
+            field_indices,
+        };
+        let is_global = self.scopes.len() == 0;
+        let global_idx = self.parse_variable(Modifier::Const, name.clone());
+
+        self.emit_constant(_struct.into());
+
+        if is_global {
+            self.define_variable(global_idx.unwrap(), Modifier::Const, Type::Struct);
+        } else {
+            self.mark_initialized(name, Type::Struct);
+        }
     }
 
     fn get_current(&mut self) -> Token {
@@ -760,7 +823,7 @@ impl<R: std::io::Read> Parser<R> {
         self.parse_precedence(Precedence::Assignment);
     }
 
-    /// This is the Ruler core itself, it orchestrate the expressions' values.
+    /// This is the Ruler core itself, it orchestrate the expressions' values / order.
     ///
     pub fn parse_precedence(&mut self, precedence: Precedence) {
         self.advance();

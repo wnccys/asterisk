@@ -102,22 +102,6 @@ impl Vm {
 
     pub fn run(&mut self) -> VmResult {
         while self.frames.len() > 0 {
-            #[cfg(feature = "debug")]
-            {
-                print!("\n");
-                print_stack(&self.stack);
-                println!(
-                    "current frame: {:?}",
-                    self.frames.last().unwrap().function.name
-                );
-                println!("current code: {:?}", unsafe {
-                    self.frames.last().unwrap().ip.read()
-                });
-            }
-
-            #[cfg(feature = "delay-exec")]
-            std::thread::sleep(Duration::from_secs(1));
-
             self.exec_code()?;
         }
 
@@ -125,6 +109,22 @@ impl Vm {
     }
 
     pub fn exec_code(&mut self) -> VmResult {
+        #[cfg(feature = "debug")]
+        {
+            print!("\n");
+            print_stack(&self.stack);
+            println!(
+                "current frame: {:?}",
+                self.frames.last().unwrap().function.name
+            );
+            println!("current code: {:?}", unsafe {
+                self.frames.last().unwrap().ip.read()
+            });
+        }
+
+        #[cfg(feature = "delay-exec")]
+        std::thread::sleep(Duration::from_secs(1));
+
         match unsafe { self.frames.last().unwrap().ip.read() } {
             OpCode::Return => {
                 let _return = self.stack.pop().ok_or(VmError::new(

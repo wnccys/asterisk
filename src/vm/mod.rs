@@ -554,6 +554,30 @@ impl Vm {
                     self.globals.insert(&struct_name, _struct);
                 }
             }
+            OpCode::Tuple(size) => {
+                let mut tuple_values: Vec<Value> = vec![Value::default(); size];
+
+                // Map tuple
+                for i in 0..size {
+                    let value = self.stack.pop().unwrap().take();
+                    tuple_values[i] = value;
+                }
+
+                let tuple = Tuple {
+                    items: tuple_values.into_boxed_slice(),
+                };
+
+                let value_tuple = Value {
+                    value: Primitive::Tuple(tuple),
+                    _type: Type::Tuple,
+                    modifier: Modifier::Const,
+                };
+
+                self.stack.push(Rc::new(RefCell::new(value_tuple)));
+            }
+        }
+
+        unsafe { self.advance_ip(); };
 
         Ok(())
     }

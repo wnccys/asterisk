@@ -13,8 +13,10 @@ pub struct Function {
 
 #[derive(Debug, PartialEq)]
 pub enum FunctionType {
-    Fn,
+    // Main script ctx
     Script,
+    // Scoped fn
+    Fn,
 }
 
 impl Function {
@@ -34,7 +36,7 @@ impl PartialEq for Function {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct NativeFn {
     pub arity: usize,
     pub _fn: fn(&[Rc<RefCell<Value>>]) -> Value,

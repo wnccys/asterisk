@@ -541,11 +541,19 @@ impl Vm {
             OpCode::GetUpValue(var_idx) => {
                 self.stack.push(Rc::clone(&self.stack[var_idx]));
             }
+            OpCode::DefineStruct(is_global) => {
+                // Already on stack for local
+                if is_global {
+                    let _struct = self.stack.pop().unwrap().take();
+
+                    let struct_name = match _struct.value {
+                        Primitive::Struct(ref _struct) => _struct.name.clone(),
+                        _ => panic!("Expect struct found {:?}.", _struct._type)
+                    };
+
+                    self.globals.insert(&struct_name, _struct);
+                }
             }
-
-
-            unsafe { self.advance_ip() }
-        }
 
         Ok(())
     }

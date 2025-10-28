@@ -48,7 +48,9 @@ impl Display for Primitive {
             Primitive::Function(f) => write!(fmt, "&fn<{}, {}>", f.arity, f.name),
             Primitive::NativeFunction(f) => write!(fmt, "&native_fn<{:?}>", f),
             Primitive::Closure { _fn, .. } => write!(fmt, "&closure<{:?}, {}>", _fn.arity, _fn.name),
-            _ => panic!("invalid value."),
+            Primitive::Struct(_struct) => write!(fmt, "{} {{...}}", _struct.name),
+            Primitive::Instance(inst) => write!(fmt, "instance_of({})", inst._struct.borrow().value),
+            Primitive::Tuple(t) => write!(fmt, "{:?}", t.items)
         }
     }
 }

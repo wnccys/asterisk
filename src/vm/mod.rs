@@ -11,6 +11,8 @@ use crate::objects::hash_table::HashTable;
 use crate::primitives::native::_typeof;
 use crate::primitives::functions::NativeFn;
 use crate::primitives::primitive::Primitive;
+use crate::primitives::structs::Instance;
+use crate::primitives::tuple::Tuple;
 use crate::primitives::{
     functions::Function,
     types::{Modifier, Type},

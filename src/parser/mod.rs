@@ -64,6 +64,8 @@ impl<R: std::io::Read> Parser<R> {
             self = self.fun_declaration();
         } else if self.match_token(Token::Var) {
             self.var_declaration();
+        } else if self.match_token(Token::StructDef) {
+            self.define_struct();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self = self.block();
@@ -218,8 +220,6 @@ impl<R: std::io::Read> Parser<R> {
             if self.match_token(Token::Equal) {
                 self.expression();
             }
-
-            // self.emit_byte(OpCode::SetType(t));
         } else {
             self.error("Uninitialized variables are not allowed.");
         }
@@ -247,10 +247,10 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    /// Consume identifier token and emit new constant (if global).
+    /// Set local/global variables to scopes by emitting new constant (if global), returning it's index.
     ///
     /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
-    /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
+    /// and scope-flow, so there's no need to set them to constants vector, the Compiler (Parser) object already take care
     /// of which indexes behaves to which variables by scope_depth and local_count when local vars are set.
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.

@@ -202,7 +202,7 @@ impl<R: std::io::Read> ParseRule<R> {
 
     /// Distinguish between re-assign and get variable already set value as well as local and global variables.
     ///
-    /// Emit: (Local set or get) or (Global set or get Bytecode).
+    /// Emit: (Local set / get) or (Global set / get).
     ///
     fn named_variable(parser: &mut Parser<R>, can_assign: bool) {
         let (get_op, set_op): (OpCode, OpCode);
@@ -233,14 +233,16 @@ impl<R: std::io::Read> ParseRule<R> {
                 get_op = OpCode::GetGlobal(var_index.unwrap());
                 set_op = OpCode::SetGlobal(var_index.unwrap());
             }
+        /* UpValues handling */
         } else if let Some(up_idx) = parser.resolve_upvalue(&var_name) {
             get_op = OpCode::GetUpValue(up_idx);
             set_op = OpCode::SetUpValue(up_idx);
+        /* Global */
         } else {
-            let var_index = parser.identifier_constant(var_name);
+            let var_index = parser.identifier_constant(var_name).unwrap();
 
-            get_op = OpCode::GetGlobal(var_index.unwrap());
-            set_op = OpCode::SetGlobal(var_index.unwrap());
+            get_op = OpCode::GetGlobal(var_index);
+            set_op = OpCode::SetGlobal(var_index);
         }
 
         if can_assign && parser.match_token(Token::Equal) {

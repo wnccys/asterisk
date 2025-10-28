@@ -29,7 +29,7 @@ pub enum Primitive {
 
 impl<'a> From<&'a Primitive> for &'a String {
     fn from(_p: &'a Primitive) -> &'a String {
-        match _p  {
+        match _p {
             Primitive::String(s) => s,
             _ => panic!("Invalid Cast to &Primitive for String")
         }
@@ -48,7 +48,15 @@ impl Display for Primitive {
             Primitive::Function(f) => write!(fmt, "&fn<{}, {}>", f.arity, f.name),
             Primitive::NativeFunction(f) => write!(fmt, "&native_fn<{:?}>", f),
             Primitive::Closure { _fn, .. } => write!(fmt, "&closure<{:?}, {}>", _fn.arity, _fn.name),
-            Primitive::Struct(_struct) => write!(fmt, "{} {{...}}", _struct.name),
+            Primitive::Struct(_struct) => {
+                write!(fmt, "{} {{ ", _struct.name)?;
+
+                for (k, v) in _struct.field_indices.iter() {
+                    write!(fmt, "{}: {:?} ", k, v.0)?;
+                }
+
+                write!(fmt, "}}")
+            },
             Primitive::Instance(inst) => write!(fmt, "instance_of({})", inst._struct.borrow().value),
             Primitive::Tuple(t) => write!(fmt, "{:?}", t.items)
         }

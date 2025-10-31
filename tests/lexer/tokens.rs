@@ -26,6 +26,7 @@ mod tokens {
             Token::BangEqual,
             Token::Equal,
             Token::EqualEqual,
+            Token::Arrow,
             Token::Greater,
             Token::GreaterEqual,
             Token::Less,
@@ -64,7 +65,7 @@ mod tokens {
 
         let source = r"
             ( ) { } , . - + : ; / * &
-            ! != = == > >= < <=
+            ! != = == => > >= < <=
             ident 'str' 1.0 1
             && class case const continue
             default else false for fn if

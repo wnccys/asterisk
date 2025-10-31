@@ -21,6 +21,7 @@ pub enum Token {
     Ampersand,
 
     // One or two char tokens
+    Arrow,
     Bang,
     BangEqual,
     Equal,
@@ -107,7 +108,13 @@ impl<R: std::io::Read> Lexer<R> {
             }
             b'&' => self.check_ahead(b'&', Token::Ampersand, Token::And),
             b'!' => self.check_ahead(b'=', Token::Bang, Token::BangEqual),
-            b'=' => self.check_ahead(b'=', Token::Equal, Token::EqualEqual),
+            b'=' => {
+                // => and == support
+                match self.check_ahead(b'=', Token::Equal, Token::EqualEqual) {
+                    t if t == Token::EqualEqual => { t }
+                    _ => self.check_ahead(b'>', Token::Equal, Token::Arrow)
+                }
+            },
             b'>' => self.check_ahead(b'=', Token::Greater, Token::GreaterEqual),
             b'<' => self.check_ahead(b'=', Token::Less, Token::LessEqual),
             b'/' => {
@@ -123,7 +130,7 @@ impl<R: std::io::Read> Lexer<R> {
             }
             b'0'..=b'9' => self.number(byt),
             b'\'' | b'"' => self.string(byt),
-            b'A'..=b'Z' | b'a'..=b'z' => self.keyword(byt),
+            b'A'..=b'Z' | b'a'..=b'z' | b'_' => self.keyword(byt),
             b'\0' => Token::Eof,
             _ => Token::Error("Invalid Token"),
         }

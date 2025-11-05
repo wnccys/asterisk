@@ -2,14 +2,14 @@ pub mod lexer;
 pub mod ruler;
 pub mod scope;
 
-use std::cell::RefCell;
+use std::{cell::RefCell};
 #[allow(unused)]
-use std::{ rc::Rc, thread::{self, current}, time::Duration};
+use std::{rc::Rc, thread::{self, current}, time::Duration};
 
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
-use crate::primitives::primitive::UpValue;
+use crate::primitives::{primitive::UpValue, structs::Struct, types::Dyn};
 #[allow(unused)]
 use crate::{
     parser::scope::Scope,
@@ -64,6 +64,8 @@ impl<R: std::io::Read> Parser<R> {
             self = self.fun_declaration();
         } else if self.match_token(Token::Var) {
             self.var_declaration();
+        } else if self.match_token(Token::StructDef) {
+            self.define_struct();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self = self.block();
@@ -78,6 +80,8 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Where the fun starts
     ///
+    /// Define functions / closures
+    /// 
     pub fn fun_declaration(mut self: Parser<R>) -> Parser<R> {
         let modifier = Modifier::Const;
         self.advance();
@@ -99,26 +103,27 @@ impl<R: std::io::Read> Parser<R> {
         self
     }
 
-    /// Basically, on every function call we create a new parser, which on a standalone way parse the token and return an 'standarized' function object which will be used later by VM packed in call stacks.
+    /// Basically, on every function call we create a new parser, 
+    /// which on a standalone way parse the token and return an 'standarized' function object which 
+    /// will be used later by VM packed in call stacks.
     ///
     fn function(mut self: Parser<R>, function_t: FunctionType, func_name: String) -> Parser<R> {
         // 'i' stands for inner
         let (
-            i_function, 
-            i_lexer, 
-            i_previous, 
-            i_current, 
+            i_function,
+            i_lexer,
+            i_previous,
+            i_current,
             mut _self
         ) = {
             let current = self.get_current();
             let previous = self.get_previous();
-            /* New parser creation, equivalent to initCompiler, it basically changes actual parser with a new one */
+            /* New parser creation, it basically changes actual parser with a new one */
             let mut parser: Parser<R> = Parser {
                 function: Function::new(func_name),
                 lexer: self.lexer.take(),
                 up_context: Some(Box::new(self)),
                 function_type: function_t,
-                // lexer: self.lexer.take(),
                 upvalues: vec![],
                 /* Temporally moves token_stream to inner parser */
                 current,
@@ -140,9 +145,10 @@ impl<R: std::io::Read> Parser<R> {
                     parser.advance();
                     parser.parse_variable(modifier, local_name.clone());
 
+                    /* Type defs: (a: x, b: y, c: z) */
                     parser.consume(
                         Token::Colon,
-                        "Expect : Type specification on function signature.",
+                        "Expect: Type specification on function signature.",
                     );
 
                     let t = parser.parse_var_type();
@@ -164,16 +170,23 @@ impl<R: std::io::Read> Parser<R> {
                 modifier: Modifier::Const,
             };
 
-            (function, parser.lexer.take(), parser.previous, parser.current, parser.up_context.take().unwrap())
+            (
+                function,
+                parser.lexer.take(),
+                parser.previous,
+                parser.current,
+                parser.up_context.take().unwrap()
+            )
         };
 
-    /* Re-gain ownership over Lexer and it's Tokens */
+    /* Re-assign ownership over Lexer and it's Tokens to parent Parser */
         _self.lexer = i_lexer;
         _self.previous = i_previous;
         _self.current = i_current;
 
         let fn_idx = _self.emit_constant(i_function);
 
+    /* Differs between fn and closure */
         if _self.scopes.len() > 0 {
             _self.emit_byte(OpCode::Closure(fn_idx));
         }
@@ -207,8 +220,6 @@ impl<R: std::io::Read> Parser<R> {
             if self.match_token(Token::Equal) {
                 self.expression();
             }
-
-            // self.emit_byte(OpCode::SetType(t));
         } else {
             self.error("Uninitialized variables are not allowed.");
         }
@@ -236,10 +247,10 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    /// Consume identifier token and emit new constant (if global).
+    /// Set local/global variables to scopes by emitting new constant (if global), returning it's index.
     ///
     /// Local Variables are auto-declared so to speak, It follows a convention on var declaration
-    /// and scope-flow, so there's no need to set them to constants vector, the Compiler object already take care
+    /// and scope-flow, so there's no need to set them to constants vector, the Compiler (Parser) object already take care
     /// of which indexes behaves to which variables by scope_depth and local_count when local vars are set.
     ///
     /// Return 0 when variable is local, which will be ignored by define_variable(), so it is not set to constants.
@@ -254,7 +265,7 @@ impl<R: std::io::Read> Parser<R> {
         return None;
     }
 
-    /// Try to extract current type from TypeDef Token.
+    /// Try to extract current type from TypeDef Token recursivelly.
     ///
     /// Executed when explicit type definition is set with :
     ///
@@ -272,7 +283,7 @@ impl<R: std::io::Read> Parser<R> {
         }
     }
 
-    /// Get variable's name by analising previous Token lexeme and emit it's Identifier as String to constants vector.
+    /// Receive variable's name and emit it's Identifier as String to constants vector.
     ///
     fn identifier_constant(&mut self, name: String) -> Option<usize> {
         Some(
@@ -290,13 +301,15 @@ impl<R: std::io::Read> Parser<R> {
             total_locals += i.local_count;
         }
 
+        // Add var to last scope, as the file is read from top to bottom
         self.scopes
             .last_mut()
             .unwrap()
             .add_local(name, modifier, total_locals);
     }
 
-    /// Initialize Local Var by emitting DefineLocal
+    /// Initialize Local Var by emitting DefineLocal, 
+    /// it basically 'reserves' a slot on stack before the value is even in there.
     ///
     fn mark_initialized(&mut self, local_name: String, _type: Type) {
         let local_index = self
@@ -306,6 +319,7 @@ impl<R: std::io::Read> Parser<R> {
             .get_local(&local_name)
             .unwrap();
 
+        // (idx on stack, Modifier, Type)
         self.emit_byte(OpCode::DefineLocal(
             local_index.borrow().0,
             local_index.borrow().1,
@@ -315,9 +329,88 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Emit DefineGlobal ByteCode with provided index. (global variables only)
     ///
-    ///
     pub fn define_variable(&mut self, name_index: usize, modifier: Modifier, _type: Type) {
         self.emit_byte(OpCode::DefineGlobal(name_index, modifier, _type));
+    }
+
+    /// Build struct blueprint by parsing name and it's types
+    /// 
+    pub fn define_struct(&mut self) {
+        let name = match self.get_current() {
+            Token::Identifier(s) => s,
+            _ => self.error("Expect struct name."),
+        };
+
+        let mut field_count = 0;
+        let mut field_indices = std::collections::HashMap::<String, (Type, usize)>::new();
+
+        self.advance();
+        self.consume(Token::LeftBrace, "Expect '{'.");
+
+        // If field type has dynamically resolved types
+        let mut dyn_count = 0usize;
+
+        // Struct fields parsing
+        while !self.check(Token::RightBrace) {
+            // Identifier
+            let tok = self.get_current();
+
+            // :
+            self.advance();
+            self.consume(Token::Colon, "Expect ':'.");
+
+            let _type = match self.get_current() {
+                Token::TypeDef(t) => t,
+                Token::Identifier(id) => {
+                    dyn_count += 1;
+
+                    // get global or get local
+                    self.previous = Token::Identifier(id);
+                    let rule = get_rule::<R>(&self.previous).prefix;
+                    rule(self, false);
+
+                    Type::Dyn(Dyn::default())
+                },
+                _ => self.error("Expect field type."),
+            };
+
+            // : or }
+            self.advance();
+
+            match tok {
+                Token::Identifier(id) => {
+                    field_indices.insert(id, (_type, field_count.clone()));
+                    field_count += 1;
+                }
+                _ => self.error("Invalid token when defining struct."),
+            }
+
+            if !self.check(Token::RightBrace) {
+                self.consume(Token::Comma, "Expect ',' after field definition.");
+            }
+        }
+
+        self.consume(Token::RightBrace, "Expect '}' after struct fields.");
+
+        let _struct = Struct {
+            name: name.clone(),
+            field_count,
+            field_indices,
+        };
+        let is_global = self.scopes.len() == 0;
+        let global_idx = self.parse_variable(Modifier::Const, name.clone());
+
+        self.emit_constant(_struct.into());
+
+        if dyn_count > 0 {
+            self.emit_byte(OpCode::ParseStructDyn(dyn_count));
+        }
+
+        if is_global {
+            self.define_variable(global_idx.unwrap(), Modifier::Const, Type::Struct);
+        } else {
+            self.mark_initialized(name, Type::Struct);
+        }
     }
 
     fn get_current(&mut self) -> Token {
@@ -401,7 +494,7 @@ impl<R: std::io::Read> Parser<R> {
         self.upvalues.push(upvalue);
         self.function.upv_count += 1;
 
-        index // self.function.upv_count;
+        index
     }
 
     /// Statement manager function
@@ -635,12 +728,14 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::Case, "Expected 'case' statement.");
         /* This gets switch value to be compared with branch value on every iteration */
         self.expression();
+        self.consume(Token::Arrow, "Expect '=>' after expression.");
         self.emit_byte(OpCode::PartialEqual);
         let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         /*
             Statements doesnt let dangling values on stack, so no pop is needed.
             Finally, the value available on top is going to be the expression() result one.
         */
+        // Validate block();
         self = self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
@@ -656,8 +751,11 @@ impl<R: std::io::Read> Parser<R> {
 
             /* This gets switch value to be compared with branch value on every iteration */
             self.expression();
+            self.consume(Token::Arrow, "Expect '=>' after expression.");
             self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+
+            // Validate block();
             self = self.statement();
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
@@ -669,6 +767,7 @@ impl<R: std::io::Read> Parser<R> {
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
         if self.match_token(Token::Default) {
+            self.consume(Token::Arrow, "Expect '=>' after expression.");
             self = self.statement();
         }
 
@@ -690,7 +789,6 @@ impl<R: std::io::Read> Parser<R> {
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(Token::SemiColon, "Expect ';' after expression.");
-        // if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
@@ -747,9 +845,11 @@ impl<R: std::io::Read> Parser<R> {
         self.parse_precedence(Precedence::Assignment);
     }
 
-    /// This is the Ruler core itself, it orchestrate the expressions' values.
+    /// This is the Ruler core itself, it orchestrate the expressions' values / order.
     ///
     pub fn parse_precedence(&mut self, precedence: Precedence) {
+        #[cfg(feature = "debug-expr")]
+        println!("\n parsing precedence for {:?}", &self.previous);
         self.advance();
 
         let prefix_rule = get_rule(&self.previous).prefix;
@@ -757,7 +857,17 @@ impl<R: std::io::Read> Parser<R> {
         let can_assign = precedence <= Precedence::Assignment;
         prefix_rule(self, can_assign);
 
+        #[cfg(feature = "debug-expr")] {
+            println!("just executed it's precedence.");
+            println!("now {:?}, {:?}", &self.current, &self.previous);
+        }
+
         while precedence <= get_rule::<R>(&self.current).precedence {
+            #[cfg(feature = "debug-expr")] {
+                println!("=== entered loop ===");
+                println!("precedence of {:?} is lower than {:?}, executing infix", &self.previous, &self.current);
+            }
+
             self.advance();
 
             let infix_rule = get_rule(&self.previous).infix;

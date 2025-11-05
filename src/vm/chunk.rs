@@ -1,6 +1,5 @@
 use crate::primitives::{
-    primitive::Primitive,
-    types::{Modifier, Type},
+    primitive::Primitive, types::{Modifier, Type}
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -38,6 +37,10 @@ pub enum OpCode {
     Closure(usize),
     GetUpValue(usize),
     SetUpValue(usize),
+    ParseStructDyn(usize),
+    CreateInstance(usize),
+    Tuple(usize),
+    Access,
 }
 
 #[derive(Debug, Default, Clone)]

@@ -1,12 +1,9 @@
-mod common;
-use common::{mk_parser};
-
 #[cfg(test)]
 mod scopes {
     use asterisk::vm::Vm;
-
-    use super::*;
     use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
+
+    use crate::common::mk_parser;
 
     #[test]
     fn scopes_single() {
@@ -98,6 +95,7 @@ mod scopes {
         let _ = vm.run();
     }
 
+    // TODO
     fn scopes_closures_multi() {
         let source = "
             fn outer() {

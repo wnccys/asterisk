@@ -1,12 +1,9 @@
-mod common;
-use common::{mk_parser};
-
 #[cfg(test)]
 mod functions {
-    use asterisk::{primitives::primitive::Primitive, vm::Vm};
-
-    use super::*;
+    use asterisk::{primitives::{primitive::Primitive, types::Type}, vm::Vm};
     use std::{io::Cursor, panic::{catch_unwind, AssertUnwindSafe}, rc::Rc};
+
+    use crate::common::mk_parser;
 
     #[test]
     fn fun_declaration_single_argument() {
@@ -17,7 +14,7 @@ mod functions {
             f(n);
         ";
         let mut parser = mk_parser(Cursor::new(sources));
-        // fun_declaratio
+        // fun_declaration
         parser = parser.declaration();
         // var_declaration
         parser = parser.declaration();
@@ -127,30 +124,31 @@ mod functions {
         assert!(result.is_ok())
     }
 
-    fn fun_local_inner() {
+    #[test]
+    fn fun_returns_closure() {
         let mut vm = Vm::default();
-        let source = "
-            let x = 'global';
 
+        let source = r"
             fn outer() {
-                let x = 'outside';
+                fn inner() { print 'xyz from closure'; }
 
-                fn inner() {
-                    x = 'inner';
-                }
-
-                inner();
+                return inner;
             }
 
-            outer();
+            let a = outer();
+            a();
         ";
 
         let mut parser = mk_parser(Cursor::new(source));
         // fn
         parser = parser.declaration();
-        // stmt
-        parser.declaration();
+        // var declaration
+        parser = parser.declaration();
 
+        vm.call(Rc::new(parser.end_compiler()), 0);
+        vm.run().unwrap();
 
+        let a = vm.globals.get(&"a".to_string()).unwrap().take();
+        assert_eq!(a._type, Type::Closure);
     }
 }

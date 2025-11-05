@@ -826,6 +826,8 @@ impl<R: std::io::Read> Parser<R> {
     /// This is the Ruler core itself, it orchestrate the expressions' values / order.
     ///
     pub fn parse_precedence(&mut self, precedence: Precedence) {
+        #[cfg(feature = "debug-expr")]
+        println!("\n parsing precedence for {:?}", &self.previous);
         self.advance();
 
         let prefix_rule = get_rule(&self.previous).prefix;
@@ -833,7 +835,17 @@ impl<R: std::io::Read> Parser<R> {
         let can_assign = precedence <= Precedence::Assignment;
         prefix_rule(self, can_assign);
 
+        #[cfg(feature = "debug-expr")] {
+            println!("just executed it's precedence.");
+            println!("now {:?}, {:?}", &self.current, &self.previous);
+        }
+
         while precedence <= get_rule::<R>(&self.current).precedence {
+            #[cfg(feature = "debug-expr")] {
+                println!("=== entered loop ===");
+                println!("precedence of {:?} is lower than {:?}, executing infix", &self.previous, &self.current);
+            }
+
             self.advance();
 
             let infix_rule = get_rule(&self.previous).infix;

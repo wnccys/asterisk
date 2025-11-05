@@ -366,7 +366,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         },
         Token::RightBrace => ParseRule {
             prefix: ParseRule::none,
-
             infix: ParseRule::none,
             precedence: Precedence::None,
         },
@@ -377,9 +376,8 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         },
         Token::Dot => ParseRule {
             prefix: ParseRule::none,
-
-            infix: ParseRule::none,
-            precedence: Precedence::None,
+            infix: ParseRule::dot,
+            precedence: Precedence::Call,
         },
         Token::Minus => ParseRule {
             prefix: ParseRule::unary,
@@ -413,14 +411,17 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         },
         Token::Star => ParseRule {
             prefix: ParseRule::none,
-
             infix: ParseRule::binary,
             precedence: Precedence::Factor,
+        },
+        Token::Arrow => ParseRule {
+            prefix: ParseRule::none,
+            infix: ParseRule::none,
+            precedence: Precedence::None,
         },
         Token::Bang => ParseRule {
             prefix: ParseRule::unary,
             infix: ParseRule::none,
-
             precedence: Precedence::None,
         },
         Token::BangEqual => ParseRule {
@@ -455,7 +456,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
             infix: ParseRule::binary,
             precedence: Precedence::Comparison,
         },
-
         Token::Less => ParseRule {
             prefix: ParseRule::none,
             infix: ParseRule::binary,
@@ -514,7 +514,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         Token::For => ParseRule {
             prefix: ParseRule::none,
             infix: ParseRule::none,
-
             precedence: Precedence::None,
         },
         Token::Fun => ParseRule {
@@ -583,12 +582,10 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         Token::This => ParseRule {
             prefix: ParseRule::none,
             infix: ParseRule::none,
-
             precedence: Precedence::None,
         },
         Token::True => ParseRule {
             prefix: ParseRule::literal,
-
             infix: ParseRule::none,
             precedence: Precedence::None,
         },
@@ -599,7 +596,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         },
         Token::Const => ParseRule {
             prefix: ParseRule::none,
-
             infix: ParseRule::none,
             precedence: Precedence::None,
         },
@@ -610,7 +606,6 @@ pub fn get_rule<R: std::io::Read>(token_code: &crate::parser::Token) -> ParseRul
         },
         Token::Error(_) => ParseRule {
             prefix: ParseRule::none,
-
             infix: ParseRule::none,
             precedence: Precedence::None,
         },

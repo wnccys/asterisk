@@ -728,12 +728,14 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::Case, "Expected 'case' statement.");
         /* This gets switch value to be compared with branch value on every iteration */
         self.expression();
+        self.consume(Token::Arrow, "Expect '=>' after expression.");
         self.emit_byte(OpCode::PartialEqual);
         let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
         /*
             Statements doesnt let dangling values on stack, so no pop is needed.
             Finally, the value available on top is going to be the expression() result one.
         */
+        // Validate block();
         self = self.statement();
         self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
@@ -749,8 +751,11 @@ impl<R: std::io::Read> Parser<R> {
 
             /* This gets switch value to be compared with branch value on every iteration */
             self.expression();
+            self.consume(Token::Arrow, "Expect '=>' after expression.");
             self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
+
+            // Validate block();
             self = self.statement();
             self.patch_jump(stmt_jump, OpCode::JumpIfFalse(0));
 
@@ -762,6 +767,7 @@ impl<R: std::io::Read> Parser<R> {
         let default_jump = self.emit_jump(OpCode::JumpIfTrue(0));
 
         if self.match_token(Token::Default) {
+            self.consume(Token::Arrow, "Expect '=>' after expression.");
             self = self.statement();
         }
 
@@ -783,7 +789,6 @@ impl<R: std::io::Read> Parser<R> {
     pub fn expression_statement(&mut self) {
         self.expression();
         self.consume(Token::SemiColon, "Expect ';' after expression.");
-        // if self.scopes.len() == 0 { self.emit_byte(OpCode::Pop); }
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.

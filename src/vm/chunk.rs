@@ -37,9 +37,10 @@ pub enum OpCode {
     Closure(usize),
     GetUpValue(usize),
     SetUpValue(usize),
-    DefineStruct(bool),
+    ParseStructDyn(usize),
     CreateInstance(usize),
-    Tuple(usize)
+    Tuple(usize),
+    Access,
 }
 
 #[derive(Debug, Default, Clone)]

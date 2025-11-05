@@ -11,8 +11,9 @@ use crate::objects::hash_table::HashTable;
 use crate::primitives::native::_typeof;
 use crate::primitives::functions::NativeFn;
 use crate::primitives::primitive::Primitive;
-use crate::primitives::structs::Instance;
+use crate::primitives::structs::{Instance};
 use crate::primitives::tuple::Tuple;
+use crate::primitives::types::Dyn;
 use crate::primitives::{
     functions::Function,
     types::{Modifier, Type},
@@ -543,26 +544,51 @@ impl Vm {
             OpCode::GetUpValue(var_idx) => {
                 self.stack.push(Rc::clone(&self.stack[var_idx]));
             }
-            OpCode::DefineStruct(is_global) => {
-                // Already on stack for local
-                if is_global {
-                    let _struct = self.stack.pop().unwrap().take();
+            OpCode::ParseStructDyn(dyn_count) => {
+                // The newly created dynamic struct
+                let mut _struct_value = self.stack.pop().unwrap();
 
-                    let struct_name = match _struct.value {
-                        Primitive::Struct(ref _struct) => _struct.name.clone(),
-                        _ => panic!("Expect struct found {:?}.", _struct._type)
+                {
+                    let mut _struct_borrow = _struct_value.borrow_mut();
+
+                    let Primitive::Struct(ref mut _struct) = &mut _struct_borrow.value else {
+                        panic!("Expect struct, found {:?}", _struct_borrow.value);
                     };
 
-                    self.globals.insert(&struct_name, _struct);
+                    let mut structs: Vec<Rc<RefCell<Value>>> = vec![];
+
+                    for _ in 0..dyn_count {
+                        let _struct = self.stack.pop().unwrap();
+                        structs.push(_struct);
+                    }
+
+                    structs.reverse();
+
+                    // Extract dyn types from stack
+                    for ((_, v), _struct) in _struct.field_indices
+                        .iter_mut()
+                        .filter(
+                            |(_, v)| 
+                                if let Some(&Type::Dyn(_)) = Some(&v.0) { true } else { false }
+                        )
+                        .zip(structs)
+                    {
+                        v.0 = Type::Dyn(Dyn { 0: _struct });
+                    };
                 }
+
+                self.stack.push(_struct_value);
             }
             OpCode::CreateInstance(arg_count) => {
-                let stack_len = self.stack.len();
+                // Tupled values (field_name[String], value[Value]),+[...]
+                let mut tupled_values: Vec<Rc<RefCell<Value>>> = vec![];
+
+                for _ in 0..arg_count {
+                    tupled_values.push(self.stack.pop().unwrap());
+                };
 
                 // The base struct
-                let blueprint = &self.stack[(self.stack.len() - 1) - arg_count];
-                // Tupled values (field_name[String], value[Value]),+[...]
-                let tupled_values = self.stack[(stack_len - arg_count) .. stack_len].iter().take(arg_count);
+                let blueprint = self.stack.pop().unwrap();
 
                 // The values to be mapped based on blueprint field_indices
                 let mut values: Vec<Value> = vec![Value::default(); arg_count];
@@ -570,15 +596,16 @@ impl Vm {
                 for _tuple in tupled_values {
                     let wrapped_tuple = _tuple.take();
 
-                    // Here, tuple (.items) is expect to be a vec! with 2 slots where [Value.value::String, Value.value::Value]
+                    // Here, tuple (.items) is expect to be a vec! with 2 slots 
+                    // where [Value.value::String, Value.value::Value]
                     let tuple = match wrapped_tuple.value {
                         Primitive::Tuple(t) => t,
                         t => panic!("Tried to destruct Tuple found {t:?}")
                     };
 
-                    let primitive_blueprint = &blueprint.borrow().value;
+                    let blueprint_value = &blueprint.borrow().value; 
 
-                    let _struct = match primitive_blueprint {
+                    let _struct = match blueprint_value {
                         Primitive::Struct(ref stct) => {
                             stct
                         }
@@ -596,15 +623,30 @@ impl Vm {
                         .expect("Use of undeclared field.");
 
                     // Type-Check
-                    if field_info.0 != tuple.items[1]._type {
-                        panic!("Cannot assign {:?} to {:?}.", field_info.0, tuple.items[1]._type)
+                    match &field_info.0 {
+                        Type::Dyn(_dyn) => {
+                            let incoming_instance = &tuple.items[1];
+
+                            let Primitive::Instance(ref instance) = incoming_instance.value else {
+                                panic!("Expect Instance got {}", *_dyn.0.borrow())
+                            };
+
+                            if *_dyn.0.borrow() != *instance._struct.borrow() {
+                                panic!("Cannot assign {} to {}", tuple.items[1], _dyn.0.borrow().value)
+                            }
+                        }
+                        t => {
+                            if *t != tuple.items[1]._type {
+                                panic!("Cannot assign {:?} to {:?}.", field_info.0, tuple.items[1]._type);
+                            }
+                        }
                     }
 
                     values[field_info.1] = tuple.items[1].clone();
                 }
 
                 let instance = Instance {
-                    _struct: Rc::clone(blueprint),
+                    _struct: Rc::clone(&blueprint),
                     values
                 };
 
@@ -630,6 +672,37 @@ impl Vm {
                 };
 
                 self.stack.push(Rc::new(RefCell::new(value_tuple)));
+            }
+            OpCode::Access => {
+                // Value :: String :: Ident :: Field_Name
+                let field_name = match self.stack.pop().unwrap().take() {
+                    Value { value: Primitive::String(str), .. } => str,
+                    t => panic!("Expect String got {t}")
+                };
+
+                // Instance being accessed
+                let instance_val = self.stack.pop().unwrap();
+
+                let field_value: Value = match &instance_val.borrow().value {
+                    Primitive::Instance(ref instc)  => {
+                        let instc_struct_borrow = instc._struct.borrow();
+
+                        let inst_struct = match instc_struct_borrow.value {
+                            Primitive::Struct(ref _struct) => _struct,
+                            _ => panic!("Invalid primitive struct")
+                        };
+
+                        let field_index = inst_struct
+                            .field_indices
+                            .get(&field_name)
+                            .expect(&format!("Invalid field access: {} is not in {}", field_name, inst_struct.name));
+
+                        instc.values[field_index.1].clone()
+                    },
+                    t => panic!("Expect Instance found {t}")
+                };
+
+                self.stack.push(Rc::new(RefCell::new(field_value)));
             }
         }
 

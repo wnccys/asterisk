@@ -95,6 +95,7 @@ mod scopes {
         let _ = vm.run();
     }
 
+    // TODO
     fn scopes_closures_multi() {
         let source = "
             fn outer() {

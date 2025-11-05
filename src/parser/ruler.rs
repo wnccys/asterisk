@@ -330,6 +330,19 @@ impl<R: std::io::Read> ParseRule<R> {
 
         parser.emit_byte(OpCode::CreateInstance(arg_count));
     }
+
+    /// Assume that variable value is on stack, accessing it's field
+    /// 
+    fn dot(parser: &mut Parser<R>, _can_assign: bool) {
+        let field_name = match parser.get_current() {
+            Token::Identifier(id) => id,
+            _ => panic!("Expect field name after '.'")
+        };
+
+        parser.emit_constant(Value { value: Primitive::String(field_name), _type: Type::String, modifier: Modifier::Unassigned });
+        parser.emit_byte(OpCode::Access);
+        parser.advance();
+    }
 }
 
 /// Define which tokens will call which functions on prefix or infix while it's precedence is being parsed.

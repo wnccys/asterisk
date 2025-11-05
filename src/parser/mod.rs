@@ -347,6 +347,9 @@ impl<R: std::io::Read> Parser<R> {
         self.advance();
         self.consume(Token::LeftBrace, "Expect '{'.");
 
+        // If field type has dynamically resolved types
+        let mut dyn_count = 0usize;
+
         // Struct fields parsing
         while !self.check(Token::RightBrace) {
             // Identifier
@@ -358,6 +361,16 @@ impl<R: std::io::Read> Parser<R> {
 
             let _type = match self.get_current() {
                 Token::TypeDef(t) => t,
+                Token::Identifier(id) => {
+                    dyn_count += 1;
+
+                    // get global or get local
+                    self.previous = Token::Identifier(id);
+                    let rule = get_rule::<R>(&self.previous).prefix;
+                    rule(self, false);
+
+                    Type::Dyn(Dyn::default())
+                },
                 _ => self.error("Expect field type."),
             };
 
@@ -388,6 +401,10 @@ impl<R: std::io::Read> Parser<R> {
         let global_idx = self.parse_variable(Modifier::Const, name.clone());
 
         self.emit_constant(_struct.into());
+
+        if dyn_count > 0 {
+            self.emit_byte(OpCode::ParseStructDyn(dyn_count));
+        }
 
         if is_global {
             self.define_variable(global_idx.unwrap(), Modifier::Const, Type::Struct);
@@ -477,7 +494,7 @@ impl<R: std::io::Read> Parser<R> {
         self.upvalues.push(upvalue);
         self.function.upv_count += 1;
 
-        index // self.function.upv_count;
+        index
     }
 
     /// Statement manager function

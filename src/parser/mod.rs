@@ -9,7 +9,7 @@ use std::{rc::Rc, thread::{self, current}, time::Duration};
 use lexer::{Lexer, Token};
 use ruler::{get_rule, Precedence};
 
-use crate::primitives::{primitive::UpValue, structs::Struct};
+use crate::primitives::{primitive::UpValue, structs::Struct, types::Dyn};
 #[allow(unused)]
 use crate::{
     parser::scope::Scope,

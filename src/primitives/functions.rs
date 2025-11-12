@@ -7,7 +7,7 @@ pub struct Function {
     pub arity: usize,
     pub chunk: Chunk,
     pub name: String,
-    // Upvalue coutn
+    // Upvalue count
     pub upv_count: usize,
 }
 

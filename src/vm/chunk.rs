@@ -34,7 +34,7 @@ pub enum OpCode {
     Jump(usize),
     Loop(usize),
     Call(usize),
-    Closure(usize),
+    Closure,
     GetUpValue(usize),
     SetUpValue(usize),
     ParseStructDyn(usize),

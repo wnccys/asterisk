@@ -84,15 +84,27 @@ impl<R: std::io::Read> Parser<R> {
     /// 
     pub fn fun_declaration(mut self: Parser<R>) -> Parser<R> {
         let modifier = Modifier::Const;
-        self.advance();
+
+        let mut is_closure = false;
+        // Unamed closure convention
+        if self.current == Token::LeftParen {
+            is_closure = true;
+        } else {
+            self.advance();
+        }
 
         let name = match self.get_previous() {
             Token::Identifier(s) => s,
+            Token::Fun => format!("{}::closure::{}", self.function.name, self.scopes.len()),
             _ => self.error("Expect function name"),
         };
         let global_var = self.parse_variable(modifier, name.clone());
 
         self = self.function(FunctionType::Fn, name.clone());
+
+        if is_closure {
+            return self;
+        }
 
         /* Let function as value available on top of stack */
         match global_var {

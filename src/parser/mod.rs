@@ -184,11 +184,11 @@ impl<R: std::io::Read> Parser<R> {
         _self.previous = i_previous;
         _self.current = i_current;
 
-        let fn_idx = _self.emit_constant(i_function);
+        _self.emit_constant(i_function);
 
     /* Differs between fn and closure */
         if _self.scopes.len() > 0 {
-            _self.emit_byte(OpCode::Closure(fn_idx));
+            _self.emit_byte(OpCode::Closure);
         }
 
         *_self

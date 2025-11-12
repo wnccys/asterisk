@@ -4,7 +4,7 @@ use std::{
     rc::Rc,
 };
 
-use crate::primitives::{functions::{Function, NativeFn}, structs::{Instance, Struct}, tuple::Tuple};
+use crate::primitives::{functions::{Closure, Function, NativeFn}, structs::{Instance, Struct}, tuple::Tuple};
 
 use super::value::Value;
 
@@ -19,10 +19,7 @@ pub enum Primitive {
     Tuple(Tuple),
     NativeFunction(NativeFn),
     Function(Rc<Function>),
-    Closure {
-        _fn: Rc<Function>,
-        upvalues: Vec<Rc<RefCell<Value>>> 
-    },
+    Closure(Closure),
     Ref(Rc<RefCell<Value>>),
     Void(()),
 }
@@ -47,7 +44,7 @@ impl Display for Primitive {
             Primitive::Ref(value_ptr) => write!(fmt, "&{}", value_ptr.borrow().value),
             Primitive::Function(f) => write!(fmt, "&fn<{}, {}>", f.arity, f.name),
             Primitive::NativeFunction(f) => write!(fmt, "&native_fn<{:?}>", f),
-            Primitive::Closure { _fn, .. } => write!(fmt, "&closure<{:?}, {}>", _fn.arity, _fn.name),
+            Primitive::Closure(c) => write!(fmt, "&closure<{:?}, {}>", c._fn.arity, c._fn.name),
             Primitive::Struct(_struct) => {
                 write!(fmt, "{} {{ ", _struct.name)?;
 

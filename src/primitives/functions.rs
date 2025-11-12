@@ -36,6 +36,11 @@ impl PartialEq for Function {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct Closure {
+    pub _fn: Rc<Function>,
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct NativeFn {
     pub arity: usize,

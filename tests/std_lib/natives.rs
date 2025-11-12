@@ -38,7 +38,7 @@ mod native {
 
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
-        parser.var_declaration();
+        parser = parser.var_declaration();
         parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);
@@ -63,7 +63,7 @@ mod native {
 
         let mut parser = mk_parser(Cursor::new(source));
         parser.advance();
-        parser.var_declaration();
+        parser = parser.var_declaration();
         parser = parser.statement();
 
         vm.call(Rc::new(parser.end_compiler()), 0);

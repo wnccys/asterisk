@@ -18,7 +18,7 @@ mod global {
 
         let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
-        parser.var_declaration();
+        parser = parser.var_declaration();
 
         // "a" and "32"
         assert_eq!(parser.function.chunk.constants.len(), 2);
@@ -67,7 +67,7 @@ mod global {
         // 1
         let mut parser = mk_parser(Cursor::new(sources[0]));
         parser.advance();
-        parser.var_declaration();
+        parser = parser.var_declaration();
 
         // "a" and "32"
         assert_eq!(parser.function.chunk.constants.len(), 2);

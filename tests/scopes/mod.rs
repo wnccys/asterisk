@@ -20,15 +20,17 @@ mod scopes {
                 parser.advance();
                 parser.begin_scope();
                     parser.advance();
-                    parser.var_declaration();
+                    parser = parser.var_declaration();
 
                     assert!(parser.scopes.last().unwrap().local_count == 1);
                     assert!(parser.scopes.len() == 1);
                 parser.end_scope();
+
+                parser.scopes.len()
         }));
 
-        assert_eq!(parser.scopes.len(), 0);
         assert!(result.is_ok());
+        assert_eq!(result.unwrap(), 0);
     }
 
     #[test]
@@ -54,17 +56,20 @@ mod scopes {
                         parser.advance();
                         parser.begin_scope();
                             parser.advance();
-                            parser.var_declaration();
+                            parser = parser.var_declaration();
 
                             assert!(parser.scopes.last().unwrap().local_count == 1);
                             assert!(parser.scopes.len() == 3);
                         parser.end_scope();
                     parser.end_scope();
                 parser.end_scope();
+
+                parser.scopes.len()
         }));
 
-        assert_eq!(parser.scopes.len(), 0);
         assert!(result.is_ok());
+        // Check scopes len
+        assert_eq!(result.unwrap(), 0);
     }
 
     #[test]

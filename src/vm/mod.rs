@@ -9,7 +9,7 @@ use std::time::Duration;
 use crate::errors::vm::{InterpretResult, VmError};
 use crate::objects::hash_table::HashTable;
 use crate::primitives::native::_typeof;
-use crate::primitives::functions::NativeFn;
+use crate::primitives::functions::{Closure, NativeFn};
 use crate::primitives::primitive::Primitive;
 use crate::primitives::structs::{Instance};
 use crate::primitives::tuple::Tuple;
@@ -516,12 +516,11 @@ impl Vm {
 
                 return Ok(());
             }
-            OpCode::Closure(fn_idx) => {
+            OpCode::Closure => {
                 let _fn = match self.stack.pop().unwrap().take().value {
                     Primitive::Function(f) => f,
                     _ => panic!("Could not find fn to enclosure"),
                 };
-
 
                 self.stack.push(Rc::new(RefCell::new(Self::enclosure(_fn))));
             }
@@ -728,7 +727,7 @@ impl Vm {
 
         match &*value {
             Value {
-                value: Primitive::Closure { _fn, .. },
+                value: Primitive::Closure(Closure { _fn, .. } ),
                 ..
             } => {
                 return self.call(Rc::clone(_fn), args_count);
@@ -790,7 +789,7 @@ impl Vm {
     /// 
     fn enclosure(_fn: Rc<Function>) -> Value {
         Value {
-            value: Primitive::Closure { _fn, upvalues: vec![] },
+            value: Primitive::Closure(Closure { _fn }),
             _type: Type::Closure,
             modifier: Modifier::Const,
         }

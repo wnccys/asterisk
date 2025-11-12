@@ -1,6 +1,6 @@
 #[cfg(test)]
 pub mod structs {
-    use std::{io::Cursor, rc::Rc};
+    use std::{io::Cursor, panic::{AssertUnwindSafe, catch_unwind}, rc::Rc};
 
     use asterisk::{primitives::{primitive::Primitive, types::{Dyn, Modifier, Type}, value::Value}, vm::Vm};
 
@@ -308,7 +308,6 @@ pub mod structs {
         vm.run().unwrap();
 
         let n = vm.globals.get(&"n".to_string()).unwrap().take();
-        dbg!(&n);
 
         let Primitive::Instance(ref instance) = n.value else {
             panic!();
@@ -323,13 +322,113 @@ pub mod structs {
     }
 
     #[test]
-    fn struct_basic_instance_type_check_fail_on_wrong_type() {}
+    fn struct_basic_instance_type_check_fail_on_wrong_type() {
+        let source = r"
+            struct L {
+                name: String
+            }
+
+            let s = L { name: 2 };
+
+            fn n(arg: Struct) { return arg; }
+
+            let g = n(s);
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        // define_struct()
+        parser = parser.declaration();
+        // define_struct()
+        parser = parser.declaration();
+        // var_declaration()
+        parser = parser.declaration();
+        // var_declaration()
+        parser = parser.declaration();
+
+        let mut vm = Vm::default();
+        vm.call(Rc::new(parser.end_compiler()), 0);
+
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _ = vm.run();
+        }));
+
+        assert!(result.is_err());
+    }
 
     #[test]
-    fn struct_complex_instance_type_check_fail_on_wrong_type() {}
+    fn struct_complex_instance_type_check_fail_on_wrong_type() {
+        let source = r"
+            struct L {
+                name: String
+            }
+
+            struct S {
+                other: L
+            }
+
+            let g = S { other: 'some' };
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        // define_struct()
+        parser = parser.declaration();
+        // define_struct()
+        parser = parser.declaration();
+        // var_declaration()
+        parser = parser.declaration();
+
+        let mut vm = Vm::default();
+        vm.call(Rc::new(parser.end_compiler()), 0);
+
+        let result = catch_unwind(AssertUnwindSafe(|| {
+            let _ = vm.run();
+        }));
+
+        assert!(result.is_err());
+    }
 
     #[test]
-    fn struct_as_argument_on_function() {}
+    fn struct_as_argument_on_function() {
+        let source = r"
+            struct L {
+                name: String
+            }
+
+            let s = L { name: 'some' };
+
+            fn n(arg: Struct) { return arg; }
+
+            let g = n(s);
+        ";
+
+        let mut parser = mk_parser(Cursor::new(source));
+        // define_struct()
+        parser = parser.declaration();
+        // define_struct()
+        parser = parser.declaration();
+        // var_declaration()
+        parser = parser.declaration();
+        // var_declaration()
+        parser = parser.declaration();
+
+        let mut vm = Vm::default();
+        vm.call(Rc::new(parser.end_compiler()), 0);
+
+        vm.run().unwrap();
+
+        let g = vm.globals.get(&"g".to_string()).unwrap().take();
+
+        let Primitive::Instance(ref instance) = g.value else {
+            panic!();
+        };
+
+        let Primitive::Struct(ref _struct) = instance._struct.borrow().value else {
+            panic!()
+        };
+
+        assert_eq!(g._type, Type::Struct);
+        assert_eq!(instance.values[_struct.field_indices.get("name").unwrap().1]._type, Type::String);
+    }
 
     #[test]
     fn struct_local() {

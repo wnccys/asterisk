@@ -356,7 +356,10 @@ impl<R: std::io::Read> ParseRule<R> {
         parser
     }
 
-    fn closure(parser: Parser<R>, _can_assign: bool) -> Parser<R> {
+    /// Parse and emit code to set closure on top of stack
+    ///
+    fn closure(mut parser: Parser<R>, _can_assign: bool) -> Parser<R> {
+        parser = parser.fun_declaration();
         parser
     }
 

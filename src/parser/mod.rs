@@ -63,9 +63,9 @@ impl<R: std::io::Read> Parser<R> {
         if self.match_token(Token::Fun) {
             self = self.fun_declaration();
         } else if self.match_token(Token::Var) {
-            self.var_declaration();
+            self = self.var_declaration();
         } else if self.match_token(Token::StructDef) {
-            self.define_struct();
+            self = self.define_struct();
         } else if self.match_token(Token::LeftBrace) {
             self.begin_scope();
             self = self.block();
@@ -179,14 +179,14 @@ impl<R: std::io::Read> Parser<R> {
             )
         };
 
-    /* Re-assign ownership over Lexer and it's Tokens to parent Parser */
+        /* Re-assign ownership over Lexer and it's Tokens to parent Parser */
         _self.lexer = i_lexer;
         _self.previous = i_previous;
         _self.current = i_current;
 
         _self.emit_constant(i_function);
 
-    /* Differs between fn and closure */
+        /* Differs between fn and closure */
         if _self.scopes.len() > 0 {
             _self.emit_byte(OpCode::Closure);
         }
@@ -196,7 +196,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Set new variable with SetGlobal or push a value to stack throught GetGlobal.
     ///
-    pub fn var_declaration(&mut self) {
+    pub fn var_declaration(mut self) -> Self {
         let modifier = self.parse_modifier();
         let var_name = match self.get_current() {
             Token::Identifier(s) => s,
@@ -209,7 +209,7 @@ impl<R: std::io::Read> Parser<R> {
 
         // Checks if after consuming identifier '=' Token is present.
         if self.match_token(Token::Equal) {
-            self.expression();
+            self = self.expression();
 
         // Check for typedef
         } else if self.match_token(Token::Colon) {
@@ -218,7 +218,7 @@ impl<R: std::io::Read> Parser<R> {
 
             // Handle uninitialized but typed vars
             if self.match_token(Token::Equal) {
-                self.expression();
+                self = self.expression();
             }
         } else {
             self.error("Uninitialized variables are not allowed.");
@@ -227,10 +227,14 @@ impl<R: std::io::Read> Parser<R> {
         self.consume(Token::SemiColon, "Expect ';' after variable declaration.");
 
         if global.is_none() {
-            return self.mark_initialized(var_name, _type.unwrap_or_default());
+            self.mark_initialized(var_name, _type.unwrap_or_default());
+
+            return self;
         }
 
         self.define_variable(global.unwrap(), modifier, _type.unwrap_or_default());
+
+        self
     }
 
     /// Match current Token for Modifier(Mut) / Identifier(Const).
@@ -335,7 +339,7 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Build struct blueprint by parsing name and it's types
     /// 
-    pub fn define_struct(&mut self) {
+    pub fn define_struct(mut self) -> Self {
         let name = match self.get_current() {
             Token::Identifier(s) => s,
             _ => self.error("Expect struct name."),
@@ -367,7 +371,7 @@ impl<R: std::io::Read> Parser<R> {
                     // get global or get local
                     self.previous = Token::Identifier(id);
                     let rule = get_rule::<R>(&self.previous).prefix;
-                    rule(self, false);
+                    self = rule(self, false);
 
                     Type::Dyn(Dyn::default())
                 },
@@ -411,6 +415,8 @@ impl<R: std::io::Read> Parser<R> {
         } else {
             self.mark_initialized(name, Type::Struct);
         }
+
+        self
     }
 
     fn get_current(&mut self) -> Token {
@@ -510,13 +516,13 @@ impl<R: std::io::Read> Parser<R> {
     ///
     pub fn statement(mut self: Parser<R>) -> Parser<R> {
         if self.match_token(Token::Print) {
-            self.print_statement();
+            return self.print_statement();
         } else if self.match_token(Token::For) {
             return self.for_statement();
         } else if self.match_token(Token::If) {
             return self.if_statement()
         } else if self.match_token(Token::Return) {
-            self.return_statement();
+            return self.return_statement();
         } else if self.match_token(Token::While) {
             return self.while_statement();
         } else if self.match_token(Token::Switch) {
@@ -524,10 +530,8 @@ impl<R: std::io::Read> Parser<R> {
         } else if self.check(Token::LeftBrace) {
             return self.declaration();
         } else {
-            self.expression_statement();
+            return self.expression_statement();
         }
-
-        self
     }
 
     // pub fn syncronize(&mut self) {
@@ -556,10 +560,12 @@ impl<R: std::io::Read> Parser<R> {
     ///
     /// Emit: OpCode::Print
     ///
-    fn print_statement(&mut self) {
-        self.expression();
+    fn print_statement(mut self) -> Parser<R> {
+        self = self.expression();
         self.consume(Token::SemiColon, "Expect ';' after value.");
         self.emit_byte(OpCode::Print);
+
+        self
     }
 
     /// The for loop statement handling
@@ -577,9 +583,9 @@ impl<R: std::io::Read> Parser<R> {
         if self.match_token(Token::SemiColon) {
             // No initializer
         } else if self.match_token(Token::Var) {
-            self.var_declaration();
+            self = self.var_declaration();
         } else {
-            self.expression_statement();
+            self = self.expression_statement();
         }
 
         /*
@@ -592,7 +598,7 @@ impl<R: std::io::Read> Parser<R> {
         let mut exit_jump: i32 = -1;
         /*  Verify if expression is present (x; HERE; y;) */
         if !self.match_token(Token::SemiColon) {
-            self.expression();
+            self = self.expression();
             self.consume(Token::SemiColon, "Expect ';' after expression.");
 
             /* Jump out of the loop if condition is false */
@@ -616,7 +622,7 @@ impl<R: std::io::Read> Parser<R> {
             /* Execute increment - this is executed after body */
             let increment_start = self.function.chunk.code.len() - 1;
             /* Increment expression */
-            self.expression();
+            self = self.expression();
 
             self.consume(Token::RightParen, "Expect ')' after for clauses.");
 
@@ -646,7 +652,7 @@ impl<R: std::io::Read> Parser<R> {
 
     fn if_statement(mut self: Parser<R>) -> Parser<R> {
         self.consume(Token::LeftParen, "Expect '(' after 'if'");
-        self.expression();
+        self = self.expression();
         self.consume(Token::RightParen, "Expect ')' after condition");
 
         /*
@@ -684,7 +690,7 @@ impl<R: std::io::Read> Parser<R> {
         _self
     }
 
-    fn return_statement(&mut self) {
+    fn return_statement(mut self) -> Self {
         if self.function_type == FunctionType::Script {
             self.error("Can't return from top-level code.");
         }
@@ -692,18 +698,20 @@ impl<R: std::io::Read> Parser<R> {
         if self.match_token(Token::SemiColon) {
             self.emit_return();
         } else {
-            self.expression();
+            self = self.expression();
             self.consume(Token::SemiColon, "Expect ; after return value.");
             self.emit_byte(OpCode::Return);
         };
+
+        self
     }
 
-    fn while_statement(mut self: Parser<R>) -> Parser<R> {
+    fn while_statement(mut self: Parser<R>) -> Self {
         /* The Bytecode index jump needs to go backward to restart loop */
         let loop_start = self.function.chunk.code.len() - 1;
 
         self.consume(Token::LeftParen, "Expect '(' after 'while'");
-        self.expression();
+        self = self.expression();
         self.consume(Token::RightParen, "Expect ')' after condition");
 
         let exit_jump = self.emit_jump(OpCode::JumpIfFalse(0));
@@ -721,13 +729,13 @@ impl<R: std::io::Read> Parser<R> {
         self.begin_scope();
 
         self.consume(Token::LeftParen, "Expect '(' after switch clause.");
-        self.expression();
+        self = self.expression();
         self.consume(Token::RightParen, "Expect ')' after expression.");
         self.consume(Token::LeftBrace, "Expect '{' start-of-block.");
 
         self.consume(Token::Case, "Expected 'case' statement.");
         /* This gets switch value to be compared with branch value on every iteration */
-        self.expression();
+        self = self.expression();
         self.consume(Token::Arrow, "Expect '=>' after expression.");
         self.emit_byte(OpCode::PartialEqual);
         let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
@@ -750,7 +758,7 @@ impl<R: std::io::Read> Parser<R> {
             self.emit_byte(OpCode::Pop);
 
             /* This gets switch value to be compared with branch value on every iteration */
-            self.expression();
+            self = self.expression();
             self.consume(Token::Arrow, "Expect '=>' after expression.");
             self.emit_byte(OpCode::PartialEqual);
             let stmt_jump = self.emit_jump(OpCode::JumpIfFalse(0));
@@ -786,9 +794,11 @@ impl<R: std::io::Read> Parser<R> {
 
     /// Evaluate expression and consume ';' token.
     ///
-    pub fn expression_statement(&mut self) {
-        self.expression();
+    pub fn expression_statement(mut self) -> Self {
+        self = self.expression();
         self.consume(Token::SemiColon, "Expect ';' after expression.");
+
+        self
     }
 
     /// Calls declaration() until LeftBrace or EOF are found, consuming RightBrace on end.
@@ -841,13 +851,13 @@ impl<R: std::io::Read> Parser<R> {
     /// Expressions are Pratt-Parsed evaluated, each expression Bytecode are emitted throught
     /// the prefix and infix rules which matches a Token and handle it's correct behavior.
     ///
-    pub fn expression(&mut self) {
-        self.parse_precedence(Precedence::Assignment);
+    pub fn expression(self) -> Parser<R> {
+        self.parse_precedence(Precedence::Assignment)
     }
 
     /// This is the Ruler core itself, it orchestrate the expressions' values / order.
     ///
-    pub fn parse_precedence(&mut self, precedence: Precedence) {
+    pub fn parse_precedence(mut self, precedence: Precedence) -> Parser<R> {
         #[cfg(feature = "debug-expr")]
         println!("\n parsing precedence for {:?}", &self.previous);
         self.advance();
@@ -855,24 +865,26 @@ impl<R: std::io::Read> Parser<R> {
         let prefix_rule = get_rule(&self.previous).prefix;
 
         let can_assign = precedence <= Precedence::Assignment;
-        prefix_rule(self, can_assign);
+        let mut _self = prefix_rule(self, can_assign);
 
         #[cfg(feature = "debug-expr")] {
             println!("just executed it's precedence.");
-            println!("now {:?}, {:?}", &self.current, &self.previous);
+            println!("now {:?}, {:?}", &_self.current, &_self.previous);
         }
 
-        while precedence <= get_rule::<R>(&self.current).precedence {
+        while precedence <= get_rule::<R>(&_self.current).precedence {
             #[cfg(feature = "debug-expr")] {
                 println!("=== entered loop ===");
-                println!("precedence of {:?} is lower than {:?}, executing infix", &self.previous, &self.current);
+                println!("precedence of {:?} is lower than {:?}, executing infix", &_self.previous, &_self.current);
             }
 
-            self.advance();
+            _self.advance();
 
-            let infix_rule = get_rule(&self.previous).infix;
-            infix_rule(self, can_assign)
+            let infix_rule = get_rule(&_self.previous).infix;
+            _self = infix_rule(_self, can_assign)
         }
+
+        _self
     }
 
     /// Match token_code with self.current and advance if true.
